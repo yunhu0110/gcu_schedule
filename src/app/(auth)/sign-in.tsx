@@ -18,7 +18,7 @@ export default function SignInScreen() {
         <Text variant="mono" color={colors.light.textSecondary}>
           VOL. {volLabel(todayStr())}
         </Text>
-        <Text variant="display">월간gcu</Text>
+        <Text variant="h1">월간gcu</Text>
         <Text variant="body" color={colors.light.textSecondary}>
           6명의 기록과 일정을 한곳에. 이메일로 로그인하세요. (입력 폼은 M0-4)
         </Text>

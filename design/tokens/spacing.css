@@ -1,0 +1,28 @@
+/* 월간gcu — Spacing, radii, layout tokens. 8pt grid. */
+:root{
+  /* 8pt spacing scale */
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --space-6:24px;
+  --space-8:32px;
+  --space-10:40px;
+  --space-12:48px;
+  --space-16:64px;
+
+  /* Layout */
+  --gutter:20px;        /* screen left/right margin */
+  --section-gap:32px;   /* gap between sections */
+  --tap-min:44px;       /* minimum touch target */
+
+  /* Radii — kept small. Print sensibility. */
+  --radius-card:4px;
+  --radius-button:8px;
+  --radius-cover:0px;   /* cover is full-bleed, square corners */
+  --radius-pill:999px;
+
+  /* Hairline width (rules replace shadows) */
+  --hairline-w:1px;
+}

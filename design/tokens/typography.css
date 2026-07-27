@@ -1,0 +1,24 @@
+/* 월간gcu — Typography tokens
+   Display serif is used sparingly (cover + screen H1 only).
+   Numbers, dates, money, Vol. numbers are ALWAYS mono. */
+:root{
+  --font-display:'Noto Serif KR', serif;
+  --font-body:'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
+  --font-mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Weights */
+  --fw-display:900; /* @kind other */
+  --fw-regular:400; /* @kind other */
+  --fw-semibold:600; /* @kind other */
+  --fw-mono:500; /* @kind other */
+
+  /* Role scale — size / line-height (px) */
+  --fs-display:44px;  --lh-display:1.15; /* @kind other */   /* cover name, big screen title (serif) */
+  --fs-h1:26px;       --lh-h1:1.3; /* @kind other */         /* screen title (serif) */
+  --fs-h2:20px;       --lh-h2:1.35; /* @kind other */        /* block title (body semibold) */
+  --fs-body:16px;     --lh-body:1.5; /* @kind other */       /* default body */
+  --fs-bodysm:14px;   --lh-bodysm:1.5; /* @kind other */     /* dense body, list rows */
+  --fs-caption:12px;  --lh-caption:1.4; /* @kind other */    /* captions, meta */
+  --fs-mono:12px;     --lh-mono:1.2; /* @kind other */       /* mono caption: uppercase, +1.2 tracking */
+  --tracking-mono:1.2px;
+}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>월간gcu — 홈 (Wanted Sans)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Big+Shoulders+Display:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+<style>
+  :root{
+    --ink:#14161D;--paper:#FFFFFF;--mist:#EDECE8;--cobalt:#2140E0;--neon:#E8318A;--amber:#FFC53D;--slate:#7A7F8C;
+    --ink-12:rgba(20,22,29,.12);--ink-24:rgba(20,22,29,.24);
+    --font-body:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#E7E6E1;font-family:var(--font-body);color:var(--ink);-webkit-font-smoothing:antialiased;padding:40px}
+
+  .phone{width:390px;background:var(--paper);border:1px solid var(--ink-12);border-radius:34px;overflow:hidden;position:relative}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-family:'Wanted Sans Variable',var(--font-mono);font-size:12px;letter-spacing:.6px}
+  .statusbar .r{display:flex;gap:6px;align-items:center}
+  .tabbar{display:flex;border-top:1px solid var(--ink-12);background:var(--paper)}
+  .tabbar .tab{flex:1;padding:9px 0 22px;text-align:center;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--slate)}
+  .tabbar .tab.on{color:var(--ink);position:relative}
+  .tabbar .tab.on::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:22px;height:2px;background:var(--ink)}
+  .tabdot{width:20px;height:20px;margin:0 auto 5px;border-radius:5px;border:1.5px solid currentColor;opacity:.9}
+  .tab.on .tabdot{background:var(--ink);border-color:var(--ink)}
+
+  .mono{font-family:var(--font-mono);letter-spacing:1.2px;text-transform:uppercase}
+  .serif{font-family:'Wanted Sans Variable','Wanted Sans',sans-serif;font-weight:900;letter-spacing:-1px}
+  .display-xl{font-family:'Big Shoulders Display','Wanted Sans Variable',sans-serif;font-weight:900;font-style:italic;letter-spacing:-1px;line-height:.86}
+  .kicker{font-family:'Wanted Sans Variable',sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .list-row{display:flex;align-items:center;gap:10px;padding:11px 0}
+  .list-row .lead{width:5px;height:5px;border-radius:50%;background:var(--cobalt);flex:0 0 auto}
+  .brandmark{height:20px;width:26px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='200' overflow='hidden'><defs><clipPath id='a'><path d='M512 260h256v200H512z'/></clipPath></defs><g clip-path='url(%23a)' transform='translate(-512 -260)'><path fill='%23004E96' d='M613.962 426.431c-25.944 0-56.308-20.316-37.998-64.71 20.845-50.53 85.644-83.369 112.206-83.369 6.636 0 10.557 2.385 10.338 7.115-.339 6.985-5.937 15.816.898 21.383 8.551 6.935 33.657-4.31 36.092-22.062C737.084 273.034 721.029 261 688.679 261c-74.388 0-147.849 43.436-169.751 101.649C499.37 414.616 530.213 459 589.345 459c53.334 0 89.126-32.499 101.579-72.103l3.074-9.979h-66.426c-3.223 13.112.619 28.468 20.954 28.468a32.633 32.633 0 0 0 15.966-4.091c.509-.279.698.1.389.409-9.32 11.964-28.089 24.727-50.919 24.727Z'/><path fill='%2380C341' d='M684.878 433.725c18.35 3.193 31.022-4.47 36.919-18.959a121.53 121.53 0 0 0 6.247-21.184c2.554-12.323-11.555-16.265-26.513-16.504Z'/><path fill='%2300B9F2' d='M766.341 370.851c2.744-16.045-3.912-27.719-18.71-29.306a104.417 104.417 0 0 0-20.635-.489c-13.022.998-17.332 7.095-23.589 29.795Z'/><path fill='%23FCAF16' d='M675.288 334.84a104.433 104.433 0 0 0-6.076 19.737c-2.056 11.046 9.379 15.965 26.622 16.294l15.845-53.883c-18.689-3.961-30.982 4.88-36.391 17.852Z'/></g></svg>") center/contain no-repeat}
+
+  .btn{height:48px;border-radius:14px;border:1px solid transparent;font-family:var(--font-body);font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+  .btn.pri{background:var(--cobalt);color:#fff}
+  .btn.sec{background:transparent;color:var(--ink);border-color:var(--ink-24)}
+  .btn.block{width:100%}
+  .dpill{font-family:var(--font-mono);font-weight:600;font-size:13px;letter-spacing:1px;background:var(--ink);color:#fff;height:26px;padding:0 11px;border-radius:999px;display:inline-flex;align-items:center}
+  .dpill.warn{background:var(--amber);color:var(--ink)}
+
+  .heroCard{background:var(--ink);color:#fff;border-radius:26px;padding:22px;position:relative;overflow:hidden}
+  .neonChip{display:inline-flex;align-items:center;gap:6px;background:var(--cobalt);color:#fff;font-family:'Wanted Sans Variable',sans-serif;font-weight:800;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:5px 10px;border-radius:999px}
+  .softCard{background:var(--mist);border-radius:20px;padding:18px}
+
+  .ava{width:28px;height:28px;border-radius:50%;background:var(--mist);border:1px solid var(--ink-12);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--slate)}
+  .ava.dim{filter:grayscale(1);opacity:.42}
+  .avstack{display:flex}
+  .avstack .ava{margin-left:-8px;box-shadow:0 0 0 2px var(--paper)}
+  .avstack .ava:first-child{margin-left:0}
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span class="r">VOL. 2026.08</span></div>
+    <div class="row" style="padding:6px 20px 16px">
+      <div style="display:flex;align-items:center;gap:8px"><span class="brandmark"></span><span class="serif" style="font-size:18px">월간gcu</span></div>
+      <span class="kicker" style="color:var(--slate)">2026.08 · No.8</span>
+    </div>
+    <div style="padding:0 20px">
+      <div class="heroCard">
+        <div style="position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:var(--cobalt);opacity:.22"></div>
+        <div class="row" style="align-items:flex-start">
+          <span class="neonChip">◆ 다음 모임</span>
+          <span class="kicker" style="color:rgba(255,255,255,.6)">08.15 SAT · 18:00</span>
+        </div>
+        <div class="display-xl" style="font-size:96px;margin:14px 0 0">D-19</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.16)">
+          <div><div style="font-size:15px;font-weight:700">성심당 본점</div><div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">대전 중구</div></div>
+          <div class="mono" style="font-size:14px;color:#7FB0FF">₩25,000</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn pri" style="flex:2">참석할게요</button>
+        <button class="btn sec" style="flex:1">불참</button>
+      </div>
+    </div>
+    <div style="padding:22px 20px 0">
+      <div class="softCard">
+        <div class="row"><span style="font-size:15px;font-weight:700">8월 일정, 아직이에요</span><span class="dpill warn">마감 D-3</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+          <div class="avstack"><span class="ava">도</span><span class="ava">서</span><span class="ava">하</span><span class="ava">민</span><span class="ava dim">유</span><span class="ava dim">지</span></div>
+          <span style="font-size:12px;color:var(--slate);margin-left:6px;font-weight:600">4 / 6 입력</span>
+        </div>
+        <button class="btn pri block" style="margin-top:14px">내 일정 입력하기</button>
+      </div>
+    </div>
+    <div style="padding:20px 20px 6px">
+      <div class="kicker" style="color:var(--slate);margin-bottom:4px">Recent</div>
+      <div class="list-row"><span class="lead"></span><span style="flex:1;font-size:14px;font-weight:500">7월 모임 기록</span><span class="mono" style="font-size:10px;color:var(--slate)">어제</span></div>
+      <div class="list-row"><span class="lead" style="background:var(--cobalt)"></span><span style="flex:1;font-size:14px;font-weight:500">가고 싶은 곳 후보</span><span class="mono" style="font-size:10px;color:var(--slate)">3일 전</span></div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><div class="tabdot"></div>표지</div>
+      <div class="tab"><div class="tabdot"></div>달력</div>
+      <div class="tab"><div class="tabdot"></div>위키</div>
+      <div class="tab"><div class="tabdot"></div>정산</div>
+      <div class="tab"><div class="tabdot"></div>나</div>
+    </div>
+  </div>
+</body>
+</html>

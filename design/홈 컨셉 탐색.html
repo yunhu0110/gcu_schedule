@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<title>월간gcu — 홈 컨셉 탐색</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Big+Shoulders+Display:wght@500;700;900&display=swap">
+<script src="./assets/image-slot.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-body);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .frame{position:absolute;width:390px}
+  .cap{margin:0 0 14px;display:flex;flex-direction:column;gap:6px}
+  .cap .k{font-family:var(--font-mono);font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--slate)}
+  .cap .t{font-family:var(--font-display);font-weight:900;font-size:22px;line-height:1.2}
+  .cap .d{font-size:13px;color:var(--slate);line-height:1.5;max-width:360px}
+
+  /* phone shell */
+  .phone{width:390px;background:var(--paper);border:1px solid var(--ink-12);border-radius:30px;overflow:hidden;position:relative}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-family:var(--font-mono);font-size:12px;letter-spacing:.6px}
+  .statusbar .r{display:flex;gap:6px;align-items:center}
+  .tabbar{display:flex;border-top:1px solid var(--ink-12);background:var(--paper)}
+  .tabbar .tab{flex:1;padding:9px 0 22px;text-align:center;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--slate)}
+  .tabbar .tab.on{color:var(--ink);position:relative}
+  .tabbar .tab.on::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:22px;height:2px;background:var(--ink)}
+  .tabdot{width:20px;height:20px;margin:0 auto 5px;border-radius:5px;border:1.5px solid currentColor;opacity:.9}
+  .tab.on .tabdot{background:var(--ink);border-color:var(--ink)}
+
+  /* type helpers */
+  .mono{font-family:var(--font-mono);letter-spacing:1.2px;text-transform:uppercase}
+  .serif{font-family:var(--font-display);font-weight:900}
+  .eyebrow{display:flex;align-items:center;gap:8px}
+  .eyebrow .bar{width:3px;height:12px;background:var(--ink);border-radius:1px}
+  .eyebrow .lbl{font-family:var(--font-mono);font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink)}
+  .hair{height:1px;background:var(--ink-12);border:0;margin:0}
+
+  /* cover photo treatment */
+  .cover-photo{position:absolute;inset:0}
+  .cover-photo image-slot{width:100%;height:100%;filter:grayscale(1) contrast(1.06) brightness(1.02)}
+  .cover-tint{position:absolute;inset:0;background:var(--neon);mix-blend-mode:multiply;opacity:.9;pointer-events:none}
+  .cover-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,22,29,.05) 0%,rgba(20,22,29,0) 34%,rgba(20,22,29,.55) 100%);pointer-events:none}
+
+  .btn{height:44px;border-radius:8px;border:1px solid transparent;font-family:var(--font-body);font-weight:600;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+  .btn.pri{background:var(--cobalt);color:#fff}
+  .btn.sec{background:transparent;color:var(--ink);border-color:var(--ink-24)}
+  .btn.block{width:100%}
+
+  .dpill{font-family:var(--font-mono);font-weight:600;font-size:13px;letter-spacing:1px;background:var(--ink);color:#fff;height:24px;padding:0 8px;border-radius:8px;display:inline-flex;align-items:center}
+  .dpill.warn{background:var(--amber);color:var(--ink)}
+
+  .gauge{display:flex;gap:2px;height:8px;width:100%}
+  .gauge span{flex:1;border-radius:1px}
+  .g-av{background:var(--cobalt)} .g-un{background:var(--ink)} .g-mb{background:var(--amber)} .g-em{background:var(--mist)}
+
+  .ava{width:28px;height:28px;border-radius:50%;background:var(--mist);border:1px solid var(--ink-12);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--slate)}
+  .ava.dim{filter:grayscale(1);opacity:.42}
+  .avstack{display:flex}
+  .avstack .ava{margin-left:-8px;box-shadow:0 0 0 2px var(--paper)}
+  .avstack .ava:first-child{margin-left:0}
+
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .list-row{display:flex;align-items:center;gap:10px;padding:11px 0}
+  .list-row .lead{width:5px;height:5px;border-radius:50%;background:var(--cobalt);flex:0 0 auto}
+  .badge{font-family:var(--font-mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;height:20px;padding:0 8px;border-radius:999px;display:inline-flex;align-items:center}
+  .badge.conf{background:var(--cobalt);color:#fff}
+  .badge.vote{background:var(--amber-24);color:var(--ink)}
+  .brandmark{height:20px;width:26px;background:url(./assets/gcu.svg) center/contain no-repeat}
+</style>
+</head>
+<body style="background:#E7E6E1">
+
+<!-- ================= CONCEPT A — 표지 전면 (Magazine cover) ================= -->
+<div class="frame" style="left:120px;top:150px">
+  <div class="cap">
+    <span class="k">Concept A</span>
+    <span class="t">표지 전면 · 월간지</span>
+    <span class="d">브리프에 충실한 안. 콜드 스타트 시 표지가 화면의 주인공. 명조 대제목 + 세로 VOL 호수. 잡지를 펼치는 감각.</span>
+  </div>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span class="r">VOL. 2026.08</span></div>
+    <!-- COVER -->
+    <div style="position:relative;height:470px;background:var(--ink)">
+      <div class="cover-photo"><image-slot id="a-cover" shape="rect" placeholder="모임장 사진"></image-slot></div>
+      <div class="cover-tint"></div>
+      <div class="cover-scrim"></div>
+      <!-- vertical spine -->
+      <div style="position:absolute;left:0;top:0;bottom:0;width:34px;background:rgba(20,22,29,.28);display:flex;align-items:center;justify-content:center">
+        <span class="mono" style="writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font-size:12px;letter-spacing:3px">VOL. 2026.08</span>
+      </div>
+      <!-- edit -->
+      <div style="position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.3)"></div>
+      <!-- title block -->
+      <div style="position:absolute;left:34px;right:20px;bottom:22px;color:#fff">
+        <div class="mono" style="font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.85);margin-bottom:10px">이 달 의 모 임 장</div>
+        <div class="serif" style="font-size:46px;line-height:1.02;letter-spacing:-.5px">김도윤</div>
+        <div style="width:44px;height:1px;background:rgba(255,255,255,.6);margin:14px 0 12px"></div>
+        <div style="font-size:15px;font-weight:600;line-height:1.5;max-width:250px">“이번 달은 천천히, 대신 확실하게.”</div>
+      </div>
+    </div>
+    <!-- NEXT MEETUP -->
+    <div style="padding:20px 20px 0">
+      <div class="eyebrow"><span class="bar"></span><span class="lbl">Next Meetup</span></div>
+      <div class="row" style="margin-top:12px">
+        <div class="mono" style="font-size:17px;letter-spacing:.5px;color:var(--ink)">08.15 <span style="color:var(--slate)">SAT</span> 18:00</div>
+        <span class="dpill">D-19</span>
+      </div>
+      <div style="font-size:13px;color:var(--slate);margin-top:6px">성심당 본점 · 1인 <span class="mono" style="font-size:12px;color:var(--ink)">25,000</span>원</div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn pri" style="flex:1">참석</button>
+        <button class="btn sec" style="flex:1">불참</button>
+      </div>
+    </div>
+    <hr class="hair" style="margin:20px 0 0">
+    <!-- 일정 입력 -->
+    <div style="padding:18px 20px 0">
+      <div class="row">
+        <div style="font-size:15px;font-weight:600">8월 일정 입력</div>
+        <div class="mono" style="font-size:11px;color:var(--amber);letter-spacing:1px">마감 D-3</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+        <div class="gauge" style="max-width:130px"><span class="g-av"></span><span class="g-av"></span><span class="g-av"></span><span class="g-av"></span><span class="g-em"></span><span class="g-em"></span></div>
+        <div style="font-size:12px;color:var(--slate)">4명 입력 · <span style="color:var(--ink)">2명 대기</span></div>
+      </div>
+      <button class="btn pri block" style="margin-top:14px">내 일정 입력하기</button>
+    </div>
+    <hr class="hair" style="margin:20px 0 0">
+    <!-- recent pages -->
+    <div style="padding:16px 20px 4px">
+      <div class="eyebrow"><span class="bar"></span><span class="lbl">Recent Pages</span></div>
+      <div class="list-row"><span class="lead"></span><span style="flex:1;font-size:14px">7월 모임 기록</span><span class="mono" style="font-size:10px;color:var(--slate)">어제</span></div>
+      <hr class="hair">
+      <div class="list-row"><span class="lead" style="background:var(--neon)"></span><span style="flex:1;font-size:14px">가고 싶은 곳 후보</span><span class="mono" style="font-size:10px;color:var(--slate)">3일 전</span></div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><div class="tabdot"></div>표지</div>
+      <div class="tab"><div class="tabdot"></div>달력</div>
+      <div class="tab"><div class="tabdot"></div>위키</div>
+      <div class="tab"><div class="tabdot"></div>정산</div>
+      <div class="tab"><div class="tabdot"></div>나</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CONCEPT B — 토스형 (Clean fintech) ================= -->
+<div class="frame" style="left:600px;top:150px">
+  <div class="cap">
+    <span class="k">Concept B</span>
+    <span class="t">토스형 · 한 손 정리</span>
+    <span class="d">표지는 요약 카드로 접고, 여백·큰 숫자·단일 주액션에 집중. 오늘 뭘 하면 되는지 3초 안에. 토스의 명료함.</span>
+  </div>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span class="r">VOL. 2026.08</span></div>
+    <!-- top bar with mark -->
+    <div class="row" style="padding:6px 20px 14px">
+      <div style="display:flex;align-items:center;gap:8px"><span class="brandmark"></span><span class="serif" style="font-size:17px">월간gcu</span></div>
+      <div class="mono" style="font-size:11px;color:var(--slate)">2026.08 · 8호</div>
+    </div>
+    <!-- compact cover card -->
+    <div style="padding:0 20px">
+      <div style="position:relative;height:150px;border-radius:4px;overflow:hidden;background:var(--ink)">
+        <div class="cover-photo"><image-slot id="b-cover" shape="rect" placeholder="모임장 사진"></image-slot></div>
+        <div class="cover-tint"></div>
+        <div class="cover-scrim"></div>
+        <div style="position:absolute;left:16px;bottom:14px;color:#fff">
+          <div class="mono" style="font-size:9px;letter-spacing:1.5px;opacity:.85">이달의 모임장</div>
+          <div class="serif" style="font-size:26px;line-height:1.1;margin-top:2px">김도윤</div>
+        </div>
+        <div style="position:absolute;right:14px;top:12px" class="mono"><span style="color:#fff;font-size:10px;letter-spacing:1.5px;background:rgba(20,22,29,.35);padding:3px 7px;border-radius:999px">VOL. 08</span></div>
+      </div>
+    </div>
+    <!-- BIG next meetup -->
+    <div style="padding:24px 20px 0">
+      <div class="mono" style="font-size:11px;color:var(--slate);letter-spacing:1.2px">다음 모임까지</div>
+      <div style="display:flex;align-items:baseline;gap:10px;margin-top:8px">
+        <div class="serif" style="font-size:52px;line-height:1;color:var(--cobalt)">D-19</div>
+        <div style="font-size:14px;color:var(--slate);line-height:1.4">8월 15일 토<br>오후 6시</div>
+      </div>
+      <div style="margin-top:16px;background:var(--mist);border-radius:4px;padding:14px 16px">
+        <div class="row"><span style="font-size:14px;font-weight:600">성심당 본점</span><span class="mono" style="font-size:13px">1인 25,000원</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn pri" style="flex:2">참석할게요</button>
+        <button class="btn sec" style="flex:1">불참</button>
+      </div>
+    </div>
+    <!-- schedule nudge -->
+    <div style="padding:22px 20px 0">
+      <div style="border:1px solid var(--ink-12);border-radius:4px;padding:16px">
+        <div class="row">
+          <span style="font-size:14px;font-weight:600">8월 일정, 아직이에요</span>
+          <span class="dpill warn">마감 D-3</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+          <div class="avstack">
+            <span class="ava">도</span><span class="ava">서</span><span class="ava">하</span><span class="ava">민</span><span class="ava dim">유</span><span class="ava dim">지</span>
+          </div>
+          <span style="font-size:12px;color:var(--slate);margin-left:6px">4 / 6 입력</span>
+        </div>
+        <button class="btn pri block" style="margin-top:14px">내 일정 입력하기</button>
+      </div>
+    </div>
+    <!-- recent -->
+    <div style="padding:20px 20px 4px">
+      <div class="row" style="margin-bottom:2px"><div class="eyebrow"><span class="bar"></span><span class="lbl">Recent Pages</span></div><span class="mono" style="font-size:10px;color:var(--slate)">전체</span></div>
+      <div class="list-row"><span class="lead"></span><span style="flex:1;font-size:14px">7월 모임 기록</span><span class="mono" style="font-size:10px;color:var(--slate)">어제</span></div>
+      <div class="list-row"><span class="lead" style="background:var(--neon)"></span><span style="flex:1;font-size:14px">가고 싶은 곳 후보</span><span class="mono" style="font-size:10px;color:var(--slate)">3일 전</span></div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><div class="tabdot"></div>표지</div>
+      <div class="tab"><div class="tabdot"></div>달력</div>
+      <div class="tab"><div class="tabdot"></div>위키</div>
+      <div class="tab"><div class="tabdot"></div>정산</div>
+      <div class="tab"><div class="tabdot"></div>나</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CONCEPT C — 컨플루언스형 (Document index) ================= -->
+<div class="frame" style="left:1080px;top:150px">
+  <div class="cap">
+    <span class="k">Concept C</span>
+    <span class="t">컨플루언스형 · 이번 호 목차</span>
+    <span class="d">홈을 '이번 호의 목차'로. 편집 마스트헤드 + 문서 트리 감각. 위키를 쓰는 모임의 정보 구조가 첫 화면에 그대로.</span>
+  </div>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span class="r">VOL. 2026.08</span></div>
+    <!-- masthead -->
+    <div style="padding:8px 20px 16px;border-bottom:1px solid var(--ink-12)">
+      <div class="row">
+        <div style="display:flex;align-items:center;gap:9px"><span class="brandmark"></span><span class="serif" style="font-size:19px">월간gcu</span></div>
+        <span class="mono" style="font-size:11px;color:var(--slate)">6 MEMBERS</span>
+      </div>
+      <div class="serif" style="font-size:34px;line-height:1.08;margin-top:16px">8월호<br><span style="font-size:20px;color:var(--slate);font-weight:400" class="mono">EDITOR — 김도윤</span></div>
+      <div style="font-size:13px;color:var(--slate);margin-top:10px;line-height:1.5">“이번 달은 천천히, 대신 확실하게.”</div>
+    </div>
+    <!-- this issue index -->
+    <div style="padding:16px 20px 0">
+      <div class="eyebrow"><span class="bar"></span><span class="lbl">이번 호 목차</span></div>
+    </div>
+    <!-- entry: meetup -->
+    <div style="padding:6px 20px 0">
+      <div style="padding:14px 0;border-bottom:1px solid var(--ink-12)">
+        <div class="row"><div style="display:flex;align-items:center;gap:8px"><span class="mono" style="font-size:11px;color:var(--slate)">01</span><span style="font-size:15px;font-weight:600">8월 정기 모임</span></div><span class="badge conf">확정</span></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;padding-left:26px">
+          <span class="mono" style="font-size:12px">08.15 SAT</span><span style="color:var(--ink-24)">·</span><span style="font-size:12px;color:var(--slate)">성심당 본점</span><span class="dpill" style="margin-left:auto">D-19</span>
+        </div>
+      </div>
+      <!-- entry: availability -->
+      <div style="padding:14px 0;border-bottom:1px solid var(--ink-12)">
+        <div class="row"><div style="display:flex;align-items:center;gap:8px"><span class="mono" style="font-size:11px;color:var(--slate)">02</span><span style="font-size:15px;font-weight:600">8월 가용성 집계</span></div><span class="mono" style="font-size:11px;color:var(--amber)">마감 D-3</span></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:10px;padding-left:26px">
+          <div class="gauge" style="max-width:120px"><span class="g-av"></span><span class="g-av"></span><span class="g-av"></span><span class="g-av"></span><span class="g-em"></span><span class="g-em"></span></div>
+          <span style="font-size:12px;color:var(--slate)">전원 가능 <span style="color:var(--neon);font-weight:600">2일</span> · 8/15, 8/22</span>
+        </div>
+      </div>
+      <!-- entry: settle -->
+      <div style="padding:14px 0;border-bottom:1px solid var(--ink-12)">
+        <div class="row"><div style="display:flex;align-items:center;gap:8px"><span class="mono" style="font-size:11px;color:var(--slate)">03</span><span style="font-size:15px;font-weight:600">7월 정산</span></div><span class="mono" style="font-size:11px;color:var(--slate)">미정산 2</span></div>
+      </div>
+    </div>
+    <!-- wiki tree -->
+    <div style="padding:18px 20px 0">
+      <div class="eyebrow"><span class="bar"></span><span class="lbl">과월호 서가 · 위키</span></div>
+      <div style="margin-top:12px;font-size:14px">
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 0"><span style="color:var(--slate)">▾</span><span style="font-weight:600">2026 모임 기록</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 0 7px 22px;border-left:1px solid var(--ink-12);margin-left:5px"><span style="color:var(--ink-24)">—</span><span style="flex:1">7월 모임 기록</span><span class="ava" style="width:20px;height:20px;font-size:9px">서</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 0 7px 22px;border-left:1px solid var(--ink-12);margin-left:5px"><span style="color:var(--ink-24)">—</span><span style="flex:1">가고 싶은 곳 후보</span><span class="ava" style="width:20px;height:20px;font-size:9px">도</span></div>
+      </div>
+    </div>
+    <div style="padding:16px 20px 20px"><button class="btn sec block">＋ 새 문서</button></div>
+    <div class="tabbar">
+      <div class="tab on"><div class="tabdot"></div>표지</div>
+      <div class="tab"><div class="tabdot"></div>달력</div>
+      <div class="tab"><div class="tabdot"></div>위키</div>
+      <div class="tab"><div class="tabdot"></div>정산</div>
+      <div class="tab"><div class="tabdot"></div>나</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= HIP DIRECTIONS (Concept B, dressed up) ================= -->
+<style>
+  /* shared hip tweaks */
+  .hip .phone{border-radius:34px}
+  .hip .statusbar{font-family:'Wanted Sans Variable',var(--font-mono)}
+  .hip .btn{border-radius:14px;height:48px;font-weight:700}
+  .hip .btn.pri{background:var(--ink)}
+  .hip .dpill{border-radius:999px;height:26px;padding:0 11px}
+
+  /* ---- Direction 1: SANS — Wanted Sans, high-energy ---- */
+  .hipA .serif{font-family:'Wanted Sans Variable','Wanted Sans',sans-serif;font-weight:900;letter-spacing:-1px}
+  .hipA .display-xl{font-family:'Big Shoulders Display','Wanted Sans Variable',sans-serif;font-weight:900;font-style:italic;letter-spacing:-1px;line-height:.86}
+  .hipA .kicker{font-family:'Wanted Sans Variable',sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase}
+  .hipA .heroCard{background:var(--ink);color:#fff;border-radius:26px;padding:22px;position:relative;overflow:hidden}
+  .hipA .neonChip{display:inline-flex;align-items:center;gap:6px;background:var(--cobalt);color:#fff;font-family:'Wanted Sans Variable',sans-serif;font-weight:800;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:5px 10px;border-radius:999px}
+  .hipA .btn.pri{background:var(--cobalt);color:#fff}
+  .hipA .softCard{background:var(--mist);border-radius:20px;padding:18px}
+
+  /* ---- Direction 2: SERIF — Song Myung, editorial mood ---- */
+  .hipB .serif{font-family:'Song Myung',serif;font-weight:400;letter-spacing:-.5px}
+  .hipB .display-xl{font-family:'Song Myung',serif;font-weight:400;line-height:1;letter-spacing:-1px}
+  .hipB .kicker{font-family:var(--font-mono);font-weight:500;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--slate)}
+  .hipB .phone{background:#F4F1EA}
+  .hipB .tabbar,.hipB .statusbar{background:#F4F1EA}
+  .hipB .heroCard{background:#26241E;color:#F4F1EA;border-radius:6px;padding:22px;position:relative;overflow:hidden}
+  .hipB .btn.pri{background:#26241E}
+  .hipB .btn{border-radius:6px}
+  .hipB .ruleLabel{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--slate);display:flex;align-items:center;gap:10px}
+  .hipB .ruleLabel::after{content:"";flex:1;height:1px;background:var(--ink-12)}
+  .hipB .softCard{background:#EDE8DD;border-radius:6px;padding:18px}
+</style>
+
+<!-- Direction 1 -->
+<div class="frame hip hipA" style="left:600px;top:1080px">
+  <div class="cap">
+    <span class="k">Concept B · 힙 A</span>
+    <span class="t">Wanted Sans · 하이에너지</span>
+    <span class="d">토스의 명료함은 유지하되, 각지고 굵은 Wanted Sans + 이탤릭 초대형 숫자 + 네온 포인트. 젊고 활기찬 클럽 무드.</span>
+  </div>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span class="r">VOL. 2026.08</span></div>
+    <div class="row" style="padding:6px 20px 16px">
+      <div style="display:flex;align-items:center;gap:8px"><span class="brandmark"></span><span class="serif" style="font-size:18px">월간gcu</span></div>
+      <span class="kicker" style="color:var(--slate)">2026.08 · No.8</span>
+    </div>
+    <!-- hero -->
+    <div style="padding:0 20px">
+      <div class="heroCard">
+        <div style="position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:var(--cobalt);opacity:.22"></div>
+        <div class="row" style="align-items:flex-start">
+          <span class="neonChip">◆ 다음 모임</span>
+          <span class="kicker" style="color:rgba(255,255,255,.6)">08.15 SAT · 18:00</span>
+        </div>
+        <div class="display-xl" style="font-size:96px;margin:14px 0 0">D-19</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.16)">
+          <div><div style="font-size:15px;font-weight:700">성심당 본점</div><div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">대전 중구</div></div>
+          <div class="mono" style="font-size:14px;color:#7FB0FF">₩25,000</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn pri" style="flex:2">참석할게요</button>
+        <button class="btn sec" style="flex:1">불참</button>
+      </div>
+    </div>
+    <!-- schedule -->
+    <div style="padding:22px 20px 0">
+      <div class="softCard">
+        <div class="row"><span style="font-size:15px;font-weight:700">8월 일정, 아직이에요</span><span class="dpill warn">마감 D-3</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+          <div class="avstack"><span class="ava">도</span><span class="ava">서</span><span class="ava">하</span><span class="ava">민</span><span class="ava dim">유</span><span class="ava dim">지</span></div>
+          <span style="font-size:12px;color:var(--slate);margin-left:6px;font-weight:600">4 / 6 입력</span>
+        </div>
+        <button class="btn pri block" style="margin-top:14px">내 일정 입력하기</button>
+      </div>
+    </div>
+    <!-- recent -->
+    <div style="padding:20px 20px 6px">
+      <div class="kicker" style="color:var(--slate);margin-bottom:4px">Recent</div>
+      <div class="list-row"><span class="lead"></span><span style="flex:1;font-size:14px;font-weight:500">7월 모임 기록</span><span class="mono" style="font-size:10px;color:var(--slate)">어제</span></div>
+      <div class="list-row"><span class="lead" style="background:var(--cobalt)"></span><span style="flex:1;font-size:14px;font-weight:500">가고 싶은 곳 후보</span><span class="mono" style="font-size:10px;color:var(--slate)">3일 전</span></div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><div class="tabdot"></div>표지</div>
+      <div class="tab"><div class="tabdot"></div>달력</div>
+      <div class="tab"><div class="tabdot"></div>위키</div>
+      <div class="tab"><div class="tabdot"></div>정산</div>
+      <div class="tab"><div class="tabdot"></div>나</div>
+    </div>
+  </div>
+</div>
+
+<!-- Direction 2 -->
+<div class="frame hip hipB" style="left:1080px;top:1080px">
+  <div class="cap">
+    <span class="k">Concept B · 힙 B</span>
+    <span class="t">Song Myung · 에디토리얼 무드</span>
+    <span class="d">토스 구조 위에 옛 활자 세리프(송명체) + 따뜻한 크림 배경 + 규칙선. 힙하지만 차분한, 오래된 잡지 감성.</span>
+  </div>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span class="r">VOL. 2026.08</span></div>
+    <div class="row" style="padding:6px 20px 16px">
+      <div style="display:flex;align-items:center;gap:8px"><span class="brandmark"></span><span class="serif" style="font-size:20px">월간gcu</span></div>
+      <span class="kicker">Vol.8 · Aug</span>
+    </div>
+    <!-- hero -->
+    <div style="padding:0 20px">
+      <div class="heroCard">
+        <div class="kicker" style="color:rgba(244,241,234,.55)">다음 모임까지</div>
+        <div style="display:flex;align-items:flex-end;gap:14px;margin-top:8px">
+          <div class="display-xl" style="font-size:82px">D-19</div>
+          <div class="serif" style="font-size:20px;line-height:1.3;padding-bottom:10px">8월 15일<br>토요일 저녁</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:16px;border-top:1px solid rgba(244,241,234,.18)">
+          <div class="serif" style="font-size:19px">성심당 본점</div>
+          <div class="mono" style="font-size:13px;color:rgba(244,241,234,.7)">1인 25,000원</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn pri" style="flex:2">참석할게요</button>
+        <button class="btn sec" style="flex:1">불참</button>
+      </div>
+    </div>
+    <!-- schedule -->
+    <div style="padding:24px 20px 0">
+      <div class="ruleLabel">08월 일정 집계</div>
+      <div class="softCard" style="margin-top:12px">
+        <div class="row"><span class="serif" style="font-size:17px">아직 입력 전이에요</span><span class="dpill warn">마감 D-3</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+          <div class="avstack"><span class="ava">도</span><span class="ava">서</span><span class="ava">하</span><span class="ava">민</span><span class="ava dim">유</span><span class="ava dim">지</span></div>
+          <span style="font-size:12px;color:var(--slate);margin-left:6px">4 / 6 입력</span>
+        </div>
+        <button class="btn pri block" style="margin-top:14px">내 일정 입력하기</button>
+      </div>
+    </div>
+    <!-- recent -->
+    <div style="padding:24px 20px 6px">
+      <div class="ruleLabel">과월호 · 최근 문서</div>
+      <div class="list-row" style="margin-top:4px"><span class="lead"></span><span style="flex:1;font-size:14px" class="serif">7월 모임 기록</span><span class="mono" style="font-size:10px;color:var(--slate)">어제</span></div>
+      <div class="list-row"><span class="lead" style="background:var(--neon)"></span><span style="flex:1;font-size:14px" class="serif">가고 싶은 곳 후보</span><span class="mono" style="font-size:10px;color:var(--slate)">3일 전</span></div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><div class="tabdot"></div>표지</div>
+      <div class="tab"><div class="tabdot"></div>달력</div>
+      <div class="tab"><div class="tabdot"></div>위키</div>
+      <div class="tab"><div class="tabdot"></div>정산</div>
+      <div class="tab"><div class="tabdot"></div>나</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

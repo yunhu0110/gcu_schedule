@@ -1,64 +1,100 @@
 /**
- * 디자인 토큰 — 단일 출처 (03-UI-UX-GUIDE, 10-DESIGN-BRIEF 참조).
- * 색·간격·폰트는 반드시 여기서만 가져온다. 컴포넌트에서 리터럴 hex 금지.
- * 다크 모드는 P3. 지금은 light만 채우되, 나중에 light/dark 두 세트를 담을 수 있는 구조로 둔다.
+ * 디자인 토큰 — 단일 출처.
+ * 방향(ADR-008): 기본은 "Wanted Sans 하이에너지"(굵은 산세리프 + 큰 라운드 + 초대형 D-day),
+ * 감성 포인트(월간 표지·과월호)에는 명조(serif)와 neon을 아껴 남긴다.
+ *
+ * 폰트 현황: Wanted Sans/Pretendard 라이선스 파일 번들 전까지 Google 폰트로 스탠드인.
+ *   - 브랜드/제목(Wanted Sans 역할) → Noto Sans KR 900
+ *   - 본문(Pretendard 역할)         → Noto Sans KR 400/700
+ *   - 초대형 D-day 숫자              → Big Shoulders Display 900 (이탤릭은 skew로 흉내)
+ *   - 숫자/날짜/금액/호수            → IBM Plex Mono 500/600
+ *   - 표지 감성 명조                  → Noto Serif KR 900
  */
 
-// 기본 팔레트 (이 7개 밖의 색은 쓰지 않는다)
 const palette = {
-  ink: '#14161D', // 본문 텍스트, 헤어라인, 불가 상태
-  paper: '#FFFFFF', // 기본 배경
-  mist: '#EDECE8', // 판면(섹션 배경), 미입력 상태
-  cobalt: '#2140E0', // 주 액션, 가능 상태
-  neon: '#E8318A', // 표지 강조, 전원 가능 날짜
-  amber: '#FFC53D', // 미정 상태, 마감 임박 경고
-  slate: '#7A7F8C', // 보조 텍스트, 캡션
+  ink: '#14161D',
+  paper: '#FFFFFF',
+  mist: '#EDECE8',
+  cobalt: '#2140E0',
+  neon: '#E8318A',
+  amber: '#FFC53D',
+  slate: '#7A7F8C',
 } as const;
 
-// 투명도 파생 (rgba). ink 계열만 우선 정의, 필요 시 확장.
 const alpha = {
-  ink12: 'rgba(20, 22, 29, 0.12)', // 헤어라인
-  ink08: 'rgba(20, 22, 29, 0.08)',
-  ink04: 'rgba(20, 22, 29, 0.04)',
+  ink04: 'rgba(20,22,29,0.04)',
+  ink06: 'rgba(20,22,29,0.06)',
+  ink08: 'rgba(20,22,29,0.08)',
+  ink12: 'rgba(20,22,29,0.12)',
+  ink24: 'rgba(20,22,29,0.24)',
+  ink60: 'rgba(20,22,29,0.60)',
+  paper12: 'rgba(255,255,255,0.12)',
+  paper16: 'rgba(255,255,255,0.16)',
+  paper60: 'rgba(255,255,255,0.60)',
+  paper80: 'rgba(255,255,255,0.80)',
+  cobalt12: 'rgba(33,64,224,0.12)',
+  cobalt22: 'rgba(33,64,224,0.22)',
+  neon12: 'rgba(232,49,138,0.12)',
+  amber24: 'rgba(255,197,61,0.24)',
 } as const;
 
 const light = {
   ...palette,
   ...alpha,
-  // 시맨틱 별칭 (가용성 상태 → 게이지 색)
+  // 시맨틱 별칭
+  textPrimary: palette.ink,
+  textSecondary: palette.slate,
+  textOnDark: palette.paper,
+  bg: palette.paper,
+  surfacePlate: palette.mist,
+  surfaceCard: palette.paper,
+  heroBg: palette.ink,
+  hairline: alpha.ink12,
+  hairlineStrong: alpha.ink24,
+  action: palette.cobalt,
+  accent: palette.neon,
+  warn: palette.amber,
+  moneyOnDark: '#7FB0FF', // ink 히어로 위 밝은 코발트(금액 강조)
+  // 가용성 상태 (6칸 게이지)
   available: palette.cobalt,
   unavailable: palette.ink,
   maybe: palette.amber,
   missing: palette.mist,
   allAvailable: palette.neon,
-  hairline: alpha.ink12,
-  textPrimary: palette.ink,
-  textSecondary: palette.slate,
-  bg: palette.paper,
-  bgSection: palette.mist,
 } as const;
 
-export const colors = { light, dark: light } as const; // dark는 P3, 지금은 light 복제
+export const colors = { light, dark: light } as const; // dark는 P3
 
-// 서체 (expo-font로 프리로드 후 이 이름으로 참조). 로드 전 폴백은 컴포넌트에서 처리.
+// 폰트 패밀리 (fonts.ts의 fontMap 키와 일치해야 함)
 export const fonts = {
-  display: 'NotoSerifKR_900Black', // 표지 이름, 화면 대제목 — 절제해서
-  body: 'Pretendard-Regular',
-  bodyBold: 'Pretendard-SemiBold',
-  mono: 'IBMPlexMono-Medium', // 호수, 날짜, D-day, 금액, 카운터
+  brand: 'NotoSansKR_900Black', // Wanted Sans 스탠드인 — 브랜드/제목
+  body: 'NotoSansKR_400Regular',
+  bodyBold: 'NotoSansKR_700Bold',
+  mono: 'IBMPlexMono_500Medium',
+  monoSemibold: 'IBMPlexMono_600SemiBold',
+  ddayNumber: 'BigShouldersDisplay_900Black', // 초대형 D-day
+  serif: 'NotoSerifKR_900Black', // 표지 감성
 } as const;
 
-// 타이포 스케일: [fontSize, lineHeight]
+// 타이포 스케일 (fontFamily 포함 — 폰트는 스플래시에서 프리로드 후 렌더)
 export const type = {
-  display: { fontSize: 44, lineHeight: 44 * 1.15, fontFamily: fonts.display },
-  h1: { fontSize: 26, lineHeight: 26 * 1.3, fontFamily: fonts.display },
-  h2: { fontSize: 20, lineHeight: 20 * 1.35, fontFamily: fonts.bodyBold },
-  body: { fontSize: 16, lineHeight: 16 * 1.5, fontFamily: fonts.body },
-  bodySm: { fontSize: 14, lineHeight: 14 * 1.5, fontFamily: fonts.body },
-  caption: { fontSize: 12, lineHeight: 12 * 1.4, fontFamily: fonts.body },
+  brand: { fontSize: 18, lineHeight: 22, fontFamily: fonts.brand, letterSpacing: -0.5 },
+  h1: { fontSize: 26, lineHeight: 34, fontFamily: fonts.brand, letterSpacing: -1 },
+  h2: { fontSize: 20, lineHeight: 27, fontFamily: fonts.bodyBold },
+  body: { fontSize: 16, lineHeight: 24, fontFamily: fonts.body },
+  bodyBold: { fontSize: 16, lineHeight: 24, fontFamily: fonts.bodyBold },
+  bodySm: { fontSize: 14, lineHeight: 21, fontFamily: fonts.body },
+  caption: { fontSize: 12, lineHeight: 17, fontFamily: fonts.body },
+  kicker: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontFamily: fonts.brand,
+    letterSpacing: 2,
+    textTransform: 'uppercase' as const,
+  },
   mono: {
     fontSize: 12,
-    lineHeight: 12 * 1.2,
+    lineHeight: 15,
     fontFamily: fonts.mono,
     letterSpacing: 1.2,
     textTransform: 'uppercase' as const,
@@ -71,22 +107,27 @@ export const space = {
   sm: 8,
   md: 12,
   lg: 16,
-  screen: 20, // 화면 좌우 여백
+  screen: 20,
   xl: 24,
-  section: 32, // 섹션 간격
+  section: 32,
 } as const;
 
+// 라운드 — 하이에너지 방향(크게). 표지(감성)만 square 유지.
 export const radius = {
-  card: 4,
-  button: 8,
-  cover: 0, // 표지는 full-bleed
+  card: 16,
+  soft: 20,
+  hero: 26,
+  button: 14,
+  pill: 999,
+  tabIcon: 5,
+  cover: 0,
 } as const;
 
 export const hairline = { width: 1, color: light.hairline } as const;
 
-// 접근성/터치 하한선
 export const layout = {
   minTouch: 44,
+  buttonHeight: 48,
   minWidth: 320,
 } as const;
 

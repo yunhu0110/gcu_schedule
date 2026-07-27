@@ -3,7 +3,7 @@
  * 텍스트 중심 컨셉이라 아이콘 없이 라벨만. 활성 ink / 비활성 slate, 상단 헤어라인.
  */
 import { Tabs } from 'expo-router';
-import { colors } from '@/theme/tokens';
+import { colors, fonts } from '@/theme/tokens';
 
 export default function TabsLayout() {
   return (
@@ -17,7 +17,7 @@ export default function TabsLayout() {
           borderTopColor: colors.light.hairline,
           borderTopWidth: 1,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.bodyBold },
         tabBarIconStyle: { display: 'none' },
       }}
     >

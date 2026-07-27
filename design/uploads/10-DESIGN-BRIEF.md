@@ -1,10 +1,5 @@
 # 10. 디자인 브리프 — 월간gcu (디자이너/디자인툴 핸드오프용)
 
-> ⚠️ **방향 갱신 (ADR-008)**: 실제 채택 방향은 **「Wanted Sans 하이에너지」**(사용자 제작 `design/` 번들 기준).
-> 제목=Wanted Sans, 초대형 D-day=Big Shoulders Display, 라운드 크게(14/20/26), 다크 히어로 카드.
-> 명조·neon은 표지·과월호 감성 포인트 전용. 색·간격은 아래 §2 그대로. 구현 토큰은 `src/theme/tokens.ts`.
-> 원본 픽셀 스펙: `design/design_handoff_home_wanted_sans/README.md`.
-
 > **이 문서 하나로 화면을 그릴 수 있게** 추린 자체 완결형 브리프.
 > 원본은 `01-PRD`, `03-UI-UX-GUIDE`, `04-SCREENS`. 값이 충돌하면 이 문서가 최신.
 > 결과물은 iOS/Android용 모바일 앱(세로 화면). 최소 지원 폭 **320pt**.

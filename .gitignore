@@ -48,3 +48,7 @@ yarn-error.*
 .DS_Store
 *.pem
 .idea/
+
+# === 디자인 번들: 25MB 에셋 인라인 HTML은 제외 (레퍼런스는 handoff/tokens/components로 충분) ===
+design/월간gcu 홈 (Wanted Sans).html
+design/.thumbnail

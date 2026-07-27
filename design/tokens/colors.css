@@ -1,0 +1,49 @@
+/* 월간gcu — Color tokens
+   7 base colors only. No color outside this palette.
+   Transparency is derived as ink12 / ink08 style tokens. */
+:root{
+  /* Base palette (the only 7) */
+  --ink:#14161D;     /* body text, hairlines, UNAVAILABLE state */
+  --paper:#FFFFFF;   /* default background */
+  --mist:#EDECE8;    /* section plate background, EMPTY (not-entered) state */
+  --cobalt:#2140E0;  /* primary action, AVAILABLE state */
+  --neon:#E8318A;    /* cover accent, ALL-AVAILABLE date */
+  --amber:#FFC53D;   /* MAYBE state, deadline-imminent warning */
+  --slate:#7A7F8C;   /* secondary text, captions */
+
+  /* Derived transparency (ink) */
+  --ink-04:rgba(20,22,29,.04);
+  --ink-06:rgba(20,22,29,.06);
+  --ink-08:rgba(20,22,29,.08);
+  --ink-12:rgba(20,22,29,.12);
+  --ink-24:rgba(20,22,29,.24);
+  --ink-60:rgba(20,22,29,.60);
+  /* Derived transparency (paper — for overlays on dark imagery) */
+  --paper-12:rgba(255,255,255,.12);
+  --paper-60:rgba(255,255,255,.60);
+  --paper-80:rgba(255,255,255,.80);
+  /* Accent tints for fills behind neon/cobalt/amber chips */
+  --cobalt-12:rgba(33,64,224,.12);
+  --neon-12:rgba(232,49,138,.12);
+  --amber-24:rgba(255,197,61,.24);
+
+  /* ---- Semantic aliases (use these in components) ---- */
+  --text-body:var(--ink);
+  --text-muted:var(--slate);
+  --text-on-dark:var(--paper);
+  --surface-page:var(--paper);
+  --surface-plate:var(--mist);      /* section plate / skeleton fill */
+  --surface-card:var(--paper);
+  --hairline:var(--ink-12);         /* 1px rules replace shadows */
+  --hairline-strong:var(--ink-24);
+  --action:var(--cobalt);
+  --accent:var(--neon);
+  --warn:var(--amber);
+
+  /* Availability states (6-gauge calendar) */
+  --state-available:var(--cobalt);
+  --state-unavailable:var(--ink);
+  --state-maybe:var(--amber);
+  --state-empty:var(--mist);
+  --state-all:var(--neon);          /* everyone available — full-cell fill */
+}

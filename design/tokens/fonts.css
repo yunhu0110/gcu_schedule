@@ -1,0 +1,8 @@
+/* 월간gcu — Webfonts
+   Display : Noto Serif KR 900  (Google Fonts)   — cover names & screen titles ONLY
+   Body    : Pretendard 400/600 (jsDelivr CDN)   — all body, buttons, labels
+   Mono    : IBM Plex Mono 500   (Google Fonts)   — Vol. no, dates, D-day, money, counters
+   NOTE: brief specifies Pretendard; it is not on Google Fonts, so the official
+   orioncactus jsDelivr webfont is used. Flag to user if a licensed copy is preferred. */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');

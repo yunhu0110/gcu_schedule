@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  html,body{margin:0;height:100%}
+  .tile{display:flex;width:1280px;height:854px;font-family:var(--font-body)}
+  .main{flex:1;background:var(--cobalt);display:flex;align-items:center;justify-content:center;position:relative}
+  .mark{display:flex;flex-direction:column;align-items:center;gap:44px}
+  .mark img{width:300px;height:auto;filter:brightness(0) invert(1)}
+  .mark .name{font-family:var(--font-display);font-weight:900;font-size:132px;color:var(--paper);line-height:1;letter-spacing:-2px}
+  .strip{display:flex;flex-direction:column;width:150px}
+  .strip span{flex:1}
+</style>
+</head>
+<body>
+<div class="tile">
+  <div class="main">
+    <div class="mark">
+      <img src="./assets/gcu.svg" alt="">
+      <div class="name">월간gcu</div>
+    </div>
+  </div>
+  <div class="strip">
+    <span style="background:var(--amber)"></span>
+    <span style="background:var(--neon)"></span>
+    <span style="background:var(--ink)"></span>
+  </div>
+</div>
+</body>
+</html>

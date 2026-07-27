@@ -1,9 +1,9 @@
 /**
- * Button — primary(cobalt 채움) / secondary(헤어라인 아웃라인) / ghost.
- * 터치 타깃 44 이상. 문구는 일어날 일을 그대로 쓴다("날짜 확정하기").
+ * Button — primary(cobalt 채움) / secondary(ink-24 아웃라인) / ghost.
+ * hifi: 높이 48, 라운드 14, 700, 15px. 문구는 일어날 일을 그대로 쓴다.
  */
 import { ActivityIndicator, Pressable, StyleSheet, type ViewStyle } from 'react-native';
-import { colors, layout, radius, space } from '@/theme/tokens';
+import { colors, fonts, layout, radius, space } from '@/theme/tokens';
 import { Text } from './Text';
 
 type Variant = 'primary' | 'secondary' | 'ghost';
@@ -14,10 +14,11 @@ type Props = {
   variant?: Variant;
   disabled?: boolean;
   loading?: boolean;
+  block?: boolean;
   style?: ViewStyle;
 };
 
-export function Button({ label, onPress, variant = 'primary', disabled, loading, style }: Props) {
+export function Button({ label, onPress, variant = 'primary', disabled, loading, block, style }: Props) {
   const isDisabled = disabled || loading;
   return (
     <Pressable
@@ -27,6 +28,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
+        block && styles.block,
         variantStyles[variant],
         pressed && !isDisabled && styles.pressed,
         isDisabled && styles.disabled,
@@ -36,7 +38,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? colors.light.paper : colors.light.cobalt} />
       ) : (
-        <Text variant="body" color={labelColor[variant]} style={styles.label}>
+        <Text color={labelColor[variant]} style={styles.label}>
           {label}
         </Text>
       )}
@@ -46,21 +48,24 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: layout.minTouch,
+    height: layout.buttonHeight,
     borderRadius: radius.button,
     paddingHorizontal: space.lg,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  label: { fontWeight: '600' },
+  block: { width: '100%' },
+  label: { fontFamily: fonts.bodyBold, fontSize: 15 },
   pressed: { opacity: 0.85 },
   disabled: { opacity: 0.4 },
 });
 
 const variantStyles: Record<Variant, ViewStyle> = {
   primary: { backgroundColor: colors.light.cobalt },
-  secondary: { backgroundColor: colors.light.paper, borderWidth: 1, borderColor: colors.light.hairline },
+  secondary: { backgroundColor: 'transparent', borderColor: colors.light.ink24 },
   ghost: { backgroundColor: 'transparent' },
 };
 

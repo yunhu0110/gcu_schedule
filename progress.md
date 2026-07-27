@@ -4,7 +4,7 @@
 > 새 세션은 이 파일 → `09-DEV-PLAN.md` → `08-OPEN-QUESTIONS.md` 순으로 읽고 이어간다.
 
 **최종 갱신:** 2026-07-27
-**현재 단계:** M0-2 앱 뼈대(라우팅+기초 컴포넌트) 완료. 앱 화면 확인 가능(`npx expo start`). 다음: 폰트 프리로드 + M0-3(Supabase 스키마) / M0-4(인증).
+**현재 단계:** M0-2 + M0-2b(Wanted Sans 폰트/홈 디자인) 완료. 앱 화면 확인 가능(`npx expo start`). 다음: M0-3(Supabase 스키마) / M0-4(인증) 또는 나머지 화면 디자인.
 
 ## 지금 어디까지 왔나
 - [x] 기획 문서 8개(01~08) 정독
@@ -29,7 +29,13 @@
   - 기초 컴포넌트: Text(변형 프리셋)·Screen·Button·Card·SectionHeader (전부 tokens 기반)
   - 표지/달력 화면에 토큰 색 반영한 플레이스홀더(범례 등). tsc 통과.
   - CI 워크플로에 EXPO_TOKEN 없으면 스킵(초록) 가드 추가 → 더 이상 빨갛게 실패 안 함
-- [ ] **M0-2b 폰트 프리로드**: Noto Serif KR / Pretendard / IBM Plex Mono (expo-font). 지금은 시스템 폰트 + 굵기로 위계만  ← **다음**
+- [x] **M0-2b 폰트 + Wanted Sans 홈 디자인 반영 (ADR-008)**:
+  - 방향 피벗: 명조 월간지 → Wanted Sans 하이에너지 (design/ 번들 기준). tokens.ts 재작성(폰트/라운드/파생색).
+  - 폰트 프리로드(expo-font useFonts + 스플래시 게이팅): Big Shoulders Display(초대형 D-day)·IBM Plex Mono(숫자)·Noto Serif KR(표지 감성)·Noto Sans KR(Wanted Sans/Pretendard 스탠드인)
+  - 홈(표지) hifi 재구성: 브랜드 헤더 + 다크 D-day 히어로 카드 + 참석/불참 + 일정카드(아바타 스택) + 최근 목록
+  - Button hifi(높이48/라운드14), Text 프리셋 재정의. tsc 통과 + `expo export -p ios` 번들 성공(3.8MB)
+  - 감성 포인트(표지/과월호)는 명조+neon 예약. 후속: 라이선스 Wanted Sans/Pretendard 번들 + CJK subset
+- [ ] 로고 SVG(design/assets/gcu.svg) 반입(react-native-svg) — 현재는 4색 미니 마크로 대체
 - [ ] M0-3 Supabase: 0001 마이그레이션(members/invite_codes/6인 트리거/RLS) + join Edge Function + 관리자 seed
 - [ ] M0-4 인증: supabase.auth 연결(sign-in/join 실제 동작) + 세션 게이팅 + me 프로필
 
