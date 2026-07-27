@@ -64,7 +64,7 @@
 - **M0-0 외부 계정 · 프로젝트 준비 (코딩 전 관문)**
   - [x] GitHub 저장소 (yunhu0110/gcu_schedule, 연동 완료)
   - [x] **Expo 계정 + 프로젝트** — 계정 `yunhu`, 프로젝트 `gcuschedule` 생성 완료 (expo.dev). `eas init`으로 이 프로젝트에 연결 예정.
-  - [ ] **Supabase 계정 + 프로젝트** — 백엔드. 사용자 로그인 후 프로젝트 생성 → URL/anon key 확보.
+  - [x] **Supabase 계정 + 프로젝트** — 프로젝트 ref `mbpvftoowisrpqgjkidw` 생성 완료. URL + publishable 키 확보 → `.env`에 저장(검증 완료). server용 secret 키는 앱/저장소에 넣지 않고 M0-3에서 Supabase Edge Function 시크릿에만 설정.
   - [ ] Apple Developer Program(유료) — iOS **상시 배포** 시에만. M1로 미룸.
   - Google Play 계정: **불필요** (스토어 미사용, APK 링크 배포).
   - EAS 프로젝트(`eas init`)와 `EXPO_TOKEN` 발급은 M0-5에서.

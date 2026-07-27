@@ -20,6 +20,7 @@
 ## 확정 사항 요약 (자세히는 ADR)
 - 앱 이름 **월간gcu** / Expo owner `yunhu` / slug `gcuschedule` / scheme `gcuschedule` / bundle `com.yunhu.gcuschedule`
 - Expo 프로젝트: https://expo.dev/accounts/yunhu/projects/gcuschedule (생성 완료)
+- Supabase: ref `mbpvftoowisrpqgjkidw`, URL/publishable키는 `.env`에 저장(커밋 안 됨). 값은 `.env.example` 형식 참고.
 - iOS+Android 동시, Expo 크로스플랫폼
 - Supabase 백엔드
 - 이메일+비번 로그인, 닉네임+프사, 초대코드 가입
@@ -28,8 +29,8 @@
 
 ## 다음에 할 일 (순서대로)
 1. [x] git init + GitHub 연동 + CI 워크플로 준비
-2. **[사용자] M0-0 계정 준비**: [x] Expo 프로젝트 `gcuschedule` 생성 완료. [ ] Supabase 프로젝트 생성(URL·anon key 확보) 남음
-3. **[승인 대기] M0-1**: `create-expo-app` (TS, expo-router), SDK 핀, ESLint/Prettier, 핵심 라이브러리 설치
+2. [x] **M0-0 계정 준비 완료**: Expo 프로젝트 `gcuschedule` + Supabase 프로젝트 `mbpvftoowisrpqgjkidw` (URL·키 `.env` 저장, 검증됨)
+3. **[승인 대기] M0-1**: `create-expo-app` (TS, expo-router), SDK 핀, ESLint/Prettier, 핵심 라이브러리 설치  ← **다음**
 3. M0-2: tokens.ts + 폰트 + 기초 컴포넌트 + date.ts/supabase.ts + 라우팅 뼈대
 4. M0-3: Supabase 프로젝트 + `0001_members_invites.sql` + 6인 트리거 + RLS + join Edge Function
 5. M0-4: sign-in / join / 세션 유지 / me 탭
