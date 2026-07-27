@@ -4,7 +4,7 @@
 > 새 세션은 이 파일 → `09-DEV-PLAN.md` → `08-OPEN-QUESTIONS.md` 순으로 읽고 이어간다.
 
 **최종 갱신:** 2026-07-27
-**현재 단계:** M0-3(스키마 파일)+M0-4(인증 클라이언트) 코드 완료. 로고 SVG 반입 완료. **남은 것: 사용자가 supabase/SETUP.md대로 스키마 적용 + join 배포 + 관리자 부트스트랩** 하면 실제 로그인 동작.
+**현재 단계:** M0-3/M0-4 완료 + 사용자가 supabase db push/functions deploy 완료(관리자 부트스트랩 SQL은 확인 필요). M0-5(APK 배포) 착수 — eas.json 작성. CI 자동배포는 M0-5에서 활성화 예정.
 
 ## 지금 어디까지 왔나
 - [x] 기획 문서 8개(01~08) 정독
@@ -46,6 +46,11 @@
 - [ ] **사용자 액션 필요(M0-3/4 활성화)**: `supabase/SETUP.md` 따라 (1)`db push` (2)`functions deploy join` (3)관리자 부트스트랩 SQL. 그래야 실제 로그인/가입 동작.
 - [ ] 라이선스 Wanted Sans/Pretendard 번들 + CJK subset(용량) — 현재 Jalnan(로컬)+Noto(Google)
 - [ ] previewMode 우회 제거(백엔드 실사용 후)
+- [~] **M0-5 배포/CI (진행 중)**: `eas.json` 작성(dev/preview=internal APK, production). @expo/ngrok devDep(터널용).
+  - [ ] `eas update:configure` (expo-updates + 채널 설정) — CI eas update에 필요
+  - [ ] `EXPO_TOKEN` GitHub Secret 등록 → `.github/workflows/eas-update.yml` 활성화(태스크 #6)
+  - [ ] `eas build -p android --profile preview` → APK 링크 → 6명 설치(서버·Wi-Fi 불필요, LTE 사용)
+- 참고: LTE 개발 미리보기는 사용자 터미널에서 `npx expo start --tunnel` (샌드박스에선 ngrok 차단으로 실패)
 - [ ] M0-3 Supabase: 0001 마이그레이션(members/invite_codes/6인 트리거/RLS) + join Edge Function + 관리자 seed
 - [ ] M0-4 인증: supabase.auth 연결(sign-in/join 실제 동작) + 세션 게이팅 + me 프로필
 
