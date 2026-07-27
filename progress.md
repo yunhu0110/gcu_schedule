@@ -11,6 +11,7 @@
 - [x] 4대 결정 확정 (ADR-001~006) → `08-OPEN-QUESTIONS.md` 기록
 - [x] `02-DATA-MODEL.md`의 `meetups` 정의를 ADR-005(유동 주기)에 맞춰 갱신
 - [x] `09-DEV-PLAN.md` 개발 기획서 작성
+- [x] `10-DESIGN-BRIEF.md` 디자인 핸드오프 브리프 작성 (디자이너/디자인툴에 던지는 자체완결 문서)
 - [x] `progress.md` 생성
 - [x] git init + .gitignore + 최초 커밋 (`main` 브랜치)
 - [x] GitHub 원격 연동 (`origin` = yunhu0110/gcu_schedule, HTTPS, push 완료)
