@@ -2,24 +2,35 @@
 .env
 .env.*
 !.env.example
+.env*.local
 google-services.json
 GoogleService-Info.plist
 *.p8
 *.p12
-*.mobileprovision
+*.key
+*.jks
 *.keystore
+*.mobileprovision
+*.orig.*
 
-# === Node / Expo / RN ===
+# === 의존성 ===
 node_modules/
+
+# === Expo ===
 .expo/
-.expo-shared/
 dist/
 web-build/
-*.tsbuildinfo
+expo-env.d.ts
 
-# EAS / native build artifacts
-android/
-ios/
+# === Metro ===
+.metro-health-check*
+
+# === 네이티브 생성 폴더 (CNG) ===
+/ios
+/android
+.kotlin/
+
+# === 빌드 산출물 ===
 *.apk
 *.aab
 *.ipa
@@ -30,10 +41,10 @@ yarn-debug.*
 yarn-error.*
 *.log
 
+# === TypeScript ===
+*.tsbuildinfo
+
 # === OS / 에디터 ===
 .DS_Store
 *.pem
-.vscode/
 .idea/
-
-# === 진행 상황 / 로컬 메모는 커밋한다 (progress.md는 추적) ===

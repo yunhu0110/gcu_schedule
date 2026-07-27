@@ -4,7 +4,7 @@
 > 새 세션은 이 파일 → `09-DEV-PLAN.md` → `08-OPEN-QUESTIONS.md` 순으로 읽고 이어간다.
 
 **최종 갱신:** 2026-07-27
-**현재 단계:** 기획 완료 + git 초기화·최초 커밋 완료. M0-1 Expo 스캐폴딩 승인 대기.
+**현재 단계:** M0-1 Expo 스캐폴딩 완료 (SDK 57, TS, expo-router). 다음은 M0-2(앱 뼈대) / M0-3(Supabase 스키마).
 
 ## 지금 어디까지 왔나
 - [x] 기획 문서 8개(01~08) 정독
@@ -16,7 +16,15 @@
 - [x] git init + .gitignore + 최초 커밋 (`main` 브랜치)
 - [x] GitHub 원격 연동 (`origin` = yunhu0110/gcu_schedule, HTTPS, push 완료)
 - [x] CI/CD 워크플로 준비 `.github/workflows/eas-update.yml` (ADR-007, dormant — M0에서 활성화)
-- [ ] M0-1 Expo 스캐폴딩 (승인 후)  ← **다음**
+- [x] **M0-1 Expo 스캐폴딩 완료**:
+  - create-expo-app (Expo SDK 57, TypeScript, expo-router) → 루트로 병합 (우리 CLAUDE.md/문서 보존)
+  - app.json 식별자: name 월간gcu, owner yunhu, slug/scheme gcuschedule, bundle com.yunhu.gcuschedule, light 고정, runtimeVersion appVersion
+  - 핵심 라이브러리 설치: @supabase/supabase-js, @tanstack/react-query, zustand, dayjs, expo-secure-store, expo-image-picker, react-native-url-polyfill
+  - 기반 lib: src/theme/tokens.ts (디자인 토큰), src/lib/date.ts (dayjs Asia/Seoul 래퍼), src/lib/supabase.ts (청크 SecureStore 어댑터), src/lib/queryClient.ts
+  - tsc --noEmit 통과. package.json에 typecheck 스크립트 추가.
+  - Node: brew node@22 설치는 네트워크(brew CDN) 차단으로 실패 → Node v25로 진행(정상 동작). 버전 무관 결정(사용자 승인).
+- [ ] M0-2 앱 뼈대: 폰트 프리로드 + 기초 컴포넌트 + QueryClientProvider 배선 + 라우팅(auth/tabs) 재구성  ← **다음**
+- [ ] M0-3 Supabase: 0001 마이그레이션(members/invite_codes/6인 트리거/RLS) + join Edge Function + 관리자 seed
 
 ## 확정 사항 요약 (자세히는 ADR)
 - 앱 이름 **월간gcu** / Expo owner `yunhu` / slug `gcuschedule` / scheme `gcuschedule` / bundle `com.yunhu.gcuschedule`
