@@ -36,3 +36,4 @@
 - **ADR-005** · 2026-07-27 · 모임 주기 = 유동적. 호스트는 `hosts (year,month)` 유니크로 매월 교체하되, `meetups`에는 `(year,month)` 유니크를 걸지 않고 실제 모임이 다음 달로 밀리는 것을 허용 · 소모임 현실상 일정이 미뤄짐 · 버린 대안: 매월 1회 고정
   - 데이터 모델 영향: `meetups`는 소속 호스트 주기를 나타내는 `cycle_year`/`cycle_month`(어느 달의 호스트가 주관하는가)를 두되 유니크 제약 없음. `confirmed_date`는 자유. 한 호스트 주기에 모임 0~n개 허용(보통 1개).
 - **ADR-006** · 2026-07-27 · 가용성 = 하루 단위 + 메모(오전/오후/저녁 구분 없음) · 6칸 게이지 달력·집계·추천 로직 단순 유지 · 버린 대안: 오전/오후/저녁 3슬롯
+- **ADR-007** · 2026-07-27 · CI/CD = GitHub Actions + `eas update`(OTA). `main` push 시 JS/이미지/설정 변경을 `preview` 채널로 자동 배포 · 설정이 저장소 안에 보이고 투명, 무료 플랜 무리 없음 · 버린 대안: Expo 대시보드 GitHub 연동(EAS Workflows), 완전 수동. 네이티브 변경은 자동화 제외(수동 `eas build`). 워크플로 `.github/workflows/eas-update.yml`은 지금 준비만; EAS 프로젝트 + `EXPO_TOKEN` secret이 갖춰지는 M0에서 활성화.

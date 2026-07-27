@@ -80,10 +80,12 @@
   - [ ] 정원/코드 오류를 문구 그대로 노출 (i18n)
   - [ ] `me` 탭에 로그아웃 + 내 프로필 표시로 "서로 보인다" 확인
 - **M0-5 배포 파이프라인 관통 (초반에 뚫는다)**
-  - [ ] `eas.json` (`dev` / `preview` 프로필, preview = internal APK)
+  - [ ] `eas init` (EAS 프로젝트 ID 생성) + `eas.json` (`dev` / `preview` 프로필, preview = internal APK)
   - [ ] Android APK 내부 배포 1회 성공 → 링크로 실기기 설치 확인
   - [ ] (iOS는 멤버십 결제 후 별도. M0에서는 dev build/Expo Go로 동작만 확인)
-  - **완료 기준: 6명이 각자 폰에 설치 → 로그인 → 서로의 닉네임/프사가 보인다.**
+  - [ ] **CI/CD 활성화 (ADR-007)**: `EXPO_TOKEN`을 GitHub Secret에 등록 → `.github/workflows/eas-update.yml` 동작 확인
+        (워크플로 파일은 이미 준비됨. 앱 파일이 생기면 push 시 자동으로 `eas update` OTA 실행)
+  - **완료 기준: 6명이 각자 폰에 설치 → 로그인 → 서로의 닉네임/프사가 보인다. + main push 한 번으로 OTA가 자동 반영된다.**
 
 ### M1 — 핵심 "앱에서 다음 모임 날짜를 확정한다"
 - **M1-1** `hosts` 마이그레이션 + `current_host` 뷰 + `is_current_host()` → 표지 화면 S1 + 로테이션 관리 S9

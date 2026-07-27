@@ -55,6 +55,20 @@ eas update --branch preview -m "달력 게이지 수정"
 - 채널: `preview`(6명 실사용) / `dev`(내가 먼저 확인). 위험한 변경은 `dev`로 먼저 올리고 확인 후 승격.
 - 롤백: `eas update:rollback` 또는 직전 커밋 재배포. 문제 생기면 되돌리는 게 고치는 것보다 빠르다.
 
+### 4-1. git push → EAS Update 자동화 (CI/CD)  ★ADR-007
+`main`에 push하면 GitHub Actions가 `eas update`를 실행해 OTA를 자동 배포한다.
+- 워크플로: `.github/workflows/eas-update.yml`
+- **트리거**: `app/**`, `src/**`, `assets/**`, `package.json`, `app.json`, `eas.json` 변경 시에만.
+  → 문서만 고친 push는 배포를 트리거하지 않는다. (Expo 앱 생성 전에도 실패하지 않도록 하는 안전장치)
+- **활성화에 필요한 것 (M0에서 충족)**:
+  1. Expo 앱 + `eas init`(EAS 프로젝트 ID) + `eas.json`
+  2. GitHub 저장소 **Secrets에 `EXPO_TOKEN`** 등록
+     - expo.dev → Account settings → Access tokens에서 발급 (Expo 계정 로그인 필요, 사용자가 직접)
+     - `gh secret set EXPO_TOKEN --repo yunhu0110/gcu_schedule` 로 등록 가능
+- **네이티브 변경은 자동화하지 않는다.** OTA로 안 되는 변경(라이브러리 추가·SDK 업글·권한·아이콘)은
+  이 파이프라인이 아니라 `eas build`(수동)로 새 빌드를 올린다. 무료 플랜 빌드 한도·큐 때문에 자동 빌드는 지양.
+- 배포 채널은 `preview`(6명 실사용) 고정. 위험한 변경은 `dev` 채널로 수동 확인 후 승격.
+
 ## 5. 푸시 알림
 - `expo-notifications` + Expo Push Service.
 - **development build 이상에서만 동작.** Expo Go에서는 테스트 불가.

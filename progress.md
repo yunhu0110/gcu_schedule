@@ -12,7 +12,9 @@
 - [x] `02-DATA-MODEL.md`의 `meetups` 정의를 ADR-005(유동 주기)에 맞춰 갱신
 - [x] `09-DEV-PLAN.md` 개발 기획서 작성
 - [x] `progress.md` 생성
-- [x] git init + .gitignore + 최초 커밋 (`main` 브랜치, 커밋 2582070)
+- [x] git init + .gitignore + 최초 커밋 (`main` 브랜치)
+- [x] GitHub 원격 연동 (`origin` = yunhu0110/gcu_schedule, HTTPS, push 완료)
+- [x] CI/CD 워크플로 준비 `.github/workflows/eas-update.yml` (ADR-007, dormant — M0에서 활성화)
 - [ ] M0-1 Expo 스캐폴딩 (승인 후)  ← **다음**
 
 ## 확정 사항 요약 (자세히는 ADR)
@@ -30,6 +32,11 @@
 4. M0-3: Supabase 프로젝트 + `0001_members_invites.sql` + 6인 트리거 + RLS + join Edge Function
 5. M0-4: sign-in / join / 세션 유지 / me 탭
 6. M0-5: eas.json + Android APK 내부 배포 1회
+
+## CI/CD 자동 배포 — M0에서 켤 때 필요한 수동 작업
+- expo.dev에서 `EXPO_TOKEN` 발급 (Expo 계정 로그인 필요 — 사용자 직접)
+- `gh secret set EXPO_TOKEN --repo yunhu0110/gcu_schedule` 로 등록
+- 앱 스캐폴딩 + `eas init` 완료되면 push 시 워크플로가 자동으로 `eas update` 실행
 
 ## 열린 질문 (미결정 — 해당 시점에 사용자에게 질문)
 - iOS 배포 비용(Apple Developer Program) — M1 iOS 배포 시점
