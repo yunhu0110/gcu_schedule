@@ -4,7 +4,7 @@
 > 새 세션은 이 파일 → `09-DEV-PLAN.md` → `08-OPEN-QUESTIONS.md` 순으로 읽고 이어간다.
 
 **최종 갱신:** 2026-07-27
-**현재 단계:** M0-3/M0-4 완료 + 사용자가 supabase db push/functions deploy 완료(관리자 부트스트랩 SQL은 확인 필요). M0-5(APK 배포) 착수 — eas.json 작성. CI 자동배포는 M0-5에서 활성화 예정.
+**현재 단계:** 🎉 M0 마일스톤 사실상 완료 — Android APK 빌드/배포 링크 확보 + CI OTA 자동배포 초록. 남은 것: (1) Expo 토큰 재발급(노출) (2) 관리자 부트스트랩 SQL 확인 (3) iOS 배포(멤버십, M1) (4) M1 실데이터. previewMode 우회 정리 예정.
 
 ## 지금 어디까지 왔나
 - [x] 기획 문서 8개(01~08) 정독
@@ -48,7 +48,7 @@
 - [ ] previewMode 우회 제거(백엔드 실사용 후)
 - [~] **M0-5 배포/CI (진행 중)**:
   - [x] `eas.json`(dev/preview=internal APK, production) + `eas init`(projectId 2af27595...) + `eas update:configure`(expo-updates, updates.url)
-  - [~] `eas build -p android --profile preview` **빌드 진행 중** — 빌드 페이지: expo.dev/accounts/yunhu/projects/gcuschedule/builds/ef3d69c4-5d3c-4ff9-9157-834e06f87c34. 완료 시 APK 링크/QR → 6명 설치(서버·Wi-Fi 불필요, LTE 사용)
+  - [x] `eas build -p android --profile preview` **완료** — APK: https://expo.dev/artifacts/eas/d7g0VXksinb5kn4YXmdWSxPBVFa2yraiJCmS3bKFTOc.apk (빌드 ef3d69c4). preview 채널 → CI OTA 자동수신. 6명 설치=서버·Wi-Fi 불필요, LTE 사용.
   - [x] **CI 활성화 완료(태스크 #6)**: EXPO_TOKEN secret 등록됨 → push→`eas update` OTA **자동배포 초록 검증**(run 30243073757 success). ⚠️ 토큰이 채팅에 노출돼 재발급 권장.
   - [x] web.output `static`→`single` (eas update 웹 정적렌더 실패 수정)
 - 참고: LTE 개발 미리보기는 사용자 터미널에서 `npx expo start --tunnel` (샌드박스에선 ngrok 차단으로 실패)
