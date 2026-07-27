@@ -26,8 +26,9 @@
 - 가용성 하루 단위 + 메모
 
 ## 다음에 할 일 (순서대로)
-1. **git init + .gitignore + 최초 커밋** (planning 문서들)
-2. **[승인 대기] M0-1**: `create-expo-app` (TS, expo-router), SDK 핀, ESLint/Prettier, 핵심 라이브러리 설치
+1. [x] git init + GitHub 연동 + CI 워크플로 준비
+2. **[사용자] M0-0 계정 준비**: Expo 계정(expo.dev) 로그인 + Supabase 계정/프로젝트 생성(URL·anon key 확보)
+3. **[승인 대기] M0-1**: `create-expo-app` (TS, expo-router), SDK 핀, ESLint/Prettier, 핵심 라이브러리 설치
 3. M0-2: tokens.ts + 폰트 + 기초 컴포넌트 + date.ts/supabase.ts + 라우팅 뼈대
 4. M0-3: Supabase 프로젝트 + `0001_members_invites.sql` + 6인 트리거 + RLS + join Edge Function
 5. M0-4: sign-in / join / 세션 유지 / me 탭

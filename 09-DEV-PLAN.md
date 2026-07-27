@@ -28,6 +28,10 @@
 5. **RLS 먼저 켜고 정책 작성.** service_role key는 앱/EAS에 넣지 않는다.
 6. **기능 하나 = 브랜치 하나.** 커밋 메시지 `feat|fix|docs|refactor|chore: 한국어 요약`.
 7. **커밋 전 `npx tsc --noEmit` 통과.**
+8. **테스트는 순수 로직만 유닛 테스트** (`jest` + `jest-expo`). UI E2E는 하지 않는다(6명 앱, 과함).
+   - 대상: `src/lib/date.ts`(월 경계·윤년·타임존), 추천 알고리즘(`05` §4), 집계(`availability_summary` 결과 가공).
+   - 이 로직들은 **화면에서 분리해 순수 함수로** 두어 기기 없이 테스트 가능하게 만든다.
+   - `05-SCHEDULING-LOGIC.md` §8의 테스트 케이스 7개를 이 유닛 테스트로 구현한다(M1-3 게이트).
 
 ## 2. 아키텍처 한 장
 ```
@@ -57,6 +61,14 @@
 ### M0 — 기반 "6명이 로그인해서 서로 보인다"
 로드맵 M0을 착수 단위로 쪼갠 것. **이 문서 승인 후 여기부터 코딩.**
 
+- **M0-0 외부 계정 · 프로젝트 준비 (코딩 전 관문)**
+  - [x] GitHub 저장소 (yunhu0110/gcu_schedule, 연동 완료)
+  - [ ] **Expo 계정** (expo.dev, 무료) — EAS 빌드/업데이트/CI에 필수. 사용자가 직접 로그인. `eas login`.
+  - [ ] **Supabase 계정 + 프로젝트** — 백엔드. 사용자 로그인 후 프로젝트 생성 → URL/anon key 확보.
+  - [ ] Apple Developer Program(유료) — iOS **상시 배포** 시에만. M1로 미룸.
+  - Google Play 계정: **불필요** (스토어 미사용, APK 링크 배포).
+  - EAS 프로젝트(`eas init`)와 `EXPO_TOKEN` 발급은 M0-5에서.
+
 - **M0-1 리포지토리 & 툴체인**
   - [ ] git init + `.gitignore`(Expo/RN + 시크릿: `.env*`, `google-services.json`, `*.p8`, `*.mobileprovision`)
   - [ ] `create-expo-app` (TypeScript 템플릿, expo-router) → SDK 버전 **핀 고정**
@@ -73,7 +85,10 @@
   - [ ] Supabase 프로젝트 생성, `.env`에 URL + anon key (`EXPO_PUBLIC_` 접두사)
   - [ ] 마이그레이션 `0001_members_invites.sql`: `members`, `invite_codes`, 6인 정원 트리거, RLS
   - [ ] Edge Function `join`: 초대 코드 검증 → auth 유저와 연결된 `members` 행 생성
-  - [ ] 관리자 본인 계정 + 초대 코드 5개 발급 (seed)
+  - [ ] **관리자 부트스트랩** (닭-달걀 문제 해결): 가입은 초대코드가 필요한데 코드는 관리자만 발급 →
+        **첫 관리자(개발자 본인)는 초대코드 흐름을 거치지 않고 SQL seed로 직접 심는다.**
+        Supabase Auth에 관리자 계정 생성 → `members`에 `is_admin=true` 행 seed → 여기서 나머지 5명 초대코드 발급.
+        (정원 트리거가 seed를 막지 않도록 seed는 트리거 예외 경로 또는 트리거 생성 전에 실행)
 - **M0-4 인증 흐름**
   - [ ] `sign-in` (이메일/비번), 세션 `expo-secure-store` 자동 로그인
   - [ ] `join` (초대코드 → 이메일/비번 → 닉네임/프로필사진 업로드 → 홈)
@@ -108,6 +123,7 @@
 - **아직 미결정(해당 마일스톤에서 질문)**: 모임장 로테이션 규칙(Q5), 모임장 권한 범위(Q7), 회비/불참비(Q8·Q9), 위키 삭제 권한(Q12).
 
 ## 5. 다음 액션 (이 문서 직후)
-1. `git init` + `.gitignore` + 최초 커밋 (planning 문서 4개 + progress.md)
-2. **[승인 대기]** M0-1 Expo 스캐폴딩 시작 — 무거운 단계라 기획서 확인 후 진행
-3. 이후 M0-2 → M0-5 순서로. 각 단계 완료 시 `progress.md` 갱신.
+1. [x] `git init` + `.gitignore` + GitHub 원격 연동 + CI 워크플로 준비
+2. **[사용자] M0-0 계정 준비**: Expo 계정(expo.dev) + Supabase 계정/프로젝트 로그인. (Apple은 M1로 미룸)
+3. **[승인 대기]** M0-1 Expo 스캐폴딩 시작 — 무거운 단계라 기획서 확인 후 진행. 시작 시 Node 22 LTS 권장.
+4. 이후 M0-2 → M0-5 순서로. 각 단계 완료 시 `progress.md` 갱신.
