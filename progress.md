@@ -35,7 +35,13 @@
   - 홈(표지) hifi 재구성: 브랜드 헤더 + 다크 D-day 히어로 카드 + 참석/불참 + 일정카드(아바타 스택) + 최근 목록
   - Button hifi(높이48/라운드14), Text 프리셋 재정의. tsc 통과 + `expo export -p ios` 번들 성공(3.8MB)
   - 감성 포인트(표지/과월호)는 명조+neon 예약. 후속: 라이선스 Wanted Sans/Pretendard 번들 + CJK subset
+- [x] **로컬 폰트 적용**: 사용자가 `fonts/`에 넣은 **Jalnan2**(브랜드 워드마크/대형 타이틀)·**JalnanGothic**(제목 h1/h2/눈썹) 번들 → tokens.fonts 갱신. 본문=Noto Sans KR 유지.
+- [x] **1번 — 나머지 화면 hifi 재구성**:
+  - 달력: 6칸 게이지 월 그리드(시그니처2) + 월 이동 + 요일 헤더 + 전원가능 neon 반전 + 하단 요약 (GaugeCell 컴포넌트, monthGrid 사용, 플레이스홀더 집계)
+  - 로그인/가입: Jalnan2 워드마크 하이에너지 화면
+  - 정산/나: 디자인 시스템 컴포넌트라 새 폰트 자동 반영(일관 유지)
 - [ ] 로고 SVG(design/assets/gcu.svg) 반입(react-native-svg) — 현재는 4색 미니 마크로 대체
+- [ ] 라이선스 Wanted Sans/Pretendard 번들 + CJK subset(용량) — 현재 Jalnan(로컬)+Noto(Google)
 - [ ] M0-3 Supabase: 0001 마이그레이션(members/invite_codes/6인 트리거/RLS) + join Edge Function + 관리자 seed
 - [ ] M0-4 인증: supabase.auth 연결(sign-in/join 실제 동작) + 세션 게이팅 + me 프로필
 

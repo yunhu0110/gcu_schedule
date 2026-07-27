@@ -1,50 +1,110 @@
 /**
- * S2. 달력 — 6칸 게이지 월 그리드가 들어갈 자리. 지금은 구조 + 범례 플레이스홀더.
- * 실제 그리드/집계/입력은 M1(availabilities + availability_summary)에서 구현.
+ * S2. 달력 — 6칸 게이지 월 그리드(시그니처 요소 2). 월 이동 + 요일 헤더 + 전원가능 강조.
+ * 지금은 가용성 데이터가 없어 날짜 기반 결정적 플레이스홀더로 채운다.
+ * 실제 집계(availability_summary)·상태 입력·범위 선택은 M1.
  */
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
-import { Card } from '@/components/Card';
-import { SectionHeader } from '@/components/SectionHeader';
+import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
 import { colors, space } from '@/theme/tokens';
-import { volLabel, todayStr } from '@/lib/date';
+import { addMonths, monthGrid, todayStr, volLabel } from '@/lib/date';
 
-const legend = [
-  { label: '가능', color: colors.light.available },
-  { label: '불가', color: colors.light.unavailable },
-  { label: '미정', color: colors.light.maybe },
-  { label: '미입력', color: colors.light.missing },
-];
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+// 날짜 문자열 기반 결정적 플레이스홀더 집계 (합 = 6). 실제 데이터는 M1.
+function placeholderCounts(date: string): DayCounts {
+  const n = [...date].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const available = n % 7; // 0..6
+  let remaining = 6 - available;
+  const unavailable = remaining >= 2 && n % 4 === 0 ? 1 : 0;
+  remaining -= unavailable;
+  const maybe = remaining >= 1 && n % 5 === 0 ? 1 : 0;
+  const missing = 6 - available - unavailable - maybe;
+  return { available, maybe, unavailable, missing };
+}
 
 export default function CalendarScreen() {
+  const [anchor, setAnchor] = useState(todayStr());
+  const cells = monthGrid(anchor);
+
+  const allDays = cells.filter((c) => {
+    if (!c.inMonth) return false;
+    const cnt = placeholderCounts(c.date);
+    return cnt.available === 6;
+  });
+
   return (
     <Screen scroll>
-      <Text variant="h1">{volLabel(todayStr())}</Text>
-      <View style={{ marginTop: space.xl }}>
-        <SectionHeader label="6칸 게이지 달력 (구현 예정)" />
-        <Card>
-          <Text variant="body" color={colors.light.textSecondary}>
-            멤버가 정확히 6명이라, 날짜마다 6칸 게이지로 가능/불가를 셉니다.
+      {/* 월 이동 */}
+      <View style={styles.header}>
+        <Pressable onPress={() => setAnchor(addMonths(anchor, -1))} hitSlop={12}>
+          <Text variant="h2" color={colors.light.textSecondary}>
+            ‹
           </Text>
-          <View style={styles.legendRow}>
-            {legend.map((l) => (
-              <View key={l.label} style={styles.legendItem}>
-                <View style={[styles.swatch, { backgroundColor: l.color }]} />
-                <Text variant="caption" color={colors.light.textSecondary}>
-                  {l.label}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </Card>
+        </Pressable>
+        <Text variant="h1">{volLabel(anchor)}</Text>
+        <Pressable onPress={() => setAnchor(addMonths(anchor, 1))} hitSlop={12}>
+          <Text variant="h2" color={colors.light.textSecondary}>
+            ›
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* 요일 헤더 */}
+      <View style={styles.weekRow}>
+        {WEEKDAYS.map((w, i) => (
+          <Text
+            key={w}
+            variant="mono"
+            style={styles.weekCell}
+            color={i === 0 ? colors.light.neon : colors.light.textSecondary}
+          >
+            {w}
+          </Text>
+        ))}
+      </View>
+
+      {/* 6칸 게이지 그리드 */}
+      <View style={styles.grid}>
+        {cells.map((c) => (
+          <GaugeCell
+            key={c.date}
+            date={c.date}
+            day={Number(c.date.slice(8, 10))}
+            inMonth={c.inMonth}
+            counts={placeholderCounts(c.date)}
+          />
+        ))}
+      </View>
+
+      {/* 하단 요약 */}
+      <View style={styles.summary}>
+        <View style={styles.dot} />
+        <Text variant="bodySm" color={colors.light.textSecondary}>
+          {allDays.length > 0
+            ? `전원 가능한 날 ${allDays.length}개`
+            : '전원 가능한 날이 아직 없어요'}
+        </Text>
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  legendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, marginTop: space.lg },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  swatch: { width: 14, height: 14, borderRadius: 2, borderWidth: 1, borderColor: colors.light.hairline },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg },
+  weekRow: { flexDirection: 'row', marginBottom: space.xs },
+  weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  summary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    marginTop: space.xl,
+    paddingTop: space.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.light.hairline,
+  },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.light.neon },
 });

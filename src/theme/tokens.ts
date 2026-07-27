@@ -67,20 +67,21 @@ export const colors = { light, dark: light } as const; // dark는 P3
 
 // 폰트 패밀리 (fonts.ts의 fontMap 키와 일치해야 함)
 export const fonts = {
-  brand: 'NotoSansKR_900Black', // Wanted Sans 스탠드인 — 브랜드/제목
+  display: 'Jalnan2', // 브랜드 워드마크·대형 타이틀 (둥글넓적 하이에너지)
+  brand: 'JalnanGothic', // 화면 제목 h1/h2·눈썹 라벨 (굵은 고딕)
   body: 'NotoSansKR_400Regular',
   bodyBold: 'NotoSansKR_700Bold',
   mono: 'IBMPlexMono_500Medium',
   monoSemibold: 'IBMPlexMono_600SemiBold',
   ddayNumber: 'BigShouldersDisplay_900Black', // 초대형 D-day
-  serif: 'NotoSerifKR_900Black', // 표지 감성
+  serif: 'NotoSerifKR_900Black', // 표지·과월호 감성
 } as const;
 
 // 타이포 스케일 (fontFamily 포함 — 폰트는 스플래시에서 프리로드 후 렌더)
 export const type = {
-  brand: { fontSize: 18, lineHeight: 22, fontFamily: fonts.brand, letterSpacing: -0.5 },
-  h1: { fontSize: 26, lineHeight: 34, fontFamily: fonts.brand, letterSpacing: -1 },
-  h2: { fontSize: 20, lineHeight: 27, fontFamily: fonts.bodyBold },
+  brand: { fontSize: 20, lineHeight: 24, fontFamily: fonts.display, letterSpacing: -0.5 },
+  h1: { fontSize: 26, lineHeight: 34, fontFamily: fonts.brand, letterSpacing: -0.5 },
+  h2: { fontSize: 20, lineHeight: 27, fontFamily: fonts.brand },
   body: { fontSize: 16, lineHeight: 24, fontFamily: fonts.body },
   bodyBold: { fontSize: 16, lineHeight: 24, fontFamily: fonts.bodyBold },
   bodySm: { fontSize: 14, lineHeight: 21, fontFamily: fonts.body },
