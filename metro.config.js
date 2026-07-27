@@ -1,0 +1,10 @@
+// SVG를 컴포넌트로 import 하기 위한 Metro 설정 (react-native-svg-transformer).
+const { getDefaultConfig } = require('expo/metro-config');
+
+const config = getDefaultConfig(__dirname);
+
+config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer/expo');
+config.resolver.assetExts = config.resolver.assetExts.filter((ext) => ext !== 'svg');
+config.resolver.sourceExts = [...config.resolver.sourceExts, 'svg'];
+
+module.exports = config;

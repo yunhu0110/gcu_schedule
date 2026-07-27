@@ -4,7 +4,7 @@
 > 새 세션은 이 파일 → `09-DEV-PLAN.md` → `08-OPEN-QUESTIONS.md` 순으로 읽고 이어간다.
 
 **최종 갱신:** 2026-07-27
-**현재 단계:** M0-2 + M0-2b(Wanted Sans 폰트/홈 디자인) 완료. 앱 화면 확인 가능(`npx expo start`). 다음: M0-3(Supabase 스키마) / M0-4(인증) 또는 나머지 화면 디자인.
+**현재 단계:** M0-3(스키마 파일)+M0-4(인증 클라이언트) 코드 완료. 로고 SVG 반입 완료. **남은 것: 사용자가 supabase/SETUP.md대로 스키마 적용 + join 배포 + 관리자 부트스트랩** 하면 실제 로그인 동작.
 
 ## 지금 어디까지 왔나
 - [x] 기획 문서 8개(01~08) 정독
@@ -40,8 +40,12 @@
   - 달력: 6칸 게이지 월 그리드(시그니처2) + 월 이동 + 요일 헤더 + 전원가능 neon 반전 + 하단 요약 (GaugeCell 컴포넌트, monthGrid 사용, 플레이스홀더 집계)
   - 로그인/가입: Jalnan2 워드마크 하이에너지 화면
   - 정산/나: 디자인 시스템 컴포넌트라 새 폰트 자동 반영(일관 유지)
-- [ ] 로고 SVG(design/assets/gcu.svg) 반입(react-native-svg) — 현재는 4색 미니 마크로 대체
+- [x] **로고 SVG 반입**: react-native-svg + svg-transformer(metro.config.js) → assets/gcu.svg → `Logo` 컴포넌트. 홈·로그인에 적용.
+- [x] **M0-3 Supabase 스키마(파일)**: `supabase/migrations/0001_init_members_invites.sql`(members·invite_codes·6인 트리거·RLS·is_active_member/is_admin 헬퍼·컬럼권한) + `supabase/functions/join/index.ts`(코드검증→계정생성→멤버등록→코드소모, 항상 200+ok) + `supabase/SETUP.md`(적용·부트스트랩 절차)
+- [x] **M0-4 인증 클라이언트**: AuthContext(세션)·useProtectedRoute(게이팅)·api/auth·api/members·TextField·실제 로그인/가입 폼·me 프로필+로그아웃. devStore.previewMode로 백엔드 전 둘러보기 우회.
+- [ ] **사용자 액션 필요(M0-3/4 활성화)**: `supabase/SETUP.md` 따라 (1)`db push` (2)`functions deploy join` (3)관리자 부트스트랩 SQL. 그래야 실제 로그인/가입 동작.
 - [ ] 라이선스 Wanted Sans/Pretendard 번들 + CJK subset(용량) — 현재 Jalnan(로컬)+Noto(Google)
+- [ ] previewMode 우회 제거(백엔드 실사용 후)
 - [ ] M0-3 Supabase: 0001 마이그레이션(members/invite_codes/6인 트리거/RLS) + join Edge Function + 관리자 seed
 - [ ] M0-4 인증: supabase.auth 연결(sign-in/join 실제 동작) + 세션 게이팅 + me 프로필
 

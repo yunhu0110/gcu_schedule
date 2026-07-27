@@ -7,6 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
+import { Logo } from '@/components/Logo';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
 // --- 플레이스홀더 데이터 (M1에서 서버 연결) ---
@@ -17,19 +18,13 @@ const RECENT = [
   { title: '가고 싶은 곳 후보', ago: '3일 전' },
 ];
 
-const LOGO_COLORS = ['#004E96', '#80C341', '#00B9F2', '#FCAF16'];
-
 export default function HomeScreen() {
   return (
     <Screen scroll>
       {/* 브랜드 헤더 */}
       <View style={styles.brandRow}>
         <View style={styles.brandLeft}>
-          <View style={styles.mark}>
-            {LOGO_COLORS.map((c) => (
-              <View key={c} style={[styles.markBar, { backgroundColor: c }]} />
-            ))}
-          </View>
+          <Logo height={20} />
           <Text variant="brand">월간gcu</Text>
         </View>
         <Text variant="kicker" color={colors.light.textSecondary}>
@@ -130,8 +125,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: space.lg },
   brandLeft: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  mark: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 20 },
-  markBar: { width: 4, height: 16, borderRadius: 2 },
 
   hero: {
     backgroundColor: colors.light.heroBg,

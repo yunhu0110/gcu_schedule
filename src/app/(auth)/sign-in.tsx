@@ -1,50 +1,94 @@
 /**
- * 로그인 — 이메일+비밀번호. 실제 인증(supabase.auth)은 M0-4에서 연결.
- * 지금은 하이에너지 브랜드 화면 골격 + 가입 화면 이동.
+ * 로그인 — 이메일+비밀번호(supabase.auth). 성공 시 세션 게이팅이 홈으로 보낸다.
+ * 백엔드 적용/관리자 부트스트랩 전에는 "둘러보기"로 탭 화면을 미리 볼 수 있다(임시).
  */
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
+import { TextField } from '@/components/TextField';
+import { Logo } from '@/components/Logo';
 import { colors, space } from '@/theme/tokens';
-import { useRouter } from 'expo-router';
 import { todayStr, volLabel } from '@/lib/date';
-
-const LOGO_COLORS = ['#004E96', '#80C341', '#00B9F2', '#FCAF16'];
+import { signIn } from '@/api/auth';
+import { useDevStore } from '@/store/devStore';
 
 export default function SignInScreen() {
   const router = useRouter();
+  const setPreview = useDevStore((s) => s.setPreview);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function onSubmit() {
+    setError(null);
+    setLoading(true);
+    const { error: err } = await signIn(email, password);
+    setLoading(false);
+    if (err) setError('로그인하지 못했어요. 이메일과 비밀번호를 확인해주세요.');
+    // 성공 시 onAuthStateChange → 게이팅이 홈으로 이동
+  }
+
   return (
-    <Screen padded>
+    <Screen scroll padded>
       <View style={styles.top}>
-        <View style={styles.mark}>
-          {LOGO_COLORS.map((c) => (
-            <View key={c} style={[styles.markBar, { backgroundColor: c }]} />
-          ))}
-        </View>
+        <Logo height={28} />
         <Text variant="kicker" color={colors.light.textSecondary}>
           VOL. {volLabel(todayStr())}
         </Text>
       </View>
 
-      <View style={styles.center}>
+      <View style={styles.head}>
         <Text style={styles.wordmark}>월간gcu</Text>
-        <Text variant="body" color={colors.light.textSecondary} style={{ marginTop: space.md }}>
-          6명의 기록과 일정을 한곳에.{'\n'}이메일로 로그인하세요.
+        <Text variant="body" color={colors.light.textSecondary} style={{ marginTop: space.sm }}>
+          6명의 기록과 일정을 한곳에.
         </Text>
       </View>
 
-      <View style={styles.actions}>
-        <Button label="로그인" block onPress={() => router.replace('/')} />
+      <View style={styles.form}>
+        <TextField
+          label="이메일"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoComplete="email"
+          placeholder="you@example.com"
+        />
+        <TextField
+          label="비밀번호"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          placeholder="••••••••"
+        />
+        {error ? (
+          <Text variant="bodySm" color={colors.light.neon}>
+            {error}
+          </Text>
+        ) : null}
+        <Button label="로그인" block loading={loading} onPress={onSubmit} style={{ marginTop: space.xs }} />
         <Button
           label="초대 코드로 시작하기"
           variant="ghost"
           block
           onPress={() => router.push('/join')}
         />
-        <Text variant="caption" color={colors.light.textSecondary} style={styles.note}>
-          입력 폼과 실제 인증은 M0-4에서 연결됩니다.
-        </Text>
+      </View>
+
+      <View style={styles.footer}>
+        <Button
+          label="백엔드 없이 둘러보기 (임시)"
+          variant="ghost"
+          block
+          onPress={() => {
+            setPreview(true);
+            router.replace('/');
+          }}
+        />
       </View>
     </Screen>
   );
@@ -52,10 +96,8 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space.lg },
-  mark: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 24 },
-  markBar: { width: 6, height: 20, borderRadius: 3 },
-  center: { flex: 1, justifyContent: 'center' },
-  wordmark: { fontFamily: 'Jalnan2', fontSize: 52, color: colors.light.ink, letterSpacing: -1 },
-  actions: { gap: space.sm, paddingBottom: space.xl },
-  note: { textAlign: 'center', marginTop: space.xs },
+  head: { marginTop: space.section },
+  wordmark: { fontFamily: 'Jalnan2', fontSize: 48, color: colors.light.ink, letterSpacing: -1 },
+  form: { gap: space.md, marginTop: space.section },
+  footer: { marginTop: space.section },
 });
