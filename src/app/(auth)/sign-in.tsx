@@ -97,7 +97,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space.lg },
   head: { marginTop: space.section },
-  wordmark: { fontFamily: 'Jalnan2', fontSize: 48, color: colors.light.ink, letterSpacing: -1 },
+  wordmark: { fontFamily: 'Jalnan2', fontSize: 48, lineHeight: 58, color: colors.light.ink, letterSpacing: -1 },
   form: { gap: space.md, marginTop: space.section },
   footer: { marginTop: space.section },
 });

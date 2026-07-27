@@ -78,24 +78,27 @@ export const fonts = {
 } as const;
 
 // 타이포 스케일 (fontFamily 포함 — 폰트는 스플래시에서 프리로드 후 렌더)
+// lineHeight는 잘난체/Noto Sans KR의 큰 세로 메트릭 기준으로 넉넉히(≈1.4~1.5×) 잡는다.
+// 좁게 잡으면 Android에서 한글 글자 위/아래가 잘린다. 인라인 fontSize 오버라이드가
+// 이 lineHeight를 물려받는 경우까지 감안해 여유를 둔다.
 export const type = {
-  brand: { fontSize: 20, lineHeight: 24, fontFamily: fonts.display, letterSpacing: -0.5 },
-  h1: { fontSize: 26, lineHeight: 34, fontFamily: fonts.brand, letterSpacing: -0.5 },
-  h2: { fontSize: 20, lineHeight: 27, fontFamily: fonts.brand },
+  brand: { fontSize: 20, lineHeight: 28, fontFamily: fonts.display, letterSpacing: -0.5 },
+  h1: { fontSize: 26, lineHeight: 36, fontFamily: fonts.brand, letterSpacing: -0.5 },
+  h2: { fontSize: 20, lineHeight: 28, fontFamily: fonts.brand },
   body: { fontSize: 16, lineHeight: 24, fontFamily: fonts.body },
   bodyBold: { fontSize: 16, lineHeight: 24, fontFamily: fonts.bodyBold },
   bodySm: { fontSize: 14, lineHeight: 21, fontFamily: fonts.body },
-  caption: { fontSize: 12, lineHeight: 17, fontFamily: fonts.body },
+  caption: { fontSize: 12, lineHeight: 18, fontFamily: fonts.body },
   kicker: {
     fontSize: 11,
-    lineHeight: 14,
+    lineHeight: 16,
     fontFamily: fonts.brand,
     letterSpacing: 2,
     textTransform: 'uppercase' as const,
   },
   mono: {
     fontSize: 12,
-    lineHeight: 15,
+    lineHeight: 18,
     fontFamily: fonts.mono,
     letterSpacing: 1.2,
     textTransform: 'uppercase' as const,
