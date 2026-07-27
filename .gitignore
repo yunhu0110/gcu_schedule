@@ -1,0 +1,39 @@
+# === 시크릿 (절대 커밋 금지) ===
+.env
+.env.*
+!.env.example
+google-services.json
+GoogleService-Info.plist
+*.p8
+*.p12
+*.mobileprovision
+*.keystore
+
+# === Node / Expo / RN ===
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.tsbuildinfo
+
+# EAS / native build artifacts
+android/
+ios/
+*.apk
+*.aab
+*.ipa
+
+# === 로그 ===
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# === OS / 에디터 ===
+.DS_Store
+*.pem
+.vscode/
+.idea/
+
+# === 진행 상황 / 로컬 메모는 커밋한다 (progress.md는 추적) ===
