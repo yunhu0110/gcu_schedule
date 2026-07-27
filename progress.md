@@ -4,7 +4,7 @@
 > 새 세션은 이 파일 → `09-DEV-PLAN.md` → `08-OPEN-QUESTIONS.md` 순으로 읽고 이어간다.
 
 **최종 갱신:** 2026-07-27
-**현재 단계:** M0-1 Expo 스캐폴딩 완료 (SDK 57, TS, expo-router). 다음은 M0-2(앱 뼈대) / M0-3(Supabase 스키마).
+**현재 단계:** M0-2 앱 뼈대(라우팅+기초 컴포넌트) 완료. 앱 화면 확인 가능(`npx expo start`). 다음: 폰트 프리로드 + M0-3(Supabase 스키마) / M0-4(인증).
 
 ## 지금 어디까지 왔나
 - [x] 기획 문서 8개(01~08) 정독
@@ -23,8 +23,15 @@
   - 기반 lib: src/theme/tokens.ts (디자인 토큰), src/lib/date.ts (dayjs Asia/Seoul 래퍼), src/lib/supabase.ts (청크 SecureStore 어댑터), src/lib/queryClient.ts
   - tsc --noEmit 통과. package.json에 typecheck 스크립트 추가.
   - Node: brew node@22 설치는 네트워크(brew CDN) 차단으로 실패 → Node v25로 진행(정상 동작). 버전 무관 결정(사용자 승인).
-- [ ] M0-2 앱 뼈대: 폰트 프리로드 + 기초 컴포넌트 + QueryClientProvider 배선 + 라우팅(auth/tabs) 재구성  ← **다음**
+- [x] **M0-2 앱 뼈대(일부)**:
+  - 데모 화면/컴포넌트 제거, expo-router 구조로 재구성: `(tabs)` 5탭(표지/달력/위키/정산/나) + `(auth)` sign-in/join
+  - 루트 _layout에 QueryClientProvider + SafeAreaProvider + GestureHandlerRootView 배선
+  - 기초 컴포넌트: Text(변형 프리셋)·Screen·Button·Card·SectionHeader (전부 tokens 기반)
+  - 표지/달력 화면에 토큰 색 반영한 플레이스홀더(범례 등). tsc 통과.
+  - CI 워크플로에 EXPO_TOKEN 없으면 스킵(초록) 가드 추가 → 더 이상 빨갛게 실패 안 함
+- [ ] **M0-2b 폰트 프리로드**: Noto Serif KR / Pretendard / IBM Plex Mono (expo-font). 지금은 시스템 폰트 + 굵기로 위계만  ← **다음**
 - [ ] M0-3 Supabase: 0001 마이그레이션(members/invite_codes/6인 트리거/RLS) + join Edge Function + 관리자 seed
+- [ ] M0-4 인증: supabase.auth 연결(sign-in/join 실제 동작) + 세션 게이팅 + me 프로필
 
 ## 확정 사항 요약 (자세히는 ADR)
 - 앱 이름 **월간gcu** / Expo owner `yunhu` / slug `gcuschedule` / scheme `gcuschedule` / bundle `com.yunhu.gcuschedule`

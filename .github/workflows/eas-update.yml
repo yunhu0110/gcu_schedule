@@ -1,10 +1,11 @@
 name: EAS Update (OTA)
 
 # main에 push되면 JS/이미지/설정 변경을 preview 채널로 OTA 배포한다.
-# ⚠️ 활성화 조건 (M0에서 충족):
-#   1. Expo 앱 스캐폴딩 + `eas init`로 EAS 프로젝트 생성, eas.json 존재
+# ⚠️ 활성화 조건 (M0-5에서 충족):
+#   1. `eas init`로 EAS 프로젝트 연결 + eas.json 존재
 #   2. GitHub 저장소 Secrets에 EXPO_TOKEN 등록 (expo.dev > Access tokens에서 발급)
-# 그 전(문서만 있는 상태)에는 아래 paths 필터 덕분에 트리거되지 않아 실패하지 않는다.
+# EXPO_TOKEN이 없으면 아래 가드로 모든 실제 단계를 스킵하고 초록(성공)으로 끝난다.
+# → 앱 파일을 push해도 토큰 설정 전까지는 CI가 빨갛게 실패하지 않는다.
 #
 # 네이티브 변경(라이브러리 추가·SDK 업그레이드·권한/아이콘 변경)은 OTA로 안 되므로
 # 이 워크플로가 아니라 `eas build`(수동)로 새 빌드를 올려야 한다. 06-DEPLOYMENT.md 참조.
@@ -13,7 +14,6 @@ on:
   push:
     branches: [main]
     paths:
-      - 'app/**'
       - 'src/**'
       - 'assets/**'
       - 'package.json'
@@ -31,26 +31,35 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    # EXPO_TOKEN이 아직 없으면 스킵 (M0 이전 안전장치)
-    if: ${{ github.repository_owner != '' }}
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
+      - name: Guard - EXPO_TOKEN 미설정 시 스킵
+        if: ${{ env.EXPO_TOKEN == '' }}
+        run: echo "::notice::EXPO_TOKEN이 없어 OTA 배포를 스킵합니다 (M0-5에서 활성화)."
+
       - name: Checkout
+        if: ${{ env.EXPO_TOKEN != '' }}
         uses: actions/checkout@v4
 
       - name: Setup Node
+        if: ${{ env.EXPO_TOKEN != '' }}
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
       - name: Setup EAS
+        if: ${{ env.EXPO_TOKEN != '' }}
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          token: ${{ env.EXPO_TOKEN }}
 
       - name: Install dependencies
+        if: ${{ env.EXPO_TOKEN != '' }}
         run: npm ci
 
       - name: Publish OTA update (preview channel)
+        if: ${{ env.EXPO_TOKEN != '' }}
         run: eas update --branch preview --message "${{ github.event.head_commit.message || 'manual update' }}" --non-interactive
