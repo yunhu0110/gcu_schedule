@@ -10,7 +10,7 @@
 
 | 항목 | 결정 |
 |---|---|
-| 앱 이름 | **월간gcu** (slug `wolgan-gcu`, scheme `wolgangcu`, bundle `com.wolgangcu.app`) |
+| 앱 이름 | **월간gcu** · Expo owner `yunhu` · slug `gcuschedule` · scheme `gcuschedule` · bundle `com.yunhu.gcuschedule` |
 | 플랫폼 | iOS + Android 동시. Expo(React Native) 단일 코드베이스 |
 | 백엔드 | Supabase (Postgres + Auth + RLS + Realtime + Storage) |
 | 로그인 | 이메일 + 비밀번호. 수집: 닉네임 · 프로필사진 · 이메일 |
@@ -63,7 +63,7 @@
 
 - **M0-0 외부 계정 · 프로젝트 준비 (코딩 전 관문)**
   - [x] GitHub 저장소 (yunhu0110/gcu_schedule, 연동 완료)
-  - [ ] **Expo 계정** (expo.dev, 무료) — EAS 빌드/업데이트/CI에 필수. 사용자가 직접 로그인. `eas login`.
+  - [x] **Expo 계정 + 프로젝트** — 계정 `yunhu`, 프로젝트 `gcuschedule` 생성 완료 (expo.dev). `eas init`으로 이 프로젝트에 연결 예정.
   - [ ] **Supabase 계정 + 프로젝트** — 백엔드. 사용자 로그인 후 프로젝트 생성 → URL/anon key 확보.
   - [ ] Apple Developer Program(유료) — iOS **상시 배포** 시에만. M1로 미룸.
   - Google Play 계정: **불필요** (스토어 미사용, APK 링크 배포).

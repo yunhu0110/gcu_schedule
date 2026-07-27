@@ -29,7 +29,8 @@
 ## 결정 기록 (ADR)
 결정할 때마다 여기 한 줄씩 남긴다. 형식: `YYYY-MM-DD · 결정 · 이유 · 버린 대안`
 - **ADR-001** · 2026-07-27 · 앱 이름 = `월간gcu` · 매달 호스트가 표지를 꾸미는 「월간지」 컨셉에 맞고 모임 정체성(gcu)이 드러남 · 버린 대안: 영문 코드네임 유지
-  - 파생 식별자: display name `월간gcu`, slug `wolgan-gcu`, scheme `wolgangcu`, bundle/package `com.wolgangcu.app` (ASCII 필요, 변경 시 재빌드).
+  - 파생 식별자(2026-07-27 갱신, 실제 Expo 프로젝트에 맞춤): display name `월간gcu`, Expo owner `yunhu`, slug `gcuschedule`(대시보드 프로젝트와 일치), scheme `gcuschedule`, bundle/package `com.yunhu.gcuschedule` (ASCII 필요, 변경 시 재빌드).
+  - Expo 프로젝트: https://expo.dev/accounts/yunhu/projects/gcuschedule — `eas init` 시 이 프로젝트에 연결(projectId를 `app.json > extra.eas.projectId`에 기록).
 - **ADR-002** · 2026-07-27 · iOS·Android 동시 지원, Expo(React Native) 크로스플랫폼 단일 코드베이스 · 6명 중 두 OS 사용자가 섞여 있음, 코드는 한 번만 작성 · 버린 대안: 안드로이드 전용. 주의: iOS **상시 설치**는 Apple Developer Program(유료, ~$99/년)이 필요하며 이 비용 결정은 M1 iOS 배포 시점에 재확인. 개발 중에는 Expo Go / dev build로 양 OS 모두 무료 확인.
 - **ADR-003** · 2026-07-27 · 백엔드 = Supabase(Postgres+Auth+RLS+Realtime+Storage) · 달력 집계·위키 리비전·전문검색이 관계형에 유리 · 버린 대안: Firebase
 - **ADR-004** · 2026-07-27 · 로그인 = 이메일+비밀번호(Supabase Auth), 수집 정보는 닉네임·프로필사진·이메일만 · 6인 지인 모임이라 단순함 우선, `auth.uid()` 기반 RLS를 깔끔히 씀 · 버린 대안: 소셜 로그인(설정 부담), 이름+공용 비번(RLS 불가)
