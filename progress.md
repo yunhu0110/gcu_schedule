@@ -49,7 +49,8 @@
 - [~] **M0-5 배포/CI (진행 중)**:
   - [x] `eas.json`(dev/preview=internal APK, production) + `eas init`(projectId 2af27595...) + `eas update:configure`(expo-updates, updates.url)
   - [~] `eas build -p android --profile preview` **빌드 진행 중** — 빌드 페이지: expo.dev/accounts/yunhu/projects/gcuschedule/builds/ef3d69c4-5d3c-4ff9-9157-834e06f87c34. 완료 시 APK 링크/QR → 6명 설치(서버·Wi-Fi 불필요, LTE 사용)
-  - [ ] **CI 활성화(태스크 #6)**: `EXPO_TOKEN` GitHub Secret 등록만 남음. 토큰은 expo.dev→Account Settings→Access tokens에서 **웹으로 발급**(CLI 불가) → `gh secret set EXPO_TOKEN`. 등록하면 push마다 OTA 자동배포.
+  - [x] **CI 활성화 완료(태스크 #6)**: EXPO_TOKEN secret 등록됨 → push→`eas update` OTA **자동배포 초록 검증**(run 30243073757 success). ⚠️ 토큰이 채팅에 노출돼 재발급 권장.
+  - [x] web.output `static`→`single` (eas update 웹 정적렌더 실패 수정)
 - 참고: LTE 개발 미리보기는 사용자 터미널에서 `npx expo start --tunnel` (샌드박스에선 ngrok 차단으로 실패)
 - [ ] M0-3 Supabase: 0001 마이그레이션(members/invite_codes/6인 트리거/RLS) + join Edge Function + 관리자 seed
 - [ ] M0-4 인증: supabase.auth 연결(sign-in/join 실제 동작) + 세션 게이팅 + me 프로필
