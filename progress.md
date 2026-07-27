@@ -4,7 +4,7 @@
 > 새 세션은 이 파일 → `09-DEV-PLAN.md` → `08-OPEN-QUESTIONS.md` 순으로 읽고 이어간다.
 
 **최종 갱신:** 2026-07-27
-**현재 단계:** 기획 완료. M0 착수 대기 (Expo 스캐폴딩 승인 대기).
+**현재 단계:** 기획 완료 + git 초기화·최초 커밋 완료. M0-1 Expo 스캐폴딩 승인 대기.
 
 ## 지금 어디까지 왔나
 - [x] 기획 문서 8개(01~08) 정독
@@ -12,8 +12,8 @@
 - [x] `02-DATA-MODEL.md`의 `meetups` 정의를 ADR-005(유동 주기)에 맞춰 갱신
 - [x] `09-DEV-PLAN.md` 개발 기획서 작성
 - [x] `progress.md` 생성
-- [ ] git init + .gitignore + 최초 커밋  ← **다음**
-- [ ] M0-1 Expo 스캐폴딩 (승인 후)
+- [x] git init + .gitignore + 최초 커밋 (`main` 브랜치, 커밋 2582070)
+- [ ] M0-1 Expo 스캐폴딩 (승인 후)  ← **다음**
 
 ## 확정 사항 요약 (자세히는 ADR)
 - 앱 이름 **월간gcu** / slug `wolgan-gcu` / scheme `wolgangcu` / bundle `com.wolgangcu.app`
