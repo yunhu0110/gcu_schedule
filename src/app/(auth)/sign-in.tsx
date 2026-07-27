@@ -72,7 +72,7 @@ export default function SignInScreen() {
         ) : null}
         <Button label="로그인" block loading={loading} onPress={onSubmit} style={{ marginTop: space.xs }} />
         <Button
-          label="초대 코드로 시작하기"
+          label="가입하기"
           variant="ghost"
           block
           onPress={() => router.push('/join')}

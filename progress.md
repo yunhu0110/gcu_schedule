@@ -3,8 +3,24 @@
 > 작업이 중단될 수 있으므로 **매 작업 후 이 파일을 갱신**한다.
 > 새 세션은 이 파일 → `09-DEV-PLAN.md` → `08-OPEN-QUESTIONS.md` 순으로 읽고 이어간다.
 
-**최종 갱신:** 2026-07-27
-**현재 단계:** 🎉 M0 마일스톤 사실상 완료 — Android APK 빌드/배포 링크 확보 + CI OTA 자동배포 초록. 남은 것: (1) Expo 토큰 재발급(노출) (2) 관리자 부트스트랩 SQL 확인 (3) iOS 배포(멤버십, M1) (4) M1 실데이터. previewMode 우회 정리 예정.
+**최종 갱신:** 2026-07-27 (저녁 방향 전환)
+**현재 단계:** 🔧 **로컬 우선 개발로 피벗**. 배포된 APK가 실행 안 된 원인 = Supabase 백엔드(마이그레이션/함수/seed)가 실제로 하나도 적용 안 됐음(껍데기 배포). 앞으로 `expo start` 로컬에서 완성 후 배포(ADR-012).
+
+### 2026-07-27 저녁 — 사용자 요구 반영(결정 기록: ADR-009~012)
+- **가입 단순화(ADR-009)**: 초대코드/`join` Edge Function **폐지**. `auth.signUp` + `members` self-insert(RLS)로 단순 회원가입. 정원 6명은 트리거로 강제. → 코드 반영 완료:
+  - `supabase/migrations/0001_init_members.sql`(구 `_invites` 대체, invite_codes 제거, members_insert_self 정책 추가), `supabase/functions/join/` 삭제
+  - `src/api/auth.ts` `joinWithCode`→`signUpMember`, `(auth)/join.tsx` 초대코드 필드 제거→닉네임/이메일/비번, `sign-in.tsx` 링크 라벨 "가입하기", `supabase/SETUP.md` 재작성(이메일 확인 OFF + 관리자 seed). tsc 통과.
+- **SDK 다운그레이드(ADR-013)**: 사용자 폰 Expo Go가 SDK 54 → 프로젝트를 **57→54로 다운그레이드**(expo 54.0.36 / react 19.1 / RN 0.81.5). 미사용 57-전용 라이브러리(@expo/ui, expo-glass-effect) 제거. tsc 통과. dev 서버 매니페스트 `sdkVersion 54.0.0` 확인 → Expo Go(54)로 접속 가능.
+- **로컬 실행 검증**: 호스티드 Supabase 연결 + 이메일 provider ON + Confirm email OFF + members self-insert 정책 적용 완료. 가입 전체 흐름을 REST로 검증(signup→세션→members insert 201). dev 서버는 `npx expo start --lan`(포트 8081)로 상시. 터널/iOS 시뮬레이터는 이 환경 제약(ngrok 차단, iOS 런타임 미설치)으로 불가 → 실기기 Expo Go 사용.
+- **⚠️ 정리 필요**: 검증용 테스트 계정 `delete-me-1785155062@example.com`(members 행 있음, 정원 1칸 점유) → 대시보드 Authentication에서 삭제.
+- **미구현(다음 순서)**: 프로필사진 업로드(Storage), 댓글+1단계 대댓글(ADR-010), 인앱 알림 우상단 배지(ADR-011).
+- **⛔ 사용자 액션 필요(로컬 실행 관문)**:
+  1. `.env` 값 — 대시보드 Settings→API의 Project URL + anon(publishable) key (호스티드 프로젝트 `mbpvftoowisrpqgjkidw` 사용 결정).
+  2. Authentication에서 **Confirm email OFF**(단순 가입 전제, SETUP §1).
+  3. 마이그레이션 `0001_init_members.sql` 적용(`db push` 또는 대시보드 SQL) + 본인 가입 후 is_admin seed(SETUP §3).
+
+---
+**(과거 기록) 🎉 M0 사실상 완료** — Android APK 빌드/배포 링크 확보 + CI OTA 자동배포 초록. ⚠️ 단, 위 원인대로 백엔드 미적용이라 실사용 불가였음.
 
 ## 지금 어디까지 왔나
 - [x] 기획 문서 8개(01~08) 정독

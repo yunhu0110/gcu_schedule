@@ -1,6 +1,7 @@
 /**
- * 초대 코드 가입 — 코드+이메일+비번+닉네임 → join Edge Function → 자동 로그인.
- * 정원 6명/사용된 코드/만료는 서버(Edge)가 판정하고 사유를 그대로 보여준다.
+ * 회원가입 — 닉네임+이메일+비번(초대코드 없음, ADR-009) → auth.signUp → members 생성 → 자동 로그인.
+ * 정원 6명 초과/중복 이메일은 서버가 판정하고 사유를 그대로 보여준다.
+ * 프로필사진은 가입 후 '나' 탭에서 설정(후속 기능).
  */
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -10,11 +11,10 @@ import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { colors, space } from '@/theme/tokens';
-import { joinWithCode } from '@/api/auth';
+import { signUpMember } from '@/api/auth';
 
 export default function JoinScreen() {
   const router = useRouter();
-  const [code, setCode] = useState('');
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,29 +23,32 @@ export default function JoinScreen() {
 
   async function onSubmit() {
     setError(null);
+    if (!nickname.trim() || !email.trim() || password.length < 6) {
+      setError('닉네임, 이메일, 6자 이상 비밀번호를 모두 입력해주세요.');
+      return;
+    }
     setLoading(true);
-    const res = await joinWithCode({ code: code.trim(), nickname: nickname.trim(), email, password });
+    const res = await signUpMember({ nickname, email, password });
     setLoading(false);
     if (!res.ok) setError(res.error ?? '가입에 실패했어요.');
-    // 성공 시 자동 로그인 → 세션 게이팅이 홈으로 이동
+    // 성공 시 세션 생성 → 게이팅이 홈으로 이동
   }
 
   return (
     <Screen scroll padded>
       <View style={styles.head}>
         <Text variant="kicker" color={colors.light.cobalt}>
-          INVITE ONLY · 6
+          월간gcu · 6
         </Text>
         <Text variant="h1" style={{ marginTop: space.sm }}>
-          초대 코드로 시작
+          가입하기
         </Text>
         <Text variant="body" color={colors.light.textSecondary} style={{ marginTop: space.sm }}>
-          관리자가 준 1회용 코드로 가입해요. 정원은 6명.
+          닉네임과 이메일로 바로 시작해요. 정원은 6명.
         </Text>
       </View>
 
       <View style={styles.form}>
-        <TextField label="초대 코드" value={code} onChangeText={setCode} autoCapitalize="characters" placeholder="GCU-A1" />
         <TextField label="닉네임" value={nickname} onChangeText={setNickname} placeholder="표시 이름" />
         <TextField
           label="이메일"
@@ -53,6 +56,7 @@ export default function JoinScreen() {
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
+          autoComplete="email"
           placeholder="you@example.com"
         />
         <TextField label="비밀번호" value={password} onChangeText={setPassword} secureTextEntry placeholder="6자 이상" />
@@ -62,7 +66,7 @@ export default function JoinScreen() {
           </Text>
         ) : null}
         <Button label="가입하기" block loading={loading} onPress={onSubmit} style={{ marginTop: space.xs }} />
-        <Button label="뒤로" variant="ghost" block onPress={() => router.back()} />
+        <Button label="이미 계정이 있어요" variant="ghost" block onPress={() => router.back()} />
       </View>
     </Screen>
   );

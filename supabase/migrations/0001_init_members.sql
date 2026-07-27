@@ -1,6 +1,7 @@
--- 0001 · members / invite_codes + 6인 정원 트리거 + RLS
--- 원칙: 모든 테이블 RLS 활성화 후 정책 작성. 삭제 대신 비활성화(기록 보존).
--- 참조: 02-DATA-MODEL.md, 01-PRD F8
+-- 0001 · members + 6인 정원 트리거 + RLS (단순 회원가입, ADR-009)
+-- 초대코드/Edge Function 없음. 링크를 아는 6명만 가입한다.
+-- 정원은 트리거로, 소유권은 RLS(id = auth.uid())로 강제한다. is_admin/is_active는 클라이언트가 못 건드린다.
+-- 참조: 02-DATA-MODEL.md, 01-PRD F8, ADR-009
 
 -- ============================================================
 -- members : auth.users 1:1. 표시 정보(닉네임/프사)만 수집.
@@ -33,17 +34,6 @@ create trigger trg_member_limit
   for each row execute function public.enforce_member_limit();
 
 -- ============================================================
--- invite_codes : 관리자 발급 1회용 코드. join Edge Function이 검증/소모.
--- ============================================================
-create table if not exists public.invite_codes (
-  code       text primary key,
-  created_by uuid references public.members (id),
-  used_by    uuid references public.members (id),
-  used_at    timestamptz,
-  expires_at timestamptz
-);
-
--- ============================================================
 -- 헬퍼 (SECURITY DEFINER: members 정책의 자기참조 재귀 방지)
 -- ============================================================
 create or replace function public.is_active_member()
@@ -70,27 +60,28 @@ $$;
 -- RLS
 -- ============================================================
 alter table public.members enable row level security;
-alter table public.invite_codes enable row level security;
 
--- members 읽기: 활성 멤버는 전체를 읽는다(단일 그룹)
+-- 읽기: 활성 멤버는 전체를 읽는다(단일 그룹)
 drop policy if exists members_read on public.members;
 create policy members_read on public.members
   for select using (public.is_active_member());
 
--- members 쓰기: 본인 행만. 단, 컬럼 권한으로 nickname/avatar_url만 수정 가능하게 제한(아래 grant).
+-- 가입: 본인 id로만 members 행 생성. 정원 초과는 trg_member_limit 트리거가 막는다.
+-- (앱: supabase.auth.signUp 성공 후 세션이 생긴 상태에서 이 insert를 수행 → 이메일 확인 OFF 필요, SETUP 참조)
+drop policy if exists members_insert_self on public.members;
+create policy members_insert_self on public.members
+  for insert with check (id = auth.uid());
+
+-- 수정: 본인 행만
 drop policy if exists members_update_own on public.members;
 create policy members_update_own on public.members
   for update using (id = auth.uid()) with check (id = auth.uid());
--- insert/delete 정책 없음 → authenticated는 불가. 가입은 join(service_role)에서만, 삭제는 금지.
-
--- invite_codes: 관리자만 (join Edge Function은 service_role로 RLS 우회)
-drop policy if exists invites_admin_all on public.invite_codes;
-create policy invites_admin_all on public.invite_codes
-  for all using (public.is_admin()) with check (public.is_admin());
+-- delete 정책 없음 → 삭제 금지(기록 보존, is_active=false로 비활성).
 
 -- ============================================================
--- 컬럼 권한: 본인 프로필에서 nickname/avatar_url만 갱신. is_admin/is_active는 아무도 못 바꾼다.
+-- 컬럼 권한: insert/update 모두 nickname/avatar_url(+insert 시 id)만 허용.
+-- is_admin/is_active는 grant에서 제외 → 클라이언트가 절대 못 바꾼다(관리자 지정은 SQL seed로만).
 -- ============================================================
 grant select on public.members to authenticated;
+grant insert (id, nickname, avatar_url) on public.members to authenticated;
 grant update (nickname, avatar_url) on public.members to authenticated;
-grant select, insert, update, delete on public.invite_codes to authenticated; -- 실제 허용은 RLS(is_admin)가 결정

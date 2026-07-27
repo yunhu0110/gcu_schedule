@@ -1,52 +1,45 @@
-# Supabase 적용 가이드 (M0-3)
+# Supabase 적용 가이드 (단순 회원가입, ADR-009)
 
 > 코드/앱에는 anon(publishable) 키만. **service_role / sb_secret_ 키는 저장소·앱에 절대 넣지 않는다.**
-> Edge Function은 service_role를 런타임이 자동 주입하므로 우리가 넣을 필요 없다.
+> 초대코드/Edge Function은 폐지했다. 가입은 앱의 `auth.signUp` → `members` insert로 끝난다.
 
-## 0. Supabase CLI 준비
+## 0. .env (로컬 개발 접속값)
+프로젝트 루트에 `.env`(git 커밋 안 됨)를 만들고 대시보드 **Settings → API** 값을 채운다:
+```
+EXPO_PUBLIC_SUPABASE_URL=https://mbpvftoowisrpqgjkidw.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon / publishable 키>
+```
+
+## 1. 이메일 확인(Confirm email) 끄기 — 단순 가입 전제
+대시보드 **Authentication → Sign In / Providers → Email** 에서 **"Confirm email" OFF**.
+> 이걸 켜두면 `signUp` 직후 세션이 안 생겨서 `members` insert가 RLS에 막힌다(가입이 반쪽으로 끝남).
+> 본인인증 없는 6인 지인 모임이므로 OFF가 맞다(ADR-009).
+
+## 2. 스키마 적용 (마이그레이션)
+- **신규(빈) DB**: `0001_init_members.sql` → `0002_simple_signup.sql` 순서로 적용.
+- **현재 hosted DB(`mbpvftoowisrpqgjkidw`)**: 구 스키마(members + invite_codes)가 이미 적용돼 있으므로 **`0002_simple_signup.sql`만** 적용하면 단순 가입으로 전환된다(members self-insert 정책 추가 + invite_codes 제거).
+
+CLI가 있으면:
 ```bash
-npx supabase --version         # 없으면 자동 설치
-npx supabase init              # config.toml 생성 (기존 migrations/functions 유지됨)
-npx supabase login             # 액세스 토큰으로 로그인 (브라우저)
 npx supabase link --project-ref mbpvftoowisrpqgjkidw   # DB 비밀번호 물어봄
+npx supabase db push
 ```
+CLI가 어려우면 대시보드 **SQL Editor**에 해당 `.sql` 파일 내용을 붙여넣어 실행한다.
+> **파일이 진실의 출처.** 대시보드에서 임의 수정 금지(스키마 변경은 항상 새 마이그레이션 파일로).
 
-## 1. 스키마 적용 (마이그레이션)
-```bash
-npx supabase db push           # migrations/0001_init_members_invites.sql 적용
-```
-> CLI가 어려우면 임시로 대시보드 SQL Editor에 `migrations/0001_init_members_invites.sql`를
-> 붙여넣어 실행해도 된다. **단, 파일이 진실의 출처**이므로 대시보드에서 임의 수정 금지.
-
-## 2. join Edge Function 배포
-```bash
-npx supabase functions deploy join
-```
-- service_role/URL은 Edge 런타임이 자동 주입하므로 별도 시크릿 설정 불필요.
-- 클라이언트는 `supabase.functions.invoke('join', { body: {...} })`로 호출한다(M0-4).
-
-## 3. 관리자 부트스트랩 (첫 사용자 — 1회, 닭-달걀 해소)
-가입은 초대 코드가 필요하고 코드는 관리자만 발급 → **첫 관리자는 초대 흐름을 건너뛰고 직접 심는다.**
-
-1. 대시보드 **Authentication → Users → Add user**로 관리자 계정 생성(이메일/비번, "Auto Confirm").
-   생성된 사용자의 **UID**를 복사.
-2. SQL Editor(또는 psql)에서 아래 실행 (UID·닉네임 교체):
+## 3. 관리자 부트스트랩 (개발자 본인 — 1회)
+관리자 지정은 클라이언트에서 불가(컬럼 권한에서 is_admin 제외). 아래로 심는다:
+1. 앱에서 **본인 계정으로 그냥 가입**(닉네임/이메일/비번). → `members` 행 자동 생성됨.
+2. 대시보드 **SQL Editor**에서 본인 행에 관리자 플래그:
 ```sql
-insert into public.members (id, nickname, is_admin)
-values ('<복사한-UID>', '관리자닉네임', true);
-
--- 나머지 5명에게 줄 1회용 초대 코드 발급 (원하는 코드 문자열로)
-insert into public.invite_codes (code, created_by) values
-  ('GCU-A1', '<복사한-UID>'),
-  ('GCU-B2', '<복사한-UID>'),
-  ('GCU-C3', '<복사한-UID>'),
-  ('GCU-D4', '<복사한-UID>'),
-  ('GCU-E5', '<복사한-UID>');
+update public.members set is_admin = true
+where id = (select id from auth.users where email = '<본인 이메일>');
 ```
-3. 이제 앱에서 관리자 이메일/비번으로 **로그인**, 나머지 5명은 발급된 코드로 **가입**하면 된다.
+3. 나머지 5명은 **앱 링크를 받아 각자 가입**하면 끝(코드 불필요).
 
 ## 검증 체크리스트
-- [ ] `members` 활성 6명 도달 시 6번째 초과 insert가 트리거로 막히는가
-- [ ] 비관리자가 `invite_codes`를 못 읽는가(RLS)
+- [ ] `.env` 값으로 앱이 Supabase에 붙는가 (로그인 화면 로딩)
+- [ ] 가입 → 곧바로 홈으로 이동하고 `members`에 행이 생기는가
+- [ ] 활성 6명 도달 시 7번째 가입이 트리거로 막히고 "정원이 가득 찼어요" 문구가 뜨는가
 - [ ] 본인 아닌 멤버의 nickname을 수정 못 하는가(RLS + 컬럼 권한)
-- [ ] 이미 쓴 코드/만료 코드로 가입이 거부되는가(join)
+- [ ] 클라이언트에서 is_admin/is_active를 못 바꾸는가(컬럼 권한 제외)

@@ -29,9 +29,16 @@ create trigger trg_member_limit before insert on members
 for each row execute function enforce_member_limit();
 ```
 
-### `invite_codes`
-`code text PK` · `created_by uuid` · `used_by uuid null` · `used_at timestamptz null` · `expires_at timestamptz`
-> 가입은 이 코드를 검증하는 Edge Function에서만 `members` 행을 만든다.
+### ~~`invite_codes`~~ — 폐지 (ADR-009)
+초대코드/`join` Edge Function은 제거한다. 가입은 `supabase.auth.signUp` 후 앱이 직접 `members` 행을 insert하며, 정원은 트리거로, 소유권은 RLS(`id = auth.uid()`)로 강제한다.
+
+**members self-insert 정책 (ADR-009)**
+```sql
+-- 가입: 본인 id로만 members 행 생성. 정원 초과는 trg_member_limit 트리거가 막는다.
+create policy members_insert_self on public.members
+  for insert with check (id = auth.uid());
+grant insert (id, nickname, avatar_url) on public.members to authenticated;
+```
 
 ### `hosts` — 월별 모임장
 `id uuid PK` · `year int` · `month int` · `member_id uuid` · `cover_message text` · `theme_color text` · `cover_image_url text`
@@ -75,8 +82,18 @@ for each row execute function enforce_member_limit();
 `id` · `page_id` · `version int` · `title` · `body_md` · `edited_by` · `edited_at`
 - **불변.** update / delete 정책을 만들지 않는다. `wiki_pages` update 트리거에서 이전 버전을 자동 적재.
 
-### `comments`
-`id` · `target_type enum('wiki','meetup')` · `target_id uuid` · `member_id` · `body text` · `created_at`
+### `comments` (ADR-010)
+`id` · `target_type enum('wiki','meetup')` · `target_id uuid` · `parent_id uuid null` · `member_id` · `body text` · `created_at` · `deleted_at timestamptz null`
+- **`parent_id`**: 대댓글용 self-ref. **깊이 1단계까지만**(대댓글에는 다시 대댓글 금지 — 앱에서 검증: `parent_id`가 있는 댓글에는 답글 불가). 최상위 댓글은 `parent_id = null`.
+- 삭제는 행 제거 대신 `deleted_at` 세팅(대댓글이 매달린 부모 보존). 본문은 "삭제된 댓글"로 표시.
+- 표시에는 `member_id`로 `members`(nickname, avatar_url) 조인 → 프사+닉네임.
+
+### `notifications` (ADR-011) — 인앱 알림
+`id uuid PK` · `recipient_id uuid` · `actor_id uuid null` · `type text` · `target_type text` · `target_id uuid` · `created_at timestamptz` · `read_at timestamptz null`
+- 이벤트 발생 시 **행위자를 제외한 활성 멤버 전원에게 fan-out**(6명이라 부담 없음). 예: 위키 글 작성 → 나머지 5명에게 1행씩.
+- `type` 예: `wiki_created` · `comment_added` · `meetup_confirmed` · `settlement_requested` ...
+- 미읽음 배지 = `count(*) where recipient_id = auth.uid() and read_at is null`.
+- 생성은 서버 트리거 또는 Edge Function(작성자 RLS로 남의 recipient 행을 못 만들게) — 상세는 M2 알림 착수 시 확정.
 
 ### `settlements` / `settlement_shares`
 - `settlements`: `id` · `meetup_id` · `payer_id` · `total_amount int` · `memo` · `closed_at`
@@ -107,7 +124,8 @@ create policy "own_write" on availabilities for all
 | hosts | 전체 | 해당 월 모임장(표지 필드만) + 관리자(로테이션) |
 | meetups, date_candidates | 전체 | 해당 월 모임장 + 관리자 |
 | date_votes, attendances | 전체 | 본인 행만 |
-| wiki_pages, comments | 전체 | 전체 (본인 댓글만 삭제) |
+| wiki_pages, comments | 전체 | 전체 insert (본인 댓글만 수정/soft-delete) |
+| notifications | 본인(recipient)만 | 읽음 처리(read_at)만 본인. insert는 트리거/서버 |
 | wiki_revisions | 전체 | insert만 (트리거 전용) |
 | settlements | 전체 | 모임장 또는 결제자 |
 | members | 전체 | 본인 프로필 필드만. `is_admin`은 정책에서 제외해 아무도 못 쓰게 한다 |
