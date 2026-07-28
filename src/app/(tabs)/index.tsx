@@ -101,22 +101,31 @@ export default function HomeScreen() {
 
       {/* 아이디어 창고 */}
       <View style={styles.ideaCard}>
-        <Text variant="kicker" color={colors.light.textSecondary}>가보고 싶은 곳 · 하고 싶은 것</Text>
+        <View style={styles.ideaHead}>
+          <Text style={styles.ideaEmoji}>💡</Text>
+          <View style={{ flex: 1 }}>
+            <Text variant="bodyBold" style={{ fontSize: 16 }}>아이디어 창고</Text>
+            <Text variant="caption" color={colors.light.textSecondary}>가보고 싶은 곳 · 하고 싶은 것</Text>
+          </View>
+        </View>
+
+        {ideas.length === 0 ? (
+          <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.md }}>첫 아이디어를 남겨보세요.</Text>
+        ) : (
+          <View style={styles.ideaChips}>
+            {ideas.map((it) => (
+              <View key={it.id} style={styles.ideaChip}>
+                <View style={[styles.ideaDot, { backgroundColor: it.color ?? colors.light.cobalt }]} />
+                <Text variant="bodySm">{it.body}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         <View style={styles.ideaInput}>
-          <TextField value={idea} onChangeText={setIdea} placeholder="아이디어를 추가해요" style={{ flex: 1 }} />
+          <TextField value={idea} onChangeText={setIdea} placeholder="아이디어 추가" style={{ flex: 1 }} />
           <Button label="추가" onPress={() => idea.trim() && ideaMut.mutate(idea)} loading={ideaMut.isPending} style={styles.ideaBtn} />
         </View>
-        {ideas.length === 0 ? (
-          <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.sm }}>첫 아이디어를 남겨보세요.</Text>
-        ) : (
-          ideas.map((it) => (
-            <View key={it.id} style={styles.ideaRow}>
-              <View style={[styles.ideaDot, { backgroundColor: it.color ?? colors.light.cobalt }]} />
-              <Text variant="bodySm" style={{ flex: 1 }}>{it.body}</Text>
-              <Text variant="caption" color={colors.light.textSecondary}>{it.nickname}</Text>
-            </View>
-          ))
-        )}
       </View>
 
       <HostPickerModal
@@ -145,8 +154,11 @@ const styles = StyleSheet.create({
   heroBig: { fontFamily: fonts.display, fontSize: 44, lineHeight: 54, letterSpacing: -1, color: colors.light.paper, marginTop: space.md },
 
   ideaCard: { backgroundColor: colors.light.surfacePlate, borderRadius: radius.soft, padding: 18, marginTop: space.xl },
-  ideaInput: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.md },
+  ideaHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  ideaEmoji: { fontSize: 26 },
+  ideaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
+  ideaChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.light.paper, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  ideaInput: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.lg },
   ideaBtn: { height: 48, paddingHorizontal: space.lg },
-  ideaRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 9 },
-  ideaDot: { width: 7, height: 7, borderRadius: 3.5 },
+  ideaDot: { width: 8, height: 8, borderRadius: 4 },
 });

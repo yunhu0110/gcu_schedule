@@ -1,38 +1,51 @@
 /**
- * 버그·문의 — 관리자(yunhu0110@gmail.com)에게 메일 전송. 기기 메일 앱을 mailto로 연다.
- * 별도 서버 없이 사용자의 메일 앱으로 수신자·제목·본문을 프리필한다.
+ * 문의 — 버그/문의를 관리자에게 인앱 알림으로 전달한다(메일 아님).
+ * 관리자는 알림 페이지에서 확인한다.
  */
 import { useState } from 'react';
-import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { colors, space } from '@/theme/tokens';
-
-const ADMIN_EMAIL = 'yunhu0110@gmail.com';
+import { useAuth } from '@/features/auth/AuthContext';
+import { getMyProfile, listMembers } from '@/api/members';
+import { notifyMembers } from '@/api/notifications';
 
 export default function FeedbackScreen() {
   const router = useRouter();
+  const { userId } = useAuth();
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
 
-  async function send() {
+  const { data: members = [] } = useQuery({ queryKey: ['members'], queryFn: listMembers, enabled: !!userId });
+  const { data: me } = useQuery({ queryKey: ['me', userId], queryFn: () => getMyProfile(userId as string), enabled: !!userId });
+
+  const sendMut = useMutation({
+    mutationFn: async () => {
+      if (!userId) throw new Error('로그인이 필요해요.');
+      const admins = members.filter((m) => m.is_admin).map((m) => m.id);
+      if (admins.length === 0) throw new Error('관리자를 찾을 수 없어요.');
+      const nick = me?.nickname ?? '멤버';
+      const text = `[문의] ${subject.trim() || '(제목 없음)'} — ${body.trim()} (from ${nick})`;
+      await notifyMembers(userId, admins, 'feedback', text, true);
+    },
+    onSuccess: () => {
+      Alert.alert('전달 완료', '관리자에게 문의가 전달됐어요.');
+      router.back();
+    },
+    onError: (e) => Alert.alert('전송 실패', e instanceof Error ? e.message : '다시 시도해주세요.'),
+  });
+
+  function send() {
     if (!subject.trim() && !body.trim()) {
       Alert.alert('내용을 입력해주세요', '제목이나 내용을 적어주세요.');
       return;
     }
-    const url =
-      `mailto:${ADMIN_EMAIL}` +
-      `?subject=${encodeURIComponent(`[월간GCU] ${subject.trim() || '문의'}`)}` +
-      `&body=${encodeURIComponent(body)}`;
-    const ok = await Linking.canOpenURL(url);
-    if (!ok) {
-      Alert.alert('메일 앱을 열 수 없어요', `직접 ${ADMIN_EMAIL} 로 보내주세요.`);
-      return;
-    }
-    await Linking.openURL(url);
+    sendMut.mutate();
   }
 
   return (
@@ -42,32 +55,27 @@ export default function FeedbackScreen() {
           <Text variant="h2">‹ 뒤로</Text>
         </Pressable>
       </View>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.content}>
+          <Text variant="h1">문의</Text>
+          <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.xs }}>
+            버그·문의를 관리자에게 알림으로 전달해요.
+          </Text>
 
-      <View style={styles.content}>
-        <Text variant="h1">버그·문의</Text>
-        <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.xs }}>
-          관리자에게 메일로 전달돼요. ({ADMIN_EMAIL})
-        </Text>
-
-        <View style={{ gap: space.md, marginTop: space.xl }}>
-          <TextField label="제목" value={subject} onChangeText={setSubject} placeholder="무엇에 대한 문의인가요?" />
-          <TextField
-            label="내용"
-            value={body}
-            onChangeText={setBody}
-            placeholder="버그 상황이나 문의 내용을 적어주세요."
-            multiline
-            style={styles.textArea}
-          />
-          <Button label="메일 앱으로 보내기" block onPress={send} style={{ marginTop: space.sm }} />
+          <View style={{ gap: space.md, marginTop: space.xl }}>
+            <TextField label="제목" value={subject} onChangeText={setSubject} placeholder="무엇에 대한 문의인가요?" />
+            <TextField label="내용" value={body} onChangeText={setBody} placeholder="버그 상황이나 문의 내용을 적어주세요." multiline style={styles.textArea} />
+            <Button label={sendMut.isPending ? '보내는 중…' : '문의 보내기'} block loading={sendMut.isPending} onPress={send} style={{ marginTop: space.sm }} />
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.light.bg },
+  flex: { flex: 1 },
   topbar: { paddingHorizontal: space.screen, height: 48, justifyContent: 'center' },
   content: { paddingHorizontal: space.screen },
   textArea: { height: 140, paddingTop: space.md, textAlignVertical: 'top' },

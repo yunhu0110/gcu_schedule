@@ -49,3 +49,29 @@ export async function deleteComment(id: string): Promise<void> {
   const { error } = await supabase.from('comments').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ── 날짜 코멘트(달력 날짜별) ──
+type RawDay = Raw; // 동일 형태 재사용
+
+export async function listDayComments(date: string): Promise<Comment[]> {
+  const { data, error } = await supabase
+    .from('day_comments')
+    .select('id, member_id, body, created_at, members(nickname, avatar_url, color)')
+    .eq('date', date)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return ((data ?? []) as unknown as RawDay[]).map((r) => ({
+    id: r.id,
+    member_id: r.member_id,
+    body: r.body,
+    created_at: r.created_at,
+    nickname: r.members?.nickname ?? '?',
+    avatar_url: r.members?.avatar_url ?? null,
+    color: r.members?.color ?? null,
+  }));
+}
+
+export async function addDayComment(date: string, memberId: string, body: string): Promise<void> {
+  const { error } = await supabase.from('day_comments').insert({ date, member_id: memberId, body: body.trim() });
+  if (error) throw error;
+}

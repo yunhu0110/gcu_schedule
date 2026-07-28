@@ -42,6 +42,7 @@ export type AvailRow = {
   date: DateStr;
   member_id: string;
   status: AvailabilityStatus;
+  note: string | null;
   start_time: string | null;
   end_time: string | null;
   nickname: string;
@@ -53,7 +54,7 @@ export type AvailRow = {
 export async function getMonthRows(from: DateStr, to: DateStr): Promise<AvailRow[]> {
   const { data, error } = await supabase
     .from('availabilities')
-    .select('date, member_id, status, start_time, end_time, members(nickname, avatar_url, color)')
+    .select('date, member_id, status, note, start_time, end_time, members(nickname, avatar_url, color)')
     .gte('date', from)
     .lte('date', to);
   if (error) throw error;
@@ -61,6 +62,7 @@ export async function getMonthRows(from: DateStr, to: DateStr): Promise<AvailRow
     date: r.date,
     member_id: r.member_id,
     status: r.status,
+    note: r.note,
     start_time: r.start_time,
     end_time: r.end_time,
     nickname: r.members?.nickname ?? '?',
@@ -73,6 +75,7 @@ type RawJoin = {
   date: DateStr;
   member_id: string;
   status: AvailabilityStatus;
+  note: string | null;
   start_time: string | null;
   end_time: string | null;
   members: { nickname: string; avatar_url: string | null; color: string | null } | null;

@@ -42,9 +42,10 @@ export async function markAllRead(userId: string): Promise<void> {
   if (error) throw error;
 }
 
-/** 나(actor)를 제외한 수신자들에게 같은 알림을 fan-out. */
-export async function notifyMembers(actorId: string, recipientIds: string[], type: string, body: string): Promise<void> {
-  const rows = recipientIds.filter((id) => id !== actorId).map((id) => ({ recipient_id: id, actor_id: actorId, type, body }));
+/** 수신자들에게 같은 알림을 fan-out. includeActor=true면 본인에게도 남긴다. */
+export async function notifyMembers(actorId: string, recipientIds: string[], type: string, body: string, includeActor = false): Promise<void> {
+  const targets = includeActor ? recipientIds : recipientIds.filter((id) => id !== actorId);
+  const rows = [...new Set(targets)].map((id) => ({ recipient_id: id, actor_id: actorId, type, body }));
   if (rows.length === 0) return;
   const { error } = await supabase.from('notifications').insert(rows);
   if (error) throw error;

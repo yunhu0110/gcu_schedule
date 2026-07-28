@@ -1,43 +1,76 @@
 /**
- * 로그인 — 이메일+비밀번호(supabase.auth). 성공 시 세션 게이팅이 홈으로 보낸다.
- * 백엔드 적용/관리자 부트스트랩 전에는 "둘러보기"로 탭 화면을 미리 볼 수 있다(임시).
+ * 로그인 — 이메일+비밀번호(supabase.auth). 아이디 저장 + 비밀번호 찾기 지원.
+ * 성공 시 세션 게이팅이 홈으로 보낸다. 백엔드 전에는 "둘러보기"로 미리 볼 수 있다(임시).
  */
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { Logo } from '@/components/Logo';
 import { colors, space } from '@/theme/tokens';
-import { todayStr, volLabel } from '@/lib/date';
-import { signIn } from '@/api/auth';
+import { todayStr } from '@/lib/date';
+import { sendPasswordReset, signIn } from '@/api/auth';
 import { useDevStore } from '@/store/devStore';
+
+const SAVED_EMAIL_KEY = 'saved_email';
 
 export default function SignInScreen() {
   const router = useRouter();
   const setPreview = useDevStore((s) => s.setPreview);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // 저장된 아이디 불러오기
+  useEffect(() => {
+    SecureStore.getItemAsync(SAVED_EMAIL_KEY).then((saved) => {
+      if (saved) {
+        setEmail(saved);
+        setRemember(true);
+      }
+    });
+  }, []);
 
   async function onSubmit() {
     setError(null);
     setLoading(true);
     const { error: err } = await signIn(email, password);
     setLoading(false);
-    if (err) setError('로그인하지 못했어요. 이메일과 비밀번호를 확인해주세요.');
+    if (err) {
+      setError('로그인하지 못했어요. 이메일과 비밀번호를 확인해주세요.');
+      return;
+    }
+    if (remember) await SecureStore.setItemAsync(SAVED_EMAIL_KEY, email.trim().toLowerCase());
+    else await SecureStore.deleteItemAsync(SAVED_EMAIL_KEY);
     // 성공 시 onAuthStateChange → 게이팅이 홈으로 이동
+  }
+
+  async function toggleRemember() {
+    const next = !remember;
+    setRemember(next);
+    if (!next) await SecureStore.deleteItemAsync(SAVED_EMAIL_KEY);
+  }
+
+  async function onForgot() {
+    if (!email.trim()) {
+      Alert.alert('이메일을 입력해주세요', '가입한 이메일을 입력하면 재설정 메일을 보내드려요.');
+      return;
+    }
+    const { error: err } = await sendPasswordReset(email);
+    Alert.alert(err ? '전송 실패' : '메일 전송', err ? '잠시 후 다시 시도해주세요.' : '비밀번호 재설정 메일을 보냈어요.');
   }
 
   return (
     <Screen scroll padded>
       <View style={styles.top}>
-        <Logo height={28} />
         <Text variant="kicker" color={colors.light.textSecondary}>
-          VOL. {volLabel(todayStr())}
+          {todayStr().replace(/-/g, '.')}
         </Text>
       </View>
 
@@ -61,25 +94,21 @@ export default function SignInScreen() {
           autoComplete="email"
           placeholder="you@example.com"
         />
-        <TextField
-          label="비밀번호"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholder="••••••••"
-        />
-        {error ? (
-          <Text variant="bodySm" color={colors.light.neon}>
-            {error}
-          </Text>
-        ) : null}
+        <TextField label="비밀번호" value={password} onChangeText={setPassword} secureTextEntry placeholder="••••••••" />
+
+        <View style={styles.rowBetween}>
+          <Pressable style={styles.check} onPress={toggleRemember} hitSlop={8}>
+            <View style={[styles.box, remember && styles.boxOn]}>{remember ? <Text variant="caption" color={colors.light.paper}>✓</Text> : null}</View>
+            <Text variant="bodySm" color={colors.light.textSecondary}>아이디 저장</Text>
+          </Pressable>
+          <Pressable onPress={onForgot} hitSlop={8}>
+            <Text variant="bodySm" color={colors.light.action}>비밀번호 찾기</Text>
+          </Pressable>
+        </View>
+
+        {error ? <Text variant="bodySm" color={colors.light.neon}>{error}</Text> : null}
         <Button label="로그인" block loading={loading} onPress={onSubmit} style={{ marginTop: space.xs }} />
-        <Button
-          label="가입하기"
-          variant="ghost"
-          block
-          onPress={() => router.push('/join')}
-        />
+        <Button label="가입하기" variant="ghost" block onPress={() => router.push('/join')} />
       </View>
 
       <View style={styles.footer}>
@@ -98,10 +127,14 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space.lg },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingTop: space.lg },
   head: { marginTop: space.section },
   wordmarkRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   wordmark: { fontFamily: 'Jalnan2', fontSize: 48, lineHeight: 58, color: colors.light.ink, letterSpacing: -1 },
   form: { gap: space.md, marginTop: space.section },
+  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  check: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  box: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: colors.light.hairlineStrong, alignItems: 'center', justifyContent: 'center' },
+  boxOn: { backgroundColor: colors.light.cobalt, borderColor: colors.light.cobalt },
   footer: { marginTop: space.section },
 });

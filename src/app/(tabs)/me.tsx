@@ -49,8 +49,14 @@ export default function MeScreen() {
   const onErr = (e: unknown) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.');
 
   const avatarMut = useMutation({ mutationFn: (v: { base64: string; ts: number }) => uploadAvatar(userId as string, v.base64, v.ts), onSuccess: invalidate, onError: onErr });
-  const colorMut = useMutation({ mutationFn: (c: string) => updateMyColor(userId as string, c), onSuccess: invalidate, onError: onErr });
-  const nickMut = useMutation({ mutationFn: (n: string) => updateMyNickname(userId as string, n), onSuccess: () => { invalidate(); setEditOpen(false); }, onError: onErr });
+  const profileMut = useMutation({
+    mutationFn: async (v: { nickname: string; color: string | null }) => {
+      if (v.nickname.trim() && v.nickname.trim() !== me?.nickname) await updateMyNickname(userId as string, v.nickname);
+      if (v.color && v.color !== me?.color) await updateMyColor(userId as string, v.color);
+    },
+    onSuccess: () => { invalidate(); setEditOpen(false); },
+    onError: onErr,
+  });
 
   async function pickPhoto() {
     if (!userId) return;
@@ -103,7 +109,7 @@ export default function MeScreen() {
         </Pressable>
       </Card>
 
-      <SectionHeader label={`${vMonth}월 모임 날짜 투표`} />
+      <SectionHeader label="모임 날짜 투표" />
       <Card>
         {userId ? (
           <VoteSection
@@ -119,10 +125,10 @@ export default function MeScreen() {
         )}
       </Card>
 
-      <SectionHeader label="도움말" />
+      <SectionHeader label="문의" />
       <Card>
         <Pressable style={styles.linkRow} onPress={() => router.push('/feedback')}>
-          <Text variant="bodyBold" style={{ fontSize: 15 }}>버그·문의 보내기</Text>
+          <Text variant="bodyBold" style={{ fontSize: 15 }}>문의 보내기</Text>
           <Text variant="body" color={colors.light.textSecondary}>›</Text>
         </Pressable>
       </Card>
@@ -137,11 +143,10 @@ export default function MeScreen() {
         nickname={me?.nickname ?? ''}
         color={me?.color ?? null}
         avatarUrl={me?.avatar_url ?? null}
-        busy={nickMut.isPending || avatarMut.isPending || colorMut.isPending}
+        busy={profileMut.isPending || avatarMut.isPending}
         onClose={() => setEditOpen(false)}
         onPickPhoto={pickPhoto}
-        onSaveNickname={(n) => nickMut.mutate(n)}
-        onPickColor={(c) => colorMut.mutate(c)}
+        onSaveProfile={(n, c) => profileMut.mutate({ nickname: n, color: c })}
       />
     </Screen>
   );

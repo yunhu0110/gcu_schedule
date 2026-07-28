@@ -3,19 +3,21 @@
  * 루트 스택에 푸시되는 화면(탭 위). 상단에 뒤로가기.
  */
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
-import { TextField } from '@/components/TextField';
+import { MentionInput } from '@/components/MentionInput';
 import { CoverEditModal, type CoverSubmit } from '@/features/host/CoverEditModal';
 import { colors, radius, space } from '@/theme/tokens';
+import { parseMentionIds } from '@/lib/mentions';
 import { useAuth } from '@/features/auth/AuthContext';
-import { getMyProfile } from '@/api/members';
+import { getMyProfile, listMembers } from '@/api/members';
 import { getPost, updateCover, uploadCoverImage, uploadCoverVideo } from '@/api/hosts';
 import { addComment, listComments } from '@/api/comments';
+import { notifyMembers } from '@/api/notifications';
 
 export default function PostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,6 +29,7 @@ export default function PostScreen() {
 
   const { data: post } = useQuery({ queryKey: ['post', id], queryFn: () => getPost(id), enabled: !!id });
   const { data: me } = useQuery({ queryKey: ['me', userId], queryFn: () => getMyProfile(userId as string), enabled: !!userId });
+  const { data: members = [] } = useQuery({ queryKey: ['members'], queryFn: listMembers, enabled: !!userId });
   const { data: comments = [] } = useQuery({ queryKey: ['comments', id], queryFn: () => listComments(id), enabled: !!id });
 
   const canEdit = !!post && (!!me?.is_admin || post.member_id === userId);
@@ -50,10 +53,18 @@ export default function PostScreen() {
   });
 
   const commentMut = useMutation({
-    mutationFn: () => addComment(id, userId as string, draft),
+    mutationFn: async () => {
+      if (!userId) return;
+      await addComment(id, userId, draft);
+      const nick = me?.nickname ?? '멤버';
+      await notifyMembers(userId, members.map((m) => m.id), 'comment', `${nick}님이 표지에 코멘트를 남겼어요: ${draft.trim()}`);
+      const mentioned = parseMentionIds(draft, members);
+      if (mentioned.length) await notifyMembers(userId, mentioned, 'mention', `${nick}님이 회원님을 언급했어요: ${draft.trim()}`);
+    },
     onSuccess: () => {
       setDraft('');
       qc.invalidateQueries({ queryKey: ['comments', id] });
+      qc.invalidateQueries({ queryKey: ['unread'] });
     },
     onError: (e) => alertErr(e),
   });
@@ -125,12 +136,14 @@ export default function PostScreen() {
         )}
       </ScrollView>
 
-      {/* 댓글 입력 */}
+      {/* 댓글 입력 (@맨션) */}
       {userId ? (
-        <View style={styles.inputBar}>
-          <TextField value={draft} onChangeText={setDraft} placeholder="코멘트 달기" style={{ flex: 1 }} />
-          <Button label="등록" onPress={() => draft.trim() && commentMut.mutate()} loading={commentMut.isPending} style={styles.sendBtn} />
-        </View>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.inputBar}>
+            <MentionInput value={draft} onChangeText={setDraft} members={members} placeholder="코멘트 (@로 멤버 언급)" style={{ flex: 1 }} />
+            <Button label="등록" onPress={() => draft.trim() && commentMut.mutate()} loading={commentMut.isPending} style={styles.sendBtn} />
+          </View>
+        </KeyboardAvoidingView>
       ) : null}
 
       <CoverEditModal

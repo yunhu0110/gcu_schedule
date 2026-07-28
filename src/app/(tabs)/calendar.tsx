@@ -75,7 +75,7 @@ export default function CalendarScreen() {
       await setRange(userId, v.from, v.to, v.status, v.note, v.startTime, v.endTime);
       const nick = members.find((m) => m.id === userId)?.nickname ?? '멤버';
       const label = v.status === 'available' ? '가능' : '불가';
-      await notifyMembers(userId, members.map((m) => m.id), 'availability_set', `${nick}님이 ${formatKo(v.from)} 일정(${label})을 등록했어요.`);
+      await notifyMembers(userId, members.map((m) => m.id), 'availability_set', `${nick}님이 ${formatKo(v.from)} 일정(${label})을 등록했어요.`, true);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['availability-summary'] });
@@ -191,6 +191,7 @@ export default function CalendarScreen() {
         date={detailDate}
         rows={detailDate ? rowsByDate[detailDate] ?? [] : []}
         members={members}
+        userId={userId}
         onClose={() => setDetailDate(null)}
         onEdit={() => {
           setEditDate(detailDate);

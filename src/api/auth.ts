@@ -12,6 +12,11 @@ export async function signOut() {
   return supabase.auth.signOut();
 }
 
+/** 비밀번호 재설정 메일 전송(재설정 링크). */
+export async function sendPasswordReset(email: string) {
+  return supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+}
+
 export type SignUpInput = {
   email: string;
   password: string;

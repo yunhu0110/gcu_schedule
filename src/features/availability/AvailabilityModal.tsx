@@ -4,7 +4,7 @@
  * 저장(upsert)·쿼리 무효화는 호출부(calendar)가 담당. 이 컴포넌트는 입력 UI만.
  */
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
@@ -85,9 +85,12 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
   }
 
   const days = Math.abs(diffDays(to, from)) + 1;
+  const needReason = status === 'unavailable';
+  const canSave = !needReason || note.trim().length > 0;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.handle} />
@@ -142,13 +145,16 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
           </View>
         )}
 
-        {/* 사유 (예시 없음) */}
-        <TextField label="사유 (선택)" value={note} onChangeText={setNote} style={{ marginTop: space.md }} />
+        {/* 사유 — 불가일 때만, 필수 */}
+        {needReason ? (
+          <TextField label="불가 사유 (필수)" value={note} onChangeText={setNote} placeholder="불가한 이유를 적어주세요" style={{ marginTop: space.md }} />
+        ) : null}
 
         <Button
           label={saving ? '저장 중…' : '저장'}
           block
           loading={saving}
+          disabled={!canSave}
           onPress={() =>
             onSubmit({
               status,
@@ -163,6 +169,7 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
         />
         <Button label="취소" variant="ghost" block onPress={onClose} />
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -205,6 +212,7 @@ function Stepper({
 }
 
 const styles = StyleSheet.create({
+  kav: { flex: 1 },
   backdrop: { flex: 1, backgroundColor: colors.light.ink60 },
   sheet: {
     backgroundColor: colors.light.paper,
