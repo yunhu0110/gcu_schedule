@@ -37,6 +37,47 @@ type SummaryRow = {
   all_available: boolean;
 };
 
+/** 멤버 정보가 붙은 가용성 행(달력 상세 팝업·후보 목록용). */
+export type AvailRow = {
+  date: DateStr;
+  member_id: string;
+  status: AvailabilityStatus;
+  start_time: string | null;
+  end_time: string | null;
+  nickname: string;
+  avatar_url: string | null;
+  color: string | null;
+};
+
+/** 월 범위의 모든 입력 행 + 멤버(닉네임/색/프사) 조인. */
+export async function getMonthRows(from: DateStr, to: DateStr): Promise<AvailRow[]> {
+  const { data, error } = await supabase
+    .from('availabilities')
+    .select('date, member_id, status, start_time, end_time, members(nickname, avatar_url, color)')
+    .gte('date', from)
+    .lte('date', to);
+  if (error) throw error;
+  return ((data ?? []) as unknown as RawJoin[]).map((r) => ({
+    date: r.date,
+    member_id: r.member_id,
+    status: r.status,
+    start_time: r.start_time,
+    end_time: r.end_time,
+    nickname: r.members?.nickname ?? '?',
+    avatar_url: r.members?.avatar_url ?? null,
+    color: r.members?.color ?? null,
+  }));
+}
+
+type RawJoin = {
+  date: DateStr;
+  member_id: string;
+  status: AvailabilityStatus;
+  start_time: string | null;
+  end_time: string | null;
+  members: { nickname: string; avatar_url: string | null; color: string | null } | null;
+};
+
 /**
  * from~to 각 날짜를 하나의 상태로 upsert(본인). 사유(note)는 선택.
  * startTime/endTime은 'HH:MM' 또는 null(하루 종일). 실사용 상태는 available/unavailable 2종.

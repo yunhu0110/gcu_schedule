@@ -22,7 +22,6 @@ export default function HomeScreen() {
   const today = todayStr();
   const nextMonth = addMonths(today, 1);
   const nextMonthNum = Number(nextMonth.slice(5, 7)); // 다음 달(월)
-  const monthNow = Number(today.slice(5, 7));
 
   return (
     <Screen scroll>
@@ -33,7 +32,7 @@ export default function HomeScreen() {
           <Text variant="brand">월간gcu</Text>
         </View>
         <Text variant="kicker" color={colors.light.textSecondary}>
-          {volLabel(today)} · No.{monthNow}
+          {volLabel(today)}
         </Text>
       </View>
 
