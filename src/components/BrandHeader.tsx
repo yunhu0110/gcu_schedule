@@ -30,13 +30,7 @@ export function BrandHeader() {
       </View>
       <Pressable onPress={() => router.push('/notifications')} hitSlop={10}>
         <TabIcon name="bell" color={colors.light.ink} size={24} />
-        {unread > 0 ? (
-          <View style={styles.badge}>
-            <Text variant="caption" color={colors.light.paper} style={styles.badgeText}>
-              {unread > 9 ? '9+' : unread}
-            </Text>
-          </View>
-        ) : null}
+        {unread > 0 ? <View style={styles.dot} /> : null}
       </Pressable>
     </View>
   );
@@ -45,17 +39,15 @@ export function BrandHeader() {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: space.lg },
   left: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  badge: {
+  dot: {
     position: 'absolute',
-    right: -6,
-    top: -5,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.light.neon,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
+    right: -2,
+    top: -2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.light.danger,
+    borderWidth: 1.5,
+    borderColor: colors.light.paper,
   },
-  badgeText: { fontSize: 10, lineHeight: 14 },
 });

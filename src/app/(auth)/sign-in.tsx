@@ -3,7 +3,7 @@
  * 성공 시 세션 게이팅이 홈으로 보낸다. 백엔드 전에는 "둘러보기"로 미리 볼 수 있다(임시).
  */
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Screen } from '@/components/Screen';
@@ -13,7 +13,7 @@ import { TextField } from '@/components/TextField';
 import { Logo } from '@/components/Logo';
 import { colors, space } from '@/theme/tokens';
 import { todayStr } from '@/lib/date';
-import { sendPasswordReset, signIn } from '@/api/auth';
+import { signIn } from '@/api/auth';
 import { useDevStore } from '@/store/devStore';
 
 const SAVED_EMAIL_KEY = 'saved_email';
@@ -57,13 +57,8 @@ export default function SignInScreen() {
     if (!next) await SecureStore.deleteItemAsync(SAVED_EMAIL_KEY);
   }
 
-  async function onForgot() {
-    if (!email.trim()) {
-      Alert.alert('이메일을 입력해주세요', '가입한 이메일을 입력하면 재설정 메일을 보내드려요.');
-      return;
-    }
-    const { error: err } = await sendPasswordReset(email);
-    Alert.alert(err ? '전송 실패' : '메일 전송', err ? '잠시 후 다시 시도해주세요.' : '비밀번호 재설정 메일을 보냈어요.');
+  function onForgot() {
+    router.push('/reset-password');
   }
 
   return (

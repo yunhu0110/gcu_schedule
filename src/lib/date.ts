@@ -104,3 +104,8 @@ export function formatKo(date: DateStr): string {
 export function volLabel(date: DateStr): string {
   return d(date).format('YYYY.MM');
 }
+
+/** timestamptz(ISO) → KST "M.D HH:mm" (메모/코멘트 시간 표시용). */
+export function formatDateTime(iso: string): string {
+  return dayjs(iso).tz(TZ).format('M.D HH:mm');
+}

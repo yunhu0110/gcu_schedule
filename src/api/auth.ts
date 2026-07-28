@@ -12,9 +12,25 @@ export async function signOut() {
   return supabase.auth.signOut();
 }
 
-/** 비밀번호 재설정 메일 전송(재설정 링크). */
-export async function sendPasswordReset(email: string) {
-  return supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+/** 비밀번호 재설정 코드 요청 → 관리자에게 알림으로 코드가 전달된다. */
+export async function requestPasswordReset(email: string) {
+  return supabase.rpc('request_password_reset', { p_email: email.trim().toLowerCase() });
+}
+
+/** 인증코드 + 새 비밀번호로 변경. 성공 시 data === true. */
+export async function resetPasswordWithCode(email: string, code: string, newPassword: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('reset_password_with_code', {
+    p_email: email.trim().toLowerCase(),
+    p_code: code.trim(),
+    p_new_password: newPassword,
+  });
+  if (error) throw error;
+  return data === true;
+}
+
+/** 로그인 상태에서 내 비밀번호 변경. */
+export async function updatePassword(newPassword: string) {
+  return supabase.auth.updateUser({ password: newPassword });
 }
 
 export type SignUpInput = {

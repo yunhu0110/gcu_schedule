@@ -19,6 +19,7 @@ const palette = {
   neon: '#E8318A',
   amber: '#FFC53D',
   slate: '#7A7F8C',
+  red: '#FF3B30',
 } as const;
 
 const alpha = {
@@ -54,6 +55,7 @@ const light = {
   action: palette.cobalt,
   accent: palette.neon,
   warn: palette.amber,
+  danger: palette.red,
   moneyOnDark: '#7FB0FF', // ink 히어로 위 밝은 코발트(금액 강조)
   // 가용성 상태 (6칸 게이지)
   available: palette.cobalt,

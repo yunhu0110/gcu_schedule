@@ -91,6 +91,7 @@ export default function MeScreen() {
       <BrandHeader />
       <Text variant="h1">마이페이지</Text>
 
+      <View style={styles.section}>
       <SectionHeader label="프로필" />
       <Card>
         <Pressable style={styles.profile} onPress={openEdit}>
@@ -108,35 +109,43 @@ export default function MeScreen() {
           <Text variant="body" color={colors.light.textSecondary}>›</Text>
         </Pressable>
       </Card>
+      </View>
 
-      <SectionHeader label="모임 날짜 투표" />
-      <Card>
-        {userId ? (
-          <VoteSection
-            userId={userId}
-            meNickname={me?.nickname ?? '멤버'}
-            isHost={nextHost?.member_id === userId}
-            year={vYear}
-            month={vMonth}
-            memberIds={members.map((m) => m.id)}
-          />
-        ) : (
-          <Text variant="bodySm" color={colors.light.textSecondary}>로그인 후 이용할 수 있어요.</Text>
-        )}
-      </Card>
+      <View style={styles.section}>
+        <SectionHeader label="모임 날짜 투표" />
+        <Card>
+          {userId ? (
+            <VoteSection
+              userId={userId}
+              meNickname={me?.nickname ?? '멤버'}
+              isHost={nextHost?.member_id === userId}
+              year={vYear}
+              month={vMonth}
+              memberIds={members.map((m) => m.id)}
+            />
+          ) : (
+            <Text variant="bodySm" color={colors.light.textSecondary}>로그인 후 이용할 수 있어요.</Text>
+          )}
+        </Card>
+      </View>
 
-      <SectionHeader label="문의" />
-      <Card>
-        <Pressable style={styles.linkRow} onPress={() => router.push('/feedback')}>
-          <Text variant="bodyBold" style={{ fontSize: 15 }}>문의 보내기</Text>
-          <Text variant="body" color={colors.light.textSecondary}>›</Text>
-        </Pressable>
-      </Card>
+      <View style={styles.section}>
+        <SectionHeader label="설정" />
+        <Card>
+          <Pressable style={styles.linkRow} onPress={() => router.push('/account')}>
+            <Text variant="bodyBold" style={{ fontSize: 15 }}>내 정보 수정</Text>
+            <Text variant="body" color={colors.light.textSecondary}>›</Text>
+          </Pressable>
+        </Card>
+        <Card style={{ marginTop: space.md }}>
+          <Pressable style={styles.linkRow} onPress={() => router.push('/feedback')}>
+            <Text variant="bodyBold" style={{ fontSize: 15 }}>문의 보내기</Text>
+            <Text variant="body" color={colors.light.textSecondary}>›</Text>
+          </Pressable>
+        </Card>
+      </View>
 
-      <SectionHeader label="계정" />
-      <Card>
-        <Button label={preview ? '로그인 화면으로' : '로그아웃'} variant="secondary" block onPress={onLogout} />
-      </Card>
+      <Button label={preview ? '로그인 화면으로' : '로그아웃'} variant="secondary" block onPress={onLogout} style={styles.logout} />
 
       <ProfileEditModal
         visible={editOpen}
@@ -153,7 +162,9 @@ export default function MeScreen() {
 }
 
 const styles = StyleSheet.create({
+  section: { marginTop: space.lg },
   profile: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   linkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  logout: { marginTop: space.section },
 });

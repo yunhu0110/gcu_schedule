@@ -3,30 +3,27 @@
  * 담당자는 관리자가 지정하고, 모임 날짜는 투표로 확정되면 여기 표시된다(마이페이지 투표).
  */
 import { useState } from 'react';
-import { Alert, Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
-import { TextField } from '@/components/TextField';
 import { BrandHeader } from '@/components/BrandHeader';
 import { HostPickerModal } from '@/features/host/HostPickerModal';
+import { MemoBoard } from '@/features/memo/MemoBoard';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 import { addMonths, formatKo, todayStr, volLabel } from '@/lib/date';
 import { useAuth } from '@/features/auth/AuthContext';
 import { getMyProfile, listMembers } from '@/api/members';
 import { getHost, setHost } from '@/api/hosts';
 import { getPoll } from '@/api/polls';
-import { addIdea, listIdeas } from '@/api/ideas';
-import { notifyMembers } from '@/api/notifications';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { userId } = useAuth();
   const qc = useQueryClient();
   const [pickHost, setPickHost] = useState(false);
-  const [idea, setIdea] = useState('');
 
   const today = todayStr();
   const nextMonth = addMonths(today, 1);
@@ -37,22 +34,10 @@ export default function HomeScreen() {
   const { data: members = [] } = useQuery({ queryKey: ['members'], queryFn: listMembers, enabled: !!userId });
   const { data: host } = useQuery({ queryKey: ['host', nYear, nMonth], queryFn: () => getHost(nYear, nMonth), enabled: !!userId });
   const { data: poll } = useQuery({ queryKey: ['next-meeting', nYear, nMonth], queryFn: () => getPoll(nYear, nMonth), enabled: !!userId });
-  const { data: ideas = [] } = useQuery({ queryKey: ['ideas'], queryFn: listIdeas, enabled: !!userId });
 
   const hostMut = useMutation({
     mutationFn: (memberId: string) => setHost(nYear, nMonth, memberId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['host', nYear, nMonth] }); setPickHost(false); },
-  });
-
-  const ideaMut = useMutation({
-    mutationFn: async (body: string) => {
-      if (!userId) throw new Error('로그인이 필요해요.');
-      await addIdea(userId, body);
-      const nick = me?.nickname ?? '멤버';
-      await notifyMembers(userId, members.map((m) => m.id), 'idea_added', `${nick}님이 아이디어를 추가했어요: ${body.trim()}`);
-    },
-    onSuccess: () => { setIdea(''); qc.invalidateQueries({ queryKey: ['ideas'] }); qc.invalidateQueries({ queryKey: ['unread'] }); },
-    onError: (e) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.'),
   });
 
   const isAdmin = !!me?.is_admin;
@@ -99,34 +84,8 @@ export default function HomeScreen() {
         <Button label="달력에서 내 일정 입력" block onPress={() => router.push('/calendar')} style={{ marginTop: space.lg }} />
       </View>
 
-      {/* 아이디어 창고 */}
-      <View style={styles.ideaCard}>
-        <View style={styles.ideaHead}>
-          <Text style={styles.ideaEmoji}>💡</Text>
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyBold" style={{ fontSize: 16 }}>아이디어 창고</Text>
-            <Text variant="caption" color={colors.light.textSecondary}>가보고 싶은 곳 · 하고 싶은 것</Text>
-          </View>
-        </View>
-
-        {ideas.length === 0 ? (
-          <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.md }}>첫 아이디어를 남겨보세요.</Text>
-        ) : (
-          <View style={styles.ideaChips}>
-            {ideas.map((it) => (
-              <View key={it.id} style={styles.ideaChip}>
-                <View style={[styles.ideaDot, { backgroundColor: it.color ?? colors.light.cobalt }]} />
-                <Text variant="bodySm">{it.body}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <View style={styles.ideaInput}>
-          <TextField value={idea} onChangeText={setIdea} placeholder="아이디어 추가" style={{ flex: 1 }} />
-          <Button label="추가" onPress={() => idea.trim() && ideaMut.mutate(idea)} loading={ideaMut.isPending} style={styles.ideaBtn} />
-        </View>
-      </View>
+      {/* 메모장 */}
+      {userId ? <MemoBoard userId={userId} /> : null}
 
       <HostPickerModal
         visible={pickHost}
@@ -152,13 +111,4 @@ const styles = StyleSheet.create({
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   chip: { backgroundColor: colors.light.cobalt, borderRadius: radius.pill, paddingVertical: 5, paddingHorizontal: 10 },
   heroBig: { fontFamily: fonts.display, fontSize: 44, lineHeight: 54, letterSpacing: -1, color: colors.light.paper, marginTop: space.md },
-
-  ideaCard: { backgroundColor: colors.light.surfacePlate, borderRadius: radius.soft, padding: 18, marginTop: space.xl },
-  ideaHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  ideaEmoji: { fontSize: 26 },
-  ideaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
-  ideaChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.light.paper, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  ideaInput: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.lg },
-  ideaBtn: { height: 48, paddingHorizontal: space.lg },
-  ideaDot: { width: 8, height: 8, borderRadius: 4 },
 });

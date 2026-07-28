@@ -4,6 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export function ProfileEditModal({ visible, nickname, color, avatarUrl, busy, onClose, onPickPhoto, onSaveProfile }: Props) {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState(nickname);
   const [sel, setSel] = useState<string | null>(color);
 
@@ -35,7 +37,7 @@ export function ProfileEditModal({ visible, nickname, color, avatarUrl, busy, on
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable style={styles.backdrop} onPress={onClose} />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>
           <View style={styles.handle} />
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text variant="h2">프로필 편집</Text>
