@@ -38,7 +38,7 @@ export default function JoinScreen() {
     <Screen scroll padded>
       <View style={styles.head}>
         <Text variant="kicker" color={colors.light.cobalt}>
-          월간gcu · 6
+          월간GCU · 6
         </Text>
         <Text variant="h1" style={{ marginTop: space.sm }}>
           가입하기

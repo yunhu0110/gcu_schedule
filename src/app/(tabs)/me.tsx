@@ -12,10 +12,14 @@ import { Text } from '@/components/Text';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { SectionHeader } from '@/components/SectionHeader';
+import { BrandHeader } from '@/components/BrandHeader';
 import { ProfileEditModal } from '@/features/profile/ProfileEditModal';
+import { VoteSection } from '@/features/vote/VoteSection';
 import { colors, space } from '@/theme/tokens';
+import { addMonths, todayStr } from '@/lib/date';
 import { useAuth } from '@/features/auth/AuthContext';
-import { getMyProfile, updateMyColor, updateMyNickname, uploadAvatar } from '@/api/members';
+import { getMyProfile, listMembers, updateMyColor, updateMyNickname, uploadAvatar } from '@/api/members';
+import { getHost } from '@/api/hosts';
 import { signOut } from '@/api/auth';
 import { useDevStore } from '@/store/devStore';
 
@@ -28,6 +32,13 @@ export default function MeScreen() {
   const [editOpen, setEditOpen] = useState(false);
 
   const { data: me } = useQuery({ queryKey: ['me', userId], queryFn: () => getMyProfile(userId as string), enabled: !!userId });
+  const { data: members = [] } = useQuery({ queryKey: ['members'], queryFn: listMembers, enabled: !!userId });
+
+  // 투표는 다음 모임(=다음 달) 기준. 그 달 담당자가 진행한다.
+  const nextMonth = addMonths(todayStr(), 1);
+  const vYear = Number(nextMonth.slice(0, 4));
+  const vMonth = Number(nextMonth.slice(5, 7));
+  const { data: nextHost } = useQuery({ queryKey: ['host', vYear, vMonth], queryFn: () => getHost(vYear, vMonth), enabled: !!userId });
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['me'] });
@@ -71,6 +82,7 @@ export default function MeScreen() {
 
   return (
     <Screen scroll>
+      <BrandHeader />
       <Text variant="h1">마이페이지</Text>
 
       <SectionHeader label="프로필" />
@@ -89,6 +101,22 @@ export default function MeScreen() {
           </View>
           <Text variant="body" color={colors.light.textSecondary}>›</Text>
         </Pressable>
+      </Card>
+
+      <SectionHeader label={`${vMonth}월 모임 날짜 투표`} />
+      <Card>
+        {userId ? (
+          <VoteSection
+            userId={userId}
+            meNickname={me?.nickname ?? '멤버'}
+            isHost={nextHost?.member_id === userId}
+            year={vYear}
+            month={vMonth}
+            memberIds={members.map((m) => m.id)}
+          />
+        ) : (
+          <Text variant="bodySm" color={colors.light.textSecondary}>로그인 후 이용할 수 있어요.</Text>
+        )}
       </Card>
 
       <SectionHeader label="도움말" />

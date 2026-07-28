@@ -8,7 +8,7 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
-import { Logo } from '@/components/Logo';
+import { BrandHeader } from '@/components/BrandHeader';
 import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
 import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { DayDetailModal } from '@/features/availability/DayDetailModal';
@@ -16,6 +16,7 @@ import { colors, space } from '@/theme/tokens';
 import { addMonths, endOfMonth, formatKo, monthGrid, startOfMonth, todayStr, volLabel } from '@/lib/date';
 import { getMonthRows, getSummary, setRange, type AvailRow } from '@/api/availabilities';
 import { listMembers } from '@/api/members';
+import { notifyMembers } from '@/api/notifications';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useDevStore } from '@/store/devStore';
 
@@ -69,13 +70,17 @@ export default function CalendarScreen() {
   });
 
   const mutation = useMutation({
-    mutationFn: (v: AvailabilitySubmit) => {
+    mutationFn: async (v: AvailabilitySubmit) => {
       if (!userId) throw new Error('로그인이 필요해요.');
-      return setRange(userId, v.from, v.to, v.status, v.note, v.startTime, v.endTime);
+      await setRange(userId, v.from, v.to, v.status, v.note, v.startTime, v.endTime);
+      const nick = members.find((m) => m.id === userId)?.nickname ?? '멤버';
+      const label = v.status === 'available' ? '가능' : '불가';
+      await notifyMembers(userId, members.map((m) => m.id), 'availability_set', `${nick}님이 ${formatKo(v.from)} 일정(${label})을 등록했어요.`);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['availability-summary'] });
       qc.invalidateQueries({ queryKey: ['availability-rows'] });
+      qc.invalidateQueries({ queryKey: ['unread'] });
       setEditDate(null);
     },
     onError: (e) => Alert.alert('저장 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
@@ -114,10 +119,7 @@ export default function CalendarScreen() {
 
   return (
     <Screen scroll>
-      <View style={styles.brandRow}>
-        <Logo height={22} />
-        <Text variant="brand">월간gcu</Text>
-      </View>
+      <BrandHeader />
 
       {/* 월 이동 */}
       <View style={styles.header}>
@@ -207,7 +209,6 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.lg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg },
   weekRow: { flexDirection: 'row', marginBottom: space.xs },
   weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },

@@ -44,7 +44,7 @@ export default function SignInScreen() {
       <View style={styles.head}>
         <View style={styles.wordmarkRow}>
           <Logo height={44} />
-          <Text style={styles.wordmark}>월간gcu</Text>
+          <Text style={styles.wordmark}>월간GCU</Text>
         </View>
         <Text variant="body" color={colors.light.textSecondary} style={{ marginTop: space.sm }}>
           월간GCU 스케줄 관리 앱

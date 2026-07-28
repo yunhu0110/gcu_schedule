@@ -1,0 +1,101 @@
+/**
+ * 날짜 투표 — 그 달 담당자가 후보 날짜로 투표를 열고, 멤버는 가능한 날에 투표.
+ * 담당자는 결과를 보고 최종 날짜를 확정한다.
+ */
+import { supabase } from '@/lib/supabase';
+import type { DateStr } from '@/lib/date';
+
+export type PollOption = {
+  id: string;
+  date: DateStr;
+  voters: { member_id: string; nickname: string; color: string | null }[];
+};
+export type Poll = {
+  id: string;
+  year: number;
+  month: number;
+  host_id: string;
+  status: string;
+  deadline: DateStr | null;
+  confirmed_date: DateStr | null;
+  options: PollOption[];
+};
+
+/** (year, month)의 가장 최근 투표 + 옵션 + 투표자. 없으면 null. */
+export async function getPoll(year: number, month: number): Promise<Poll | null> {
+  const { data: polls, error } = await supabase
+    .from('date_polls')
+    .select('id, year, month, host_id, status, deadline, confirmed_date')
+    .eq('year', year)
+    .eq('month', month)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const poll = polls?.[0];
+  if (!poll) return null;
+
+  const { data: opts, error: oErr } = await supabase
+    .from('date_poll_options')
+    .select('id, date')
+    .eq('poll_id', poll.id)
+    .order('date', { ascending: true });
+  if (oErr) throw oErr;
+  const optionIds = (opts ?? []).map((o) => o.id);
+
+  let votes: { option_id: string; member_id: string; members: { nickname: string; color: string | null } | null }[] = [];
+  if (optionIds.length) {
+    const { data: v, error: vErr } = await supabase
+      .from('date_poll_votes')
+      .select('option_id, member_id, members(nickname, color)')
+      .in('option_id', optionIds);
+    if (vErr) throw vErr;
+    votes = (v ?? []) as unknown as typeof votes;
+  }
+
+  return {
+    ...(poll as Omit<Poll, 'options'>),
+    options: (opts ?? []).map((o) => ({
+      id: o.id,
+      date: o.date,
+      voters: votes
+        .filter((vt) => vt.option_id === o.id)
+        .map((vt) => ({ member_id: vt.member_id, nickname: vt.members?.nickname ?? '?', color: vt.members?.color ?? null })),
+    })),
+  };
+}
+
+/** 담당자: 후보 날짜들로 투표 생성. */
+export async function createPoll(hostId: string, year: number, month: number, dates: DateStr[], deadline: DateStr | null): Promise<string> {
+  const { data: poll, error } = await supabase
+    .from('date_polls')
+    .insert({ year, month, host_id: hostId, status: 'open', deadline })
+    .select('id')
+    .single();
+  if (error) throw error;
+  const pollId = poll.id as string;
+  const rows = dates.map((d) => ({ poll_id: pollId, date: d }));
+  if (rows.length) {
+    const { error: oErr } = await supabase.from('date_poll_options').insert(rows);
+    if (oErr) throw oErr;
+  }
+  return pollId;
+}
+
+/** 멤버: 이 투표에서 내 표를 selectedOptionIds로 교체(가능한 날 다중 선택). */
+export async function castVote(memberId: string, allOptionIds: string[], selectedOptionIds: string[]): Promise<void> {
+  if (allOptionIds.length) {
+    const { error: dErr } = await supabase.from('date_poll_votes').delete().eq('member_id', memberId).in('option_id', allOptionIds);
+    if (dErr) throw dErr;
+  }
+  if (selectedOptionIds.length) {
+    const rows = selectedOptionIds.map((id) => ({ option_id: id, member_id: memberId }));
+    const { error: iErr } = await supabase.from('date_poll_votes').insert(rows);
+    if (iErr) throw iErr;
+  }
+}
+
+/** 담당자: 최종 날짜 확정 + 투표 종료. */
+export async function confirmDate(pollId: string, date: DateStr): Promise<void> {
+  const { error } = await supabase.from('date_polls').update({ confirmed_date: date, status: 'closed' }).eq('id', pollId);
+  if (error) throw error;
+}

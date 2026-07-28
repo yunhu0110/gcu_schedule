@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
+import { BrandHeader } from '@/components/BrandHeader';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { listMonthlyPosts, type MonthlyPost } from '@/api/hosts';
@@ -23,6 +24,7 @@ export default function RecordScreen() {
 
   return (
     <Screen scroll>
+      <BrandHeader />
       <Text variant="h1">기록</Text>
       <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.xs, marginBottom: space.lg }}>
         매달 담당자가 남기는 표지. 눌러서 코멘트를 달아보세요.
@@ -44,7 +46,11 @@ export default function RecordScreen() {
 function CoverCard({ post, onPress }: { post: MonthlyPost; onPress: () => void }) {
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      {post.cover_image_url ? (
+      {post.cover_image_url && /\.(mp4|mov|m4v)(\?|$)/i.test(post.cover_image_url) ? (
+        <View style={[styles.cover, styles.coverEmpty]}>
+          <Text variant="h2" color={colors.light.textSecondary}>🎬 동영상</Text>
+        </View>
+      ) : post.cover_image_url ? (
         <Image source={{ uri: post.cover_image_url }} style={styles.cover} />
       ) : (
         <View style={[styles.cover, styles.coverEmpty]}>

@@ -16,6 +16,15 @@ export async function uploadImageBase64(
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
 
+/** 로컬 파일 uri(동영상 등 base64가 없는 경우)를 blob으로 업로드. */
+export async function uploadUri(bucket: string, path: string, uri: string, contentType: string): Promise<string> {
+  const resp = await fetch(uri);
+  const blob = await resp.blob();
+  const { error } = await supabase.storage.from(bucket).upload(path, blob, { contentType, upsert: true });
+  if (error) throw error;
+  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
+
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 export function base64ToBytes(b64: string): Uint8Array {
   const clean = b64.replace(/[^A-Za-z0-9+/]/g, '');

@@ -34,6 +34,7 @@ function RootNavigator() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="post/[id]" />
       <Stack.Screen name="feedback" />
+      <Stack.Screen name="notifications" />
     </Stack>
   );
 }

@@ -1,72 +1,72 @@
 /**
- * S1. 표지/홈 — 브랜드 표지 + 이 달의 담당자 + 다음 모임 상태 + 일정 입력 유도.
- * 담당자(모임장)는 매월 다르며, 관리자가 지정한다(hosts). 다음 모임은 데이터 전이라 "미정".
+ * S1. 표지/홈 — 브랜드 헤더 + 다음 모임(다음 달) 담당자·확정 날짜 + 아이디어 창고.
+ * 담당자는 관리자가 지정하고, 모임 날짜는 투표로 확정되면 여기 표시된다(마이페이지 투표).
  */
 import { useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Alert, Image, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
-import { Logo } from '@/components/Logo';
+import { TextField } from '@/components/TextField';
+import { BrandHeader } from '@/components/BrandHeader';
 import { HostPickerModal } from '@/features/host/HostPickerModal';
 import { colors, fonts, radius, space } from '@/theme/tokens';
-import { addMonths, todayStr, volLabel } from '@/lib/date';
+import { addMonths, formatKo, todayStr, volLabel } from '@/lib/date';
 import { useAuth } from '@/features/auth/AuthContext';
 import { getMyProfile, listMembers } from '@/api/members';
 import { getHost, setHost } from '@/api/hosts';
-
-const RECENT = [
-  { title: '7월 모임 기록', ago: '어제' },
-  { title: '가고 싶은 곳 후보', ago: '3일 전' },
-];
+import { getPoll } from '@/api/polls';
+import { addIdea, listIdeas } from '@/api/ideas';
+import { notifyMembers } from '@/api/notifications';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { userId } = useAuth();
   const qc = useQueryClient();
   const [pickHost, setPickHost] = useState(false);
+  const [idea, setIdea] = useState('');
 
   const today = todayStr();
   const nextMonth = addMonths(today, 1);
-  const nextMonthNum = Number(nextMonth.slice(5, 7));
-  const year = Number(today.slice(0, 4));
-  const month = Number(today.slice(5, 7));
+  const nMonth = Number(nextMonth.slice(5, 7));
+  const nYear = Number(nextMonth.slice(0, 4));
 
   const { data: me } = useQuery({ queryKey: ['me', userId], queryFn: () => getMyProfile(userId as string), enabled: !!userId });
-  const { data: host } = useQuery({ queryKey: ['host', year, month], queryFn: () => getHost(year, month), enabled: !!userId });
   const { data: members = [] } = useQuery({ queryKey: ['members'], queryFn: listMembers, enabled: !!userId });
+  const { data: host } = useQuery({ queryKey: ['host', nYear, nMonth], queryFn: () => getHost(nYear, nMonth), enabled: !!userId });
+  const { data: poll } = useQuery({ queryKey: ['next-meeting', nYear, nMonth], queryFn: () => getPoll(nYear, nMonth), enabled: !!userId });
+  const { data: ideas = [] } = useQuery({ queryKey: ['ideas'], queryFn: listIdeas, enabled: !!userId });
 
   const hostMut = useMutation({
-    mutationFn: (memberId: string) => setHost(year, month, memberId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['host', year, month] });
-      setPickHost(false);
+    mutationFn: (memberId: string) => setHost(nYear, nMonth, memberId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['host', nYear, nMonth] }); setPickHost(false); },
+  });
+
+  const ideaMut = useMutation({
+    mutationFn: async (body: string) => {
+      if (!userId) throw new Error('로그인이 필요해요.');
+      await addIdea(userId, body);
+      const nick = me?.nickname ?? '멤버';
+      await notifyMembers(userId, members.map((m) => m.id), 'idea_added', `${nick}님이 아이디어를 추가했어요: ${body.trim()}`);
     },
+    onSuccess: () => { setIdea(''); qc.invalidateQueries({ queryKey: ['ideas'] }); qc.invalidateQueries({ queryKey: ['unread'] }); },
+    onError: (e) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.'),
   });
 
   const isAdmin = !!me?.is_admin;
+  const confirmed = poll?.confirmed_date ?? null;
 
   return (
     <Screen scroll>
-      {/* 브랜드 헤더 (로고 왼쪽 + 월간gcu) */}
-      <View style={styles.brandRow}>
-        <View style={styles.brandLeft}>
-          <Logo height={22} />
-          <Text variant="brand">월간gcu</Text>
-        </View>
-        <Text variant="kicker" color={colors.light.textSecondary}>
-          {volLabel(today)}
-        </Text>
-      </View>
+      <BrandHeader />
+      <Text variant="kicker" color={colors.light.textSecondary}>{volLabel(today)}</Text>
 
-      {/* 이 달의 담당자 */}
+      {/* 다음 모임 담당자 */}
       <View style={styles.hostCard}>
         <View style={{ flex: 1 }}>
-          <Text variant="kicker" color={colors.light.textSecondary}>
-            {month}월 담당자
-          </Text>
+          <Text variant="kicker" color={colors.light.textSecondary}>{nMonth}월 모임 담당자</Text>
           {host ? (
             <View style={styles.hostRow}>
               {host.avatar_url ? (
@@ -79,53 +79,49 @@ export default function HomeScreen() {
               <Text variant="bodyBold" style={{ fontSize: 16 }}>{host.nickname}</Text>
             </View>
           ) : (
-            <Text variant="bodyBold" style={{ fontSize: 16, marginTop: 4 }} color={colors.light.textSecondary}>
-              아직 미정
-            </Text>
+            <Text variant="bodyBold" style={{ fontSize: 16, marginTop: 4 }} color={colors.light.textSecondary}>아직 미정</Text>
           )}
         </View>
-        {isAdmin ? (
-          <Button label={host ? '변경' : '지정'} variant="secondary" onPress={() => setPickHost(true)} style={styles.hostBtn} />
-        ) : null}
+        {isAdmin ? <Button label={host ? '변경' : '지정'} variant="secondary" onPress={() => setPickHost(true)} style={styles.hostBtn} /> : null}
       </View>
 
-      {/* 히어로 — 다음 모임 미정 */}
+      {/* 히어로 — 다음 모임 날짜 */}
       <View style={styles.hero}>
         <View style={styles.heroDeco} />
         <View style={styles.heroTop}>
-          <View style={styles.chip}>
-            <Text variant="kicker" color={colors.light.paper}>◆ 다음 모임</Text>
-          </View>
+          <View style={styles.chip}><Text variant="kicker" color={colors.light.paper}>◆ 다음 모임</Text></View>
           <Text variant="mono" color={colors.light.paper60}>{volLabel(nextMonth)}</Text>
         </View>
-
-        <Text style={styles.heroBig}>미정</Text>
-
-        <Text variant="body" color={colors.light.paper} style={{ marginTop: space.xs }}>
-          {nextMonthNum}월 모임 일정을 모으는 중이에요.
-        </Text>
+        <Text style={styles.heroBig}>{confirmed ? formatKo(confirmed) : '미정'}</Text>
         <Text variant="bodySm" color={colors.light.paper60} style={{ marginTop: space.xs }}>
-          달력에서 각자 가능한 날을 입력하면 후보가 잡혀요.
+          {confirmed ? `${nMonth}월 모임 날짜가 확정됐어요.` : `${nMonth}월 날짜를 투표로 정해요. 달력에서 가능한 날을 먼저 입력!`}
         </Text>
-
         <Button label="달력에서 내 일정 입력" block onPress={() => router.push('/calendar')} style={{ marginTop: space.lg }} />
       </View>
 
-      {/* 최근 문서 */}
-      <View style={styles.recent}>
-        <Text variant="kicker" color={colors.light.textSecondary}>Recent</Text>
-        {RECENT.map((r) => (
-          <View key={r.title} style={styles.recentRow}>
-            <View style={styles.recentDot} />
-            <Text variant="bodySm" style={{ flex: 1 }} onPress={() => router.push('/wiki')}>{r.title}</Text>
-            <Text variant="mono" color={colors.light.textSecondary} style={{ fontSize: 10 }}>{r.ago}</Text>
-          </View>
-        ))}
+      {/* 아이디어 창고 */}
+      <View style={styles.ideaCard}>
+        <Text variant="kicker" color={colors.light.textSecondary}>가보고 싶은 곳 · 하고 싶은 것</Text>
+        <View style={styles.ideaInput}>
+          <TextField value={idea} onChangeText={setIdea} placeholder="아이디어를 추가해요" style={{ flex: 1 }} />
+          <Button label="추가" onPress={() => idea.trim() && ideaMut.mutate(idea)} loading={ideaMut.isPending} style={styles.ideaBtn} />
+        </View>
+        {ideas.length === 0 ? (
+          <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.sm }}>첫 아이디어를 남겨보세요.</Text>
+        ) : (
+          ideas.map((it) => (
+            <View key={it.id} style={styles.ideaRow}>
+              <View style={[styles.ideaDot, { backgroundColor: it.color ?? colors.light.cobalt }]} />
+              <Text variant="bodySm" style={{ flex: 1 }}>{it.body}</Text>
+              <Text variant="caption" color={colors.light.textSecondary}>{it.nickname}</Text>
+            </View>
+          ))
+        )}
       </View>
 
       <HostPickerModal
         visible={pickHost}
-        monthLabel={`${month}월`}
+        monthLabel={`${nMonth}월`}
         members={members}
         currentId={host?.member_id}
         saving={hostMut.isPending}
@@ -137,18 +133,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: space.lg },
-  brandLeft: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-
-  hostCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    backgroundColor: colors.light.surfacePlate,
-    borderRadius: radius.soft,
-    padding: 16,
-    marginBottom: space.lg,
-  },
+  hostCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.light.surfacePlate, borderRadius: radius.soft, padding: 16, marginTop: space.md, marginBottom: space.lg },
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: 6 },
   hostAvatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   hostBtn: { height: 40, paddingHorizontal: space.lg },
@@ -157,9 +142,11 @@ const styles = StyleSheet.create({
   heroDeco: { position: 'absolute', right: -30, top: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: colors.light.cobalt22 },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   chip: { backgroundColor: colors.light.cobalt, borderRadius: radius.pill, paddingVertical: 5, paddingHorizontal: 10 },
-  heroBig: { fontFamily: fonts.display, fontSize: 56, lineHeight: 66, letterSpacing: -1, color: colors.light.paper, marginTop: space.md },
+  heroBig: { fontFamily: fonts.display, fontSize: 44, lineHeight: 54, letterSpacing: -1, color: colors.light.paper, marginTop: space.md },
 
-  recent: { marginTop: space.xl, gap: space.xs },
-  recentRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 11 },
-  recentDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.light.cobalt },
+  ideaCard: { backgroundColor: colors.light.surfacePlate, borderRadius: radius.soft, padding: 18, marginTop: space.xl },
+  ideaInput: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.md },
+  ideaBtn: { height: 48, paddingHorizontal: space.lg },
+  ideaRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 9 },
+  ideaDot: { width: 7, height: 7, borderRadius: 3.5 },
 });

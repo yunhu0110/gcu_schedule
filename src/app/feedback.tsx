@@ -25,7 +25,7 @@ export default function FeedbackScreen() {
     }
     const url =
       `mailto:${ADMIN_EMAIL}` +
-      `?subject=${encodeURIComponent(`[월간gcu] ${subject.trim() || '문의'}`)}` +
+      `?subject=${encodeURIComponent(`[월간GCU] ${subject.trim() || '문의'}`)}` +
       `&body=${encodeURIComponent(body)}`;
     const ok = await Linking.canOpenURL(url);
     if (!ok) {

@@ -10,7 +10,7 @@ import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { colors, radius, space } from '@/theme/tokens';
 
-export type CoverSubmit = { message: string; base64: string | null };
+export type CoverSubmit = { message: string; base64: string | null; videoUri: string | null };
 
 type Props = {
   visible: boolean;
@@ -24,26 +24,39 @@ type Props = {
 export function CoverEditModal({ visible, initialMessage, initialImage, saving, onClose, onSubmit }: Props) {
   const [message, setMessage] = useState('');
   const [base64, setBase64] = useState<string | null>(null);
+  const [videoUri, setVideoUri] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (visible) {
       setMessage(initialMessage ?? '');
       setBase64(null);
+      setVideoUri(null);
       setPreview(initialImage ?? null);
     }
   }, [visible, initialMessage, initialImage]);
 
+  const isVideoPreview = (preview ?? '').match(/\.(mp4|mov|m4v)$/i) != null || videoUri != null;
+
   async function pickImage() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('권한 필요', '사진 라이브러리 접근을 허용해주세요.');
+      Alert.alert('권한 필요', '사진/동영상 접근을 허용해주세요.');
       return;
     }
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.6, base64: true });
-    if (res.canceled || !res.assets[0]?.base64) return;
-    setBase64(res.assets[0].base64);
-    setPreview(res.assets[0].uri);
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], quality: 0.6, base64: true });
+    if (res.canceled) return;
+    const a = res.assets[0];
+    if (!a) return;
+    if (a.type === 'video') {
+      setVideoUri(a.uri);
+      setBase64(null);
+      setPreview(a.uri);
+    } else if (a.base64) {
+      setBase64(a.base64);
+      setVideoUri(null);
+      setPreview(a.uri);
+    }
   }
 
   return (
@@ -54,14 +67,16 @@ export function CoverEditModal({ visible, initialMessage, initialImage, saving, 
         <Text variant="h2">표지 올리기</Text>
 
         <Pressable onPress={pickImage} style={styles.imgBox}>
-          {preview ? (
+          {preview && !isVideoPreview ? (
             <Image source={{ uri: preview }} style={styles.img} />
+          ) : isVideoPreview ? (
+            <Text variant="body" color={colors.light.textSecondary}>🎬 동영상 선택됨</Text>
           ) : (
-            <Text variant="body" color={colors.light.textSecondary}>＋ 사진 변경 (갤러리)</Text>
+            <Text variant="body" color={colors.light.textSecondary}>＋ 사진/동영상 (갤러리)</Text>
           )}
         </Pressable>
         {preview ? (
-          <Button label="사진 변경" variant="ghost" block onPress={pickImage} />
+          <Button label="사진/동영상 변경" variant="ghost" block onPress={pickImage} />
         ) : null}
 
         <TextField
@@ -76,7 +91,7 @@ export function CoverEditModal({ visible, initialMessage, initialImage, saving, 
           label={saving ? '올리는 중…' : '표지 저장'}
           block
           loading={saving}
-          onPress={() => onSubmit({ message, base64 })}
+          onPress={() => onSubmit({ message, base64, videoUri })}
           style={{ marginTop: space.md }}
         />
         <Button label="취소" variant="ghost" block onPress={onClose} />

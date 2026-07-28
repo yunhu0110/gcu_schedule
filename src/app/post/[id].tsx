@@ -3,7 +3,7 @@
  * 루트 스택에 푸시되는 화면(탭 위). 상단에 뒤로가기.
  */
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +14,7 @@ import { CoverEditModal, type CoverSubmit } from '@/features/host/CoverEditModal
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { getMyProfile } from '@/api/members';
-import { getPost, updateCover, uploadCoverImage } from '@/api/hosts';
+import { getPost, updateCover, uploadCoverImage, uploadCoverVideo } from '@/api/hosts';
 import { addComment, listComments } from '@/api/comments';
 
 export default function PostScreen() {
@@ -33,11 +33,12 @@ export default function PostScreen() {
 
   const coverMut = useMutation({
     mutationFn: async (v: CoverSubmit) => {
-      let imageUrl: string | undefined;
-      if (v.base64 && userId) imageUrl = await uploadCoverImage(userId, v.base64, Date.now());
+      let mediaUrl: string | undefined;
+      if (userId && v.base64) mediaUrl = await uploadCoverImage(userId, v.base64, Date.now());
+      else if (userId && v.videoUri) mediaUrl = await uploadCoverVideo(userId, v.videoUri, Date.now());
       await updateCover(id, {
         cover_message: v.message.trim() ? v.message.trim() : null,
-        ...(imageUrl ? { cover_image_url: imageUrl } : {}),
+        ...(mediaUrl ? { cover_image_url: mediaUrl } : {}),
       });
     },
     onSuccess: () => {
@@ -78,11 +79,15 @@ export default function PostScreen() {
           <ActivityIndicator style={{ marginTop: space.section }} color={colors.light.cobalt} />
         ) : (
           <>
-            {post.cover_image_url ? (
+            {post.cover_image_url && isVideoUrl(post.cover_image_url) ? (
+              <Pressable style={[styles.cover, styles.coverEmpty]} onPress={() => Linking.openURL(post.cover_image_url as string)}>
+                <Text variant="h2" color={colors.light.cobalt}>▶ 동영상 보기</Text>
+              </Pressable>
+            ) : post.cover_image_url ? (
               <Image source={{ uri: post.cover_image_url }} style={styles.cover} />
             ) : (
               <View style={[styles.cover, styles.coverEmpty]}>
-                <Text variant="mono" color={colors.light.textSecondary}>표지 사진 없음</Text>
+                <Text variant="mono" color={colors.light.textSecondary}>표지 없음</Text>
               </View>
             )}
             <Text variant="kicker" color={colors.light.textSecondary} style={{ marginTop: space.lg }}>
@@ -143,6 +148,8 @@ export default function PostScreen() {
 function alertErr(e: unknown) {
   Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.');
 }
+
+const isVideoUrl = (url: string) => /\.(mp4|mov|m4v)(\?|$)/i.test(url);
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.light.bg },

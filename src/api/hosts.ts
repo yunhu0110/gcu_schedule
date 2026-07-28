@@ -3,7 +3,7 @@
  * 담당자 지정은 관리자만. 표지(사진+글) 편집은 그 달 담당자(또는 관리자). 읽기는 활성 멤버 전체.
  */
 import { supabase } from '@/lib/supabase';
-import { uploadImageBase64 } from '@/lib/uploadImage';
+import { uploadImageBase64, uploadUri } from '@/lib/uploadImage';
 
 export type Host = {
   member_id: string;
@@ -105,4 +105,9 @@ export async function updateCover(id: string, patch: { cover_message?: string | 
 /** 표지 사진 업로드 → covers 버킷({uid}/...) → URL 반환(호출부에서 updateCover로 반영). */
 export async function uploadCoverImage(userId: string, base64: string, ts: number): Promise<string> {
   return uploadImageBase64('covers', `${userId}/cover_${ts}.jpg`, base64);
+}
+
+/** 표지 동영상 업로드(base64 없이 uri→blob). 확장자로 동영상 여부를 판별하니 .mp4 로 저장. */
+export async function uploadCoverVideo(userId: string, uri: string, ts: number): Promise<string> {
+  return uploadUri('covers', `${userId}/cover_${ts}.mp4`, uri, 'video/mp4');
 }
