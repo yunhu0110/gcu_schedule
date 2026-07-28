@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, space } from '@/theme/tokens';
 import { formatDateTime } from '@/lib/date';
 import { addMemo, deleteMemo, listMemos, updateMemo, type Memo } from '@/api/memos';
 
@@ -27,18 +27,12 @@ export function MemoBoard({ userId }: { userId: string }) {
 
   return (
     <View style={styles.card}>
-      <Text variant="bodyBold" style={{ fontSize: 16, marginBottom: space.md }}>낙서장</Text>
+      <Text variant="bodyBold" style={{ fontSize: 15, marginBottom: space.sm }}>낙서장</Text>
 
-      <View style={styles.inputRow}>
-        <TextField value={draft} onChangeText={setDraft} placeholder="낙서 남기기" multiline style={styles.inputField} />
-        <Button label="작성" onPress={() => draft.trim() && addMut.mutate({ body: draft, parentId: null })} loading={addMut.isPending} style={styles.sendBtn} />
-      </View>
+      <TextField value={draft} onChangeText={setDraft} placeholder="낙서 남기기" style={styles.inputField} />
+      <Button label="작성" onPress={() => draft.trim() && addMut.mutate({ body: draft, parentId: null })} loading={addMut.isPending} style={styles.sendBtn} />
 
-      {memos.length === 0 ? (
-        <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.md }}>첫 낙서를 남겨보세요.</Text>
-      ) : (
-        memos.map((m) => <Bubble key={m.id} memo={m} userId={userId} onChange={invalidate} onError={onErr} />)
-      )}
+      {memos.map((m) => <Bubble key={m.id} memo={m} userId={userId} onChange={invalidate} onError={onErr} />)}
     </View>
   );
 }
@@ -71,11 +65,11 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
           </View>
           {editing ? (
             <View style={styles.editRow}>
-              <TextField value={editText} onChangeText={setEditText} style={{ flex: 1 }} />
+              <TextField value={editText} onChangeText={setEditText} style={styles.inlineField} />
               <Button label="저장" onPress={() => editText.trim() && run(() => updateMemo(memo.id, editText), () => setEditing(false))} style={styles.miniBtn} />
             </View>
           ) : (
-            <Text variant="body">{memo.body}</Text>
+            <Text variant="bodySm">{memo.body}</Text>
           )}
           <View style={styles.actions}>
             {!isReply ? <Text variant="caption" color={colors.light.action} onPress={() => setReplying((v) => !v)}>답글</Text> : null}
@@ -95,7 +89,7 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
 
       {replying ? (
         <View style={[styles.replyInput, styles.replyIndent]}>
-          <TextField value={reply} onChangeText={setReply} placeholder="답글" style={{ flex: 1 }} />
+          <TextField value={reply} onChangeText={setReply} placeholder="답글" style={styles.inlineField} />
           <Button label="등록" onPress={() => reply.trim() && run(() => addMemo(userId, reply, memo.id), () => { setReply(''); setReplying(false); })} style={styles.miniBtn} />
         </View>
       ) : null}
@@ -106,18 +100,28 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.light.paper, borderRadius: radius.soft, borderWidth: 1.5, borderColor: colors.light.cobalt, padding: 18, marginTop: space.xl },
-  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
-  inputField: { flex: 1, height: 88, paddingTop: space.md, textAlignVertical: 'top' },
-  sendBtn: { height: 48, paddingHorizontal: space.lg },
+  card: { marginTop: space.xl, paddingTop: space.lg, borderTopWidth: 1, borderTopColor: colors.light.hairline },
+  // 밑줄만 있는 모던 입력 (네모 박스 아님)
+  inputField: {
+    height: 44,
+    borderWidth: 0,
+    borderBottomWidth: 1.5,
+    borderColor: colors.light.hairlineStrong,
+    borderRadius: 0,
+    paddingHorizontal: 0,
+    backgroundColor: 'transparent',
+    fontSize: 15,
+  },
+  inlineField: { flex: 1, height: 40, fontSize: 14 },
+  sendBtn: { alignSelf: 'flex-end', height: 38, paddingHorizontal: space.lg, marginTop: space.sm },
   bubbleWrap: { marginTop: space.md, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.light.hairline },
   replyIndent: { marginLeft: space.xl, borderTopWidth: 0, paddingTop: 0 },
   bubbleRow: { flexDirection: 'row', gap: space.sm },
-  avatar: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   bubble: { flex: 1 },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
   editRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
   replyInput: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.sm, marginLeft: space.xl },
-  actions: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
-  miniBtn: { height: 44, paddingHorizontal: space.md },
+  actions: { flexDirection: 'row', gap: space.lg, marginTop: space.xs },
+  miniBtn: { height: 40, paddingHorizontal: space.md },
 });

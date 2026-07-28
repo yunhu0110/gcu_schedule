@@ -91,9 +91,6 @@ export default function HomeScreen() {
         <Text variant="body" color={colors.light.paper} style={{ marginTop: space.xs }}>
           {confirmed ? `${formatKo(confirmed)} 모임` : `${nMonth}월 모임 날짜 미정`}
         </Text>
-        <Text variant="bodySm" color={colors.light.paper60} style={{ marginTop: space.xs }}>
-          {confirmed ? '달력에도 표시돼 있어요.' : '달력에서 가능한 날을 입력하고 투표로 정해요.'}
-        </Text>
         <Button label="달력에서 내 일정 입력" block onPress={() => router.push('/calendar')} style={{ marginTop: space.lg }} />
         {canFix ? (
           <Button label={confirmed ? '날짜 변경' : '날짜 확정하기'} variant="ghost" block onPress={() => setConfirmOpen(true)} />
