@@ -29,7 +29,7 @@ export function MemoBoard({ userId }: { userId: string }) {
     <View style={styles.card}>
       <Text variant="bodyBold" style={{ fontSize: 15, marginBottom: space.sm }}>낙서장</Text>
 
-      <TextField value={draft} onChangeText={setDraft} placeholder="낙서 남기기" style={styles.inputField} />
+      <TextField value={draft} onChangeText={setDraft} style={styles.inputField} />
       <Button label="작성" onPress={() => draft.trim() && addMut.mutate({ body: draft, parentId: null })} loading={addMut.isPending} style={styles.sendBtn} />
 
       {memos.map((m) => <Bubble key={m.id} memo={m} userId={userId} onChange={invalidate} onError={onErr} />)}
