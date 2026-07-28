@@ -1,6 +1,7 @@
 /**
- * DayDetailModal — 날짜를 누르면 뜨는 상세: 그 날 누가 가능/불가한지 + 날짜 코멘트(@맨션).
+ * DayDetailModal — 날짜를 누르면 뜨는 상세: 그 날 누가 가능한지 + 날짜 코멘트(@맨션).
  * 거기서 내 일정 입력/수정으로 넘어간다.
+ * 등록되는 상태는 '가능'뿐이라 나머지는 전부 '미등록'으로 묶는다(불가는 곧 삭제).
  */
 import { useState } from 'react';
 import { Image, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -38,9 +39,8 @@ export function DayDetailModal({ visible, date, rows, members, userId, onClose, 
   const [draft, setDraft] = useState('');
 
   const available = rows.filter((r) => r.status === 'available');
-  const unavailable = rows.filter((r) => r.status === 'unavailable');
-  const answeredIds = new Set(rows.map((r) => r.member_id));
-  const missing = members.filter((m) => !answeredIds.has(m.id));
+  const availableIds = new Set(available.map((r) => r.member_id));
+  const missing = members.filter((m) => !availableIds.has(m.id));
   const myNick = members.find((m) => m.id === userId)?.nickname ?? '멤버';
 
   const { data: comments = [] } = useQuery({
@@ -73,19 +73,23 @@ export function DayDetailModal({ visible, date, rows, members, userId, onClose, 
           <View style={styles.handle} />
           <Text variant="h2">{date ? formatKo(date) : ''}</Text>
           <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.xs }}>
-            가능 {available.length} · 불가 {unavailable.length} · 미입력 {missing.length}
+            가능 {available.length} · 미등록 {missing.length}
           </Text>
 
           <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Group title="가능" tint={colors.light.available}>
-              {available.map((r) => <MemberLine key={r.member_id} color={r.color} avatar={r.avatar_url} name={r.nickname} right={timeLabel(r)} />)}
+              {available.map((r) => (
+                <MemberLine
+                  key={r.member_id}
+                  color={r.color}
+                  avatar={r.avatar_url}
+                  name={r.nickname}
+                  right={r.note ? `${timeLabel(r)} · ${r.note}` : timeLabel(r)}
+                />
+              ))}
               {available.length === 0 && <Empty />}
             </Group>
-            <Group title="불가" tint={colors.light.unavailable}>
-              {unavailable.map((r) => <MemberLine key={r.member_id} color={r.color} avatar={r.avatar_url} name={r.nickname} right={r.note ? r.note : timeLabel(r)} />)}
-              {unavailable.length === 0 && <Empty />}
-            </Group>
-            <Group title="미입력" tint={colors.light.slate}>
+            <Group title="미등록" tint={colors.light.slate}>
               {missing.map((m) => <MemberLine key={m.id} color={m.color} avatar={m.avatar_url} name={m.nickname} right="—" dim />)}
               {missing.length === 0 && <Empty />}
             </Group>

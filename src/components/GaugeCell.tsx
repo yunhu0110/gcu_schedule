@@ -1,7 +1,8 @@
 /**
  * GaugeCell — 시그니처 요소 2. 달력 한 칸: 날짜 + 하단 6칸 미니 게이지.
  * 6명이라는 사실을 채도가 아니라 "칸 수"로 보여준다.
- * 전원 가능(all)한 날은 셀 전체 neon + 숫자 흰색 반전.
+ * 가능 인원이 많은 날은 셀 배경을 연두로 강조한다(전원 → 1명 빠짐 → 2명 빠짐 순으로 채도 down).
+ * 3명 이하는 하이라이트 없이 게이지만 보여준다.
  */
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors } from '@/theme/tokens';
@@ -20,9 +21,22 @@ type Props = {
   day: number; // 표시 숫자 (1~31)
   inMonth: boolean;
   counts: DayCounts;
+  total?: number; // 활성 멤버 수(기본 6) — 하이라이트 단계 기준
   marked?: boolean; // 확정된 모임 날짜
   onPress?: () => void;
 };
+
+const MIN_HIGHLIGHT = 4; // 4명 미만은 하이라이트 없음
+
+/** 가능 인원 → 셀 배경색. 하이라이트가 없으면 null. */
+function highlightColor(available: number, total: number): string | null {
+  if (available < MIN_HIGHLIGHT) return null;
+  const short = total - available; // 몇 명이 빠졌나
+  if (short <= 0) return colors.light.availAll;
+  if (short === 1) return colors.light.availHigh;
+  if (short === 2) return colors.light.availMid;
+  return null;
+}
 
 // 6칸을 상태 순서(가능→미정→불가→미입력)로 채운 색 배열
 function gaugeColors(c: DayCounts): string[] {
@@ -34,24 +48,30 @@ function gaugeColors(c: DayCounts): string[] {
   return seq.slice(0, 6);
 }
 
-export function GaugeCell({ date, day, inMonth, counts, marked, onPress }: Props) {
-  const total = counts.available + counts.maybe + counts.unavailable + counts.missing;
-  const allAvailable = total > 0 && counts.available === total;
+export function GaugeCell({ date, day, inMonth, counts, total = 6, marked, onPress }: Props) {
+  const allAvailable = total > 0 && counts.available >= total;
+  const tint = inMonth ? highlightColor(counts.available, total) : null;
   const segments = gaugeColors(counts);
 
-  const label = `${day}일, ${allAvailable ? '6명 모두 가능' : `가능 ${counts.available}명`}`;
+  const label = `${day}일, ${allAvailable ? `${total}명 모두 가능` : `가능 ${counts.available}명`}`;
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={[styles.cell, !inMonth && styles.outMonth, allAvailable && styles.allCell, marked && styles.markedCell]}
+      style={[
+        styles.cell,
+        !inMonth && styles.outMonth,
+        tint ? [styles.tintCell, { backgroundColor: tint }] : null,
+        allAvailable && styles.allCell,
+        marked && styles.markedCell,
+      ]}
     >
       <Text
         variant="mono"
         style={styles.num}
-        color={allAvailable ? colors.light.paper : inMonth ? colors.light.textPrimary : colors.light.ink24}
+        color={inMonth ? colors.light.textPrimary : colors.light.ink24}
       >
         {day}
       </Text>
@@ -77,11 +97,8 @@ const styles = StyleSheet.create({
   },
   outMonth: { opacity: 0.5 },
   markedCell: { borderWidth: 2, borderColor: colors.light.cobalt, borderRadius: 8 },
-  allCell: {
-    backgroundColor: colors.light.neon,
-    borderRadius: 8,
-    justifyContent: 'center',
-  },
+  tintCell: { borderRadius: 8 },
+  allCell: { justifyContent: 'center' },
   num: { fontSize: 13, letterSpacing: 0 },
   gauge: { flexDirection: 'row', gap: 1, marginTop: 8, width: '86%' },
   seg: { flex: 1, height: 4, borderRadius: 1 },

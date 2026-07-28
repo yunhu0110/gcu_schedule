@@ -1,7 +1,9 @@
 /**
- * S2. 달력 — 6칸 게이지 월 그리드 + 날짜 상세(누가 가능/불가) + 하단 "가능한 날" 후보.
- * 날짜 탭 → 상세 팝업(가능/불가/미입력 · 시간), 거기서 내 일정 입력/수정.
- * 하단엔 이번 달 후보(불가 0명 & 가능 1명 이상)를 멤버·시간과 함께 보여준다.
+ * S2. 달력 — 6칸 게이지 월 그리드 + 날짜 상세(누가 가능한지) + 하단 "가능한 날" 후보.
+ * 날짜 탭 → 상세 팝업(가능/미등록 · 시간), 거기서 내 일정 입력/수정.
+ *
+ * 모델: 등록되는 건 "가능"뿐이다. 불가는 별도 상태가 아니라 등록해둔 가능을 지우는 동작(삭제).
+ * 하단엔 이번 달 후보를 가능 인원 많은 순(내림차순)으로 멤버·시간과 함께 보여준다.
  */
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
@@ -24,8 +26,7 @@ import { useDevStore } from '@/store/devStore';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const EMPTY: DayCounts = { available: 0, maybe: 0, unavailable: 0, missing: 0 };
-// default = 가능: 미입력(missing) 멤버는 가능으로 간주해 게이지·집계에 반영한다.
-const fold = (c: DayCounts): DayCounts => ({ available: c.available + c.missing, maybe: c.maybe, unavailable: c.unavailable, missing: 0 });
+const CANDIDATE_LIMIT = 10;
 const fmtTime = (s: string | null) => (s ? s.slice(0, 5) : null);
 const timeLabel = (r: AvailRow) => {
   const a = fmtTime(r.start_time);
@@ -33,15 +34,11 @@ const timeLabel = (r: AvailRow) => {
   return a && b ? `${a}–${b}` : '종일';
 };
 
+// 둘러보기(미로그인) 모드에서 빈 달력이 심심하지 않도록 만드는 가짜 집계.
 function placeholderCounts(date: string): DayCounts {
   const n = [...date].reduce((a, c) => a + c.charCodeAt(0), 0);
   const available = n % 7;
-  let remaining = 6 - available;
-  const unavailable = remaining >= 2 && n % 4 === 0 ? 1 : 0;
-  remaining -= unavailable;
-  const maybe = remaining >= 1 && n % 5 === 0 ? 1 : 0;
-  const missing = 6 - available - unavailable - maybe;
-  return { available, maybe, unavailable, missing };
+  return { available, maybe: 0, unavailable: 0, missing: Math.max(0, 6 - available) };
 }
 
 export default function CalendarScreen() {
@@ -82,13 +79,19 @@ export default function CalendarScreen() {
   });
   const confirmedDate = poll?.confirmed_date ?? null;
 
+  // 가능 = 등록(upsert), 불가 = 등록해둔 가능을 지움(delete). 불가라는 상태는 저장하지 않는다.
   const mutation = useMutation({
     mutationFn: async (v: AvailabilitySubmit) => {
       if (!userId) throw new Error('로그인이 필요해요.');
-      await setRange(userId, v.from, v.to, v.status, v.note, v.startTime, v.endTime);
       const nick = members.find((m) => m.id === userId)?.nickname ?? '멤버';
-      const label = v.status === 'available' ? '가능' : '불가';
-      await notifyMembers(userId, members.map((m) => m.id), 'availability_set', `${nick}님이 ${formatKo(v.from)} 일정(${label})을 등록했어요.`, true);
+      const ids = members.map((m) => m.id);
+      if (v.status === 'unavailable') {
+        await clearRange(userId, v.from, v.to);
+        await notifyMembers(userId, ids, 'availability_set', `${nick}님이 ${formatKo(v.from)} 가능 일정을 취소했어요.`, true);
+        return;
+      }
+      await setRange(userId, v.from, v.to, 'available', v.note, v.startTime, v.endTime);
+      await notifyMembers(userId, ids, 'availability_set', `${nick}님이 ${formatKo(v.from)} 일정(가능)을 등록했어요.`, true);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['availability-summary'] });
@@ -117,21 +120,23 @@ export default function CalendarScreen() {
     return m;
   }, [rows]);
 
+  const totalMembers = members.length || 6;
+
   function countsFor(date: string): DayCounts {
-    if (summary && summary[date]) return fold(summary[date]);
+    if (summary && summary[date]) return summary[date];
     if (preview) return placeholderCounts(date);
     return EMPTY;
   }
 
-  // 하단 후보: 이번 달 & 불가 0명 & 가능 1명 이상. 가능 많은 순 → 빠른 날짜 순.
+  // 하단 후보: 이번 달 & 가능 1명 이상. 가능 많은 순(내림차순) → 같으면 빠른 날짜 순.
   const candidates = useMemo(() => {
     if (!summary) return [];
     return cells
       .filter((c) => c.inMonth)
-      .map((c) => ({ date: c.date, counts: fold(summary[c.date] ?? EMPTY) }))
-      .filter((c) => c.counts.unavailable === 0 && c.counts.available > 0)
+      .map((c) => ({ date: c.date, counts: summary[c.date] ?? EMPTY }))
+      .filter((c) => c.counts.available > 0)
       .sort((a, b) => b.counts.available - a.counts.available || (a.date < b.date ? -1 : 1))
-      .slice(0, 6);
+      .slice(0, CANDIDATE_LIMIT);
   }, [summary, cells]);
 
   function onPickDate(date: string) {
@@ -186,16 +191,31 @@ export default function CalendarScreen() {
             day={Number(c.date.slice(8, 10))}
             inMonth={c.inMonth}
             counts={countsFor(c.date)}
+            total={totalMembers}
             marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
           />
         ))}
       </View>
 
+      {/* 범례 — 가능 인원이 많을수록 진한 연두 */}
+      <View style={styles.legend}>
+        {[
+          { c: colors.light.availAll, label: `${totalMembers}명` },
+          { c: colors.light.availHigh, label: `${totalMembers - 1}명` },
+          { c: colors.light.availMid, label: `${totalMembers - 2}명` },
+        ].map((l) => (
+          <View key={l.label} style={styles.legendItem}>
+            <View style={[styles.legendChip, { backgroundColor: l.c }]} />
+            <Text variant="caption" color={colors.light.textSecondary}>{l.label}</Text>
+          </View>
+        ))}
+      </View>
+
       {/* 내 일정 초기화 (해당 월) */}
       {userId ? (
         <Pressable style={styles.resetBtn} onPress={() => setResetOpen(true)}>
-          <Text variant="bodySm" color={colors.light.textSecondary}>{anchor.slice(0, 7)}월 초기화</Text>
+          <Text variant="bodySm" color={colors.light.textSecondary}>{Number(anchor.slice(5, 7))}월 초기화</Text>
         </Pressable>
       ) : null}
 
@@ -251,7 +271,7 @@ export default function CalendarScreen() {
       />
       <ActionModal
         visible={resetOpen}
-        title={`${anchor.slice(0, 7)}월 초기화`}
+        title={`${Number(anchor.slice(5, 7))}월 초기화`}
         message="이 달에 입력한 내 일정을 모두 지울까요?"
         actions={[
           { label: '초기화', destructive: true, onPress: () => resetMut.mutate() },
@@ -269,6 +289,10 @@ const styles = StyleSheet.create({
   weekRow: { flexDirection: 'row', marginBottom: space.xs },
   weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
+
+  legend: { flexDirection: 'row', justifyContent: 'center', gap: space.lg, marginTop: space.md },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendChip: { width: 14, height: 10, borderRadius: 3 },
 
   resetBtn: {
     alignSelf: 'center',

@@ -8,10 +8,11 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
+import { ActionModal } from '@/components/ActionModal';
 import { StartPollModal } from './StartPollModal';
 import { colors, radius, space } from '@/theme/tokens';
 import { formatKo, type DateStr } from '@/lib/date';
-import { castVote, closePoll, confirmDate, createPoll, getPoll } from '@/api/polls';
+import { castVote, closePoll, confirmDate, createPoll, deletePoll, getPoll } from '@/api/polls';
 import { notifyMembers } from '@/api/notifications';
 
 type Props = {
@@ -27,6 +28,7 @@ type Props = {
 export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, memberIds }: Props) {
   const qc = useQueryClient();
   const [startOpen, setStartOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const canManage = isHost || !!isAdmin;
 
@@ -81,7 +83,17 @@ export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, 
     onError: onErr,
   });
 
-  // 이 투표를 관리(확정·종료)할 수 있는 사람 = 투표 작성자 또는 관리자
+  const deleteMut = useMutation({
+    mutationFn: async () => {
+      if (!poll) return;
+      await deletePoll(poll.id);
+      await notifyMembers(userId, memberIds, 'vote_closed', `${meNickname}님이 ${month}월 날짜 투표를 삭제했어요.`);
+    },
+    onSuccess: refresh,
+    onError: onErr,
+  });
+
+  // 이 투표를 관리(확정·종료·삭제)할 수 있는 사람 = 투표 작성자 또는 관리자
   const manage = poll ? poll.host_id === userId || !!isAdmin : false;
 
   function toggle(id: string) {
@@ -92,6 +104,28 @@ export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, 
 
   const startModal = (
     <StartPollModal visible={startOpen} year={year} month={month} saving={createMut.isPending} onClose={() => setStartOpen(false)} onSubmit={(dates, deadline) => createMut.mutate({ dates, deadline })} />
+  );
+
+  // 완료(종료·확정)와 짝이 되는 삭제. 투표 자체를 지운다(표까지 함께).
+  const deleteBtn = manage ? (
+    <Pressable style={styles.deleteBtn} onPress={() => setDeleteOpen(true)} disabled={deleteMut.isPending}>
+      <Text variant="bodyBold" style={{ fontSize: 15 }} color={colors.light.danger}>
+        {deleteMut.isPending ? '삭제 중…' : '투표 삭제'}
+      </Text>
+    </Pressable>
+  ) : null;
+
+  const deleteModal = (
+    <ActionModal
+      visible={deleteOpen}
+      title="투표 삭제"
+      message="이 투표와 지금까지 모인 표가 모두 사라져요. 삭제할까요?"
+      actions={[
+        { label: '삭제', destructive: true, onPress: () => deleteMut.mutate() },
+        { label: '취소', cancel: true },
+      ]}
+      onClose={() => setDeleteOpen(false)}
+    />
   );
 
   // 투표 없음
@@ -119,7 +153,9 @@ export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, 
       <View style={styles.box}>
         <Text variant="bodyBold" color={colors.light.action}>✅ {formatKo(poll.confirmed_date)}로 확정</Text>
         {canManage ? <Button label="투표 새로 생성하기" variant="ghost" block onPress={() => setStartOpen(true)} style={{ marginTop: space.sm }} /> : null}
+        {deleteBtn}
         {startModal}
+        {deleteModal}
       </View>
     );
   }
@@ -136,7 +172,9 @@ export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, 
           </View>
         ))}
         {manage ? <Button label="투표 새로 생성하기" variant="ghost" block onPress={() => setStartOpen(true)} style={{ marginTop: space.md }} /> : null}
+        {deleteBtn}
         {startModal}
+        {deleteModal}
       </View>
     );
   }
@@ -170,14 +208,18 @@ export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, 
       })}
       <Button label={voteMut.isPending ? '저장 중…' : '내 투표 저장'} block loading={voteMut.isPending} onPress={() => voteMut.mutate()} style={{ marginTop: space.md }} />
       {manage ? (
-        <Button label={closeMut.isPending ? '종료 중…' : '투표 종료'} variant="ghost" block loading={closeMut.isPending} onPress={() => closeMut.mutate()} />
+        <Button label={closeMut.isPending ? '종료 중…' : '투표 완료'} variant="ghost" block loading={closeMut.isPending} onPress={() => closeMut.mutate()} />
       ) : null}
+      {deleteBtn}
+      {startModal}
+      {deleteModal}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   box: {},
+  deleteBtn: { height: 44, alignItems: 'center', justifyContent: 'center', marginTop: space.xs },
   optRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space.sm, borderBottomWidth: 1, borderBottomColor: colors.light.hairline },
   optLeft: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flex: 1 },
   optRight: { flexDirection: 'row', alignItems: 'center', gap: space.md },

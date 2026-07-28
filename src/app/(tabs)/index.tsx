@@ -47,6 +47,13 @@ export default function HomeScreen() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['next-meeting', nYear, nMonth] }); setConfirmOpen(false); },
   });
 
+  // 담당자 표시는 members(=마이페이지에서 방금 바꾼 값)를 우선한다.
+  // hosts 조인 스냅샷만 믿으면 프사·닉네임 변경이 이 카드에 늦게 반영된다.
+  const hostMember = members.find((m) => m.id === host?.member_id);
+  const hostName = hostMember?.nickname ?? host?.nickname ?? '';
+  const hostAvatar = hostMember?.avatar_url ?? host?.avatar_url ?? null;
+  const hostColor = hostMember?.color ?? host?.color ?? null;
+
   const isAdmin = !!me?.is_admin;
   const confirmed = poll?.confirmed_date ?? null;
   const canFix = host?.member_id === userId || isAdmin;
@@ -64,14 +71,14 @@ export default function HomeScreen() {
           <Text variant="kicker" color={colors.light.textSecondary}>{nMonth}월 모임 담당자</Text>
           {host ? (
             <View style={styles.hostRow}>
-              {host.avatar_url ? (
-                <Image source={{ uri: host.avatar_url }} style={styles.hostAvatar} />
+              {hostAvatar ? (
+                <Image source={{ uri: hostAvatar }} style={styles.hostAvatar} />
               ) : (
-                <View style={[styles.hostAvatar, { backgroundColor: host.color ?? colors.light.mist }]}>
-                  <Text variant="caption" color={colors.light.paper}>{host.nickname.slice(0, 1)}</Text>
+                <View style={[styles.hostAvatar, { backgroundColor: hostColor ?? colors.light.mist }]}>
+                  <Text variant="bodyBold" color={colors.light.paper}>{(hostName || '?').slice(0, 1)}</Text>
                 </View>
               )}
-              <Text variant="bodyBold" style={{ fontSize: 16 }}>{host.nickname}</Text>
+              <Text variant="bodyBold" style={{ fontSize: 17 }}>{hostName}</Text>
             </View>
           ) : (
             <Text variant="bodyBold" style={{ fontSize: 16, marginTop: 4 }} color={colors.light.textSecondary}>아직 미정</Text>
@@ -124,7 +131,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   hostCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.light.surfacePlate, borderRadius: radius.soft, padding: 16, marginTop: space.md, marginBottom: space.lg },
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: 6 },
-  hostAvatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  hostAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   hostBtn: { height: 40, paddingHorizontal: space.lg },
 
   hero: { backgroundColor: colors.light.heroBg, borderRadius: radius.hero, padding: 22, overflow: 'hidden' },

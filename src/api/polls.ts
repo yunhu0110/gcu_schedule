@@ -21,6 +21,9 @@ export type Poll = {
   options: PollOption[];
 };
 
+/** 삭제된 투표 표시값 — delete 권한이 없는 환경에서의 폴백(deletePoll 참조). */
+const DELETED = 'deleted';
+
 /** (year, month)의 가장 최근 투표 + 옵션 + 투표자. 없으면 null. */
 export async function getPoll(year: number, month: number): Promise<Poll | null> {
   const { data: polls, error } = await supabase
@@ -28,6 +31,7 @@ export async function getPoll(year: number, month: number): Promise<Poll | null>
     .select('id, year, month, host_id, status, deadline, confirmed_date')
     .eq('year', year)
     .eq('month', month)
+    .neq('status', DELETED)
     .order('created_at', { ascending: false })
     .limit(1);
   if (error) throw error;
@@ -106,9 +110,20 @@ export async function closePoll(pollId: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * 투표 작성자/관리자: 투표를 통째로 삭제. 옵션·표는 FK cascade로 함께 사라진다.
+ * date_polls의 delete 권한(0015 마이그레이션) 이전 환경에서는 status='deleted'로 숨긴다.
+ */
+export async function deletePoll(pollId: string): Promise<void> {
+  const { error, count } = await supabase.from('date_polls').delete({ count: 'exact' }).eq('id', pollId);
+  if (!error && count) return;
+  const { error: uErr } = await supabase.from('date_polls').update({ status: DELETED }).eq('id', pollId);
+  if (uErr) throw error ?? uErr;
+}
+
 /** 담당자/관리자: 투표 없이 날짜를 바로 확정(픽스). 기존 poll 있으면 갱신, 없으면 생성 후 확정. */
 export async function setConfirmedDate(hostId: string, year: number, month: number, date: DateStr): Promise<void> {
-  const { data, error } = await supabase.from('date_polls').select('id').eq('year', year).eq('month', month).order('created_at', { ascending: false }).limit(1);
+  const { data, error } = await supabase.from('date_polls').select('id').eq('year', year).eq('month', month).neq('status', DELETED).order('created_at', { ascending: false }).limit(1);
   if (error) throw error;
   let pollId = data?.[0]?.id as string | undefined;
   if (!pollId) {
