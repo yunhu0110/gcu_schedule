@@ -8,26 +8,29 @@
  */
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
 import * as Updates from 'expo-updates';
 
 dayjs.extend(utc);
-dayjs.extend(timezone);
 
 export const TZ = 'Asia/Seoul';
-dayjs.tz.setDefault(TZ);
+/**
+ * KST 고정 오프셋(+9h, 분). 한국은 DST가 없어 항상 +9다.
+ * RN(Hermes)은 Intl 타임존 DB가 없어 dayjs.tz('Asia/Seoul')가 무시(UTC 그대로)되는
+ * 문제가 있어, 타임존 플러그인 대신 이 고정 오프셋으로 변환한다.
+ */
+const KST_OFFSET = 9 * 60;
 
 /** `YYYY-MM-DD` 형식 날짜 문자열. 앱 전체에서 날짜의 표준 표현. */
 export type DateStr = string;
 
-/** 문자열을 KST 기준 dayjs 객체로. (직접 new Date 금지) */
+/** 날짜 문자열을 UTC 자정 dayjs로. 요일/월/일 등 달력 계산은 UTC로 일관 처리(변환 없음). */
 function d(date: DateStr) {
-  return dayjs.tz(date, TZ);
+  return dayjs.utc(date);
 }
 
 /** 오늘 (KST) `YYYY-MM-DD` */
 export function todayStr(): DateStr {
-  return dayjs().tz(TZ).format('YYYY-MM-DD');
+  return dayjs.utc().utcOffset(KST_OFFSET).format('YYYY-MM-DD');
 }
 
 /** 요일 (0=일 ~ 6=토), KST 기준 */
@@ -108,7 +111,7 @@ export function volLabel(date: DateStr): string {
 
 /** timestamptz(ISO) → KST "M.D HH:mm" (메모/코멘트 시간 표시용). */
 export function formatDateTime(iso: string): string {
-  return dayjs(iso).tz(TZ).format('M.D HH:mm');
+  return dayjs.utc(iso).utcOffset(KST_OFFSET).format('M.D HH:mm');
 }
 
 /** 배포일 "YYYY.MM.DD" — 현재 실행 중인 OTA 업데이트 생성일(없으면 오늘, 개발 환경). */
@@ -119,6 +122,6 @@ export function deployDateLabel(): string {
   } catch {
     created = null;
   }
-  const base = created ? dayjs(created) : dayjs();
-  return base.tz(TZ).format('YYYY.MM.DD');
+  const base = created ? dayjs.utc(created) : dayjs.utc();
+  return base.utcOffset(KST_OFFSET).format('YYYY.MM.DD');
 }

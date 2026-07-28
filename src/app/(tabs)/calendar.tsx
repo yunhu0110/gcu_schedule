@@ -9,12 +9,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { BrandHeader } from '@/components/BrandHeader';
+import { ActionModal } from '@/components/ActionModal';
 import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
 import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { DayDetailModal } from '@/features/availability/DayDetailModal';
 import { colors, radius, space } from '@/theme/tokens';
 import { addMonths, dday, endOfMonth, formatKo, monthGrid, startOfMonth, todayStr, volLabel } from '@/lib/date';
-import { getMonthRows, getSummary, setRange, type AvailRow } from '@/api/availabilities';
+import { clearRange, getMonthRows, getSummary, setRange, type AvailRow } from '@/api/availabilities';
 import { listMembers } from '@/api/members';
 import { getPoll } from '@/api/polls';
 import { notifyMembers } from '@/api/notifications';
@@ -23,6 +24,8 @@ import { useDevStore } from '@/store/devStore';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const EMPTY: DayCounts = { available: 0, maybe: 0, unavailable: 0, missing: 0 };
+// default = 가능: 미입력(missing) 멤버는 가능으로 간주해 게이지·집계에 반영한다.
+const fold = (c: DayCounts): DayCounts => ({ available: c.available + c.missing, maybe: c.maybe, unavailable: c.unavailable, missing: 0 });
 const fmtTime = (s: string | null) => (s ? s.slice(0, 5) : null);
 const timeLabel = (r: AvailRow) => {
   const a = fmtTime(r.start_time);
@@ -49,6 +52,7 @@ export default function CalendarScreen() {
   const [anchor, setAnchor] = useState(todayStr());
   const [detailDate, setDetailDate] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
 
   const from = startOfMonth(anchor);
   const to = endOfMonth(anchor);
@@ -95,6 +99,18 @@ export default function CalendarScreen() {
     onError: (e) => Alert.alert('저장 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
   });
 
+  const resetMut = useMutation({
+    mutationFn: async () => {
+      if (!userId) throw new Error('로그인이 필요해요.');
+      await clearRange(userId, from, to);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['availability-summary'] });
+      qc.invalidateQueries({ queryKey: ['availability-rows'] });
+    },
+    onError: (e) => Alert.alert('초기화 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
+  });
+
   const rowsByDate = useMemo(() => {
     const m: Record<string, AvailRow[]> = {};
     for (const r of rows) (m[r.date] ??= []).push(r);
@@ -102,7 +118,7 @@ export default function CalendarScreen() {
   }, [rows]);
 
   function countsFor(date: string): DayCounts {
-    if (summary && summary[date]) return summary[date];
+    if (summary && summary[date]) return fold(summary[date]);
     if (preview) return placeholderCounts(date);
     return EMPTY;
   }
@@ -112,7 +128,7 @@ export default function CalendarScreen() {
     if (!summary) return [];
     return cells
       .filter((c) => c.inMonth)
-      .map((c) => ({ date: c.date, counts: summary[c.date] ?? EMPTY }))
+      .map((c) => ({ date: c.date, counts: fold(summary[c.date] ?? EMPTY) }))
       .filter((c) => c.counts.unavailable === 0 && c.counts.available > 0)
       .sort((a, b) => b.counts.available - a.counts.available || (a.date < b.date ? -1 : 1))
       .slice(0, 6);
@@ -176,6 +192,13 @@ export default function CalendarScreen() {
         ))}
       </View>
 
+      {/* 내 일정 초기화 (해당 월) */}
+      {userId ? (
+        <Pressable style={styles.resetBtn} onPress={() => setResetOpen(true)}>
+          <Text variant="bodySm" color={colors.light.textSecondary}>{anchor.slice(0, 7)}월 초기화</Text>
+        </Pressable>
+      ) : null}
+
       {/* 하단: 가능한 날 후보 (날짜 · 멤버 · 시간) */}
       <View style={styles.candidates}>
         <Text variant="kicker" color={colors.light.textSecondary}>가능한 날</Text>
@@ -226,6 +249,16 @@ export default function CalendarScreen() {
         onClose={() => setEditDate(null)}
         onSubmit={(v) => mutation.mutate(v)}
       />
+      <ActionModal
+        visible={resetOpen}
+        title={`${anchor.slice(0, 7)}월 초기화`}
+        message="이 달에 입력한 내 일정을 모두 지울까요?"
+        actions={[
+          { label: '초기화', destructive: true, onPress: () => resetMut.mutate() },
+          { label: '취소', cancel: true },
+        ]}
+        onClose={() => setResetOpen(false)}
+      />
     </Screen>
   );
 }
@@ -237,6 +270,15 @@ const styles = StyleSheet.create({
   weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
 
+  resetBtn: {
+    alignSelf: 'center',
+    marginTop: space.lg,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.light.hairlineStrong,
+  },
   candidates: { marginTop: space.xl, paddingTop: space.lg, borderTopWidth: 1, borderTopColor: colors.light.hairline },
   candRow: {
     flexDirection: 'row',

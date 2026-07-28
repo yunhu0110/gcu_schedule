@@ -63,7 +63,7 @@ export default function SignInScreen() {
     <Screen scroll padded>
       <View style={styles.top}>
         <Text variant="kicker" color={colors.light.textSecondary}>
-          {deployDateLabel()}
+          배포일 {deployDateLabel()}
         </Text>
       </View>
 

@@ -43,7 +43,7 @@ const toHHMM = (m: number) => {
 };
 
 export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: Props) {
-  const [status, setStatus] = useState<AvailabilityStatus>('unavailable');
+  const [status, setStatus] = useState<AvailabilityStatus>('available');
   const [from, setFrom] = useState<DateStr | null>(date);
   const [to, setTo] = useState<DateStr | null>(date);
   const [allDay, setAllDay] = useState(true);
@@ -54,7 +54,7 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
   // 새 날짜로 열릴 때 값 초기화
   useEffect(() => {
     if (visible) {
-      setStatus('unavailable');
+      setStatus('available');
       setFrom(date);
       setTo(date);
       setAllDay(true);
