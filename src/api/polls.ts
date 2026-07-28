@@ -68,6 +68,46 @@ export async function getPoll(year: number, month: number): Promise<Poll | null>
   };
 }
 
+/** 홈에서 달을 넘겨 볼 때 쓰는 전체 요약(월별 확정 날짜). 삭제된 건 제외, 최신 먼저. */
+export type PollBrief = {
+  id: string;
+  year: number;
+  month: number;
+  host_id: string;
+  status: string;
+  confirmed_date: DateStr | null;
+};
+
+export async function listPolls(): Promise<PollBrief[]> {
+  const { data, error } = await supabase
+    .from('date_polls')
+    .select('id, year, month, host_id, status, confirmed_date')
+    .neq('status', DELETED)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as PollBrief[];
+}
+
+/** 담당자/관리자: 그 달 확정 날짜를 지운다(미정으로 되돌림). 투표는 다시 진행 중으로. */
+export async function clearConfirmedDate(year: number, month: number): Promise<void> {
+  const { data, error } = await supabase
+    .from('date_polls')
+    .select('id')
+    .eq('year', year)
+    .eq('month', month)
+    .neq('status', DELETED)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const id = data?.[0]?.id as string | undefined;
+  if (!id) return;
+  const { error: uErr } = await supabase
+    .from('date_polls')
+    .update({ confirmed_date: null, status: 'open' })
+    .eq('id', id);
+  if (uErr) throw uErr;
+}
+
 /** 담당자: 후보 날짜들로 투표 생성. */
 export async function createPoll(hostId: string, year: number, month: number, dates: DateStr[], deadline: DateStr | null): Promise<string> {
   const { data: poll, error } = await supabase
