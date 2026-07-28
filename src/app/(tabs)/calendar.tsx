@@ -5,8 +5,9 @@
  * 모델: 등록되는 건 "가능"뿐이다. 불가는 별도 상태가 아니라 등록해둔 가능을 지우는 동작(삭제).
  * 하단엔 이번 달 후보를 가능 인원 많은 순(내림차순)으로 멤버·시간과 함께 보여준다.
  */
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
@@ -54,6 +55,10 @@ export default function CalendarScreen() {
   const qc = useQueryClient();
 
   const [anchor, setAnchor] = useState(todayStr());
+  // 달력에 들어올 때는 항상 오늘이 속한 달부터 보여준다.
+  // (탭 화면은 언마운트되지 않아서, 넘겨둔 달이 그대로 남아 있는 걸 막는다. 날짜가 바뀐 경우도 포함)
+  useFocusEffect(useCallback(() => setAnchor(todayStr()), []));
+
   const [detailDate, setDetailDate] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
