@@ -63,7 +63,6 @@ export default function HomeScreen() {
   return (
     <Screen scroll>
       <BrandHeader />
-      <Text variant="kicker" color={colors.light.textSecondary}>{volLabel(today)}</Text>
 
       {/* 다음 모임 담당자 */}
       <View style={styles.hostCard}>

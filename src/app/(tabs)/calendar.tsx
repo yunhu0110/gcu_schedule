@@ -139,6 +139,9 @@ export default function CalendarScreen() {
   }, [rows]);
 
   const totalMembers = members.length || 6;
+  // "홍길동님 2026-07 초기화" — 지워지는 게 내 일정이라는 걸 버튼에서 바로 알 수 있게.
+  const myNickname = members.find((m) => m.id === userId)?.nickname ?? '나';
+  const resetLabel = `${myNickname}님 ${anchor.slice(0, 7)} 초기화`;
 
   function countsFor(date: string): DayCounts {
     if (summary && summary[date]) return asRegistered(summary[date]);
@@ -234,7 +237,7 @@ export default function CalendarScreen() {
       {/* 내 일정 초기화 (해당 월) */}
       {userId ? (
         <Pressable style={styles.resetBtn} onPress={() => setResetOpen(true)}>
-          <Text variant="bodySm" color={colors.light.textSecondary}>{Number(anchor.slice(5, 7))}월 초기화</Text>
+          <Text variant="bodySm" color={colors.light.textSecondary}>{resetLabel}</Text>
         </Pressable>
       ) : null}
 
@@ -290,7 +293,7 @@ export default function CalendarScreen() {
       />
       <ActionModal
         visible={resetOpen}
-        title={`${Number(anchor.slice(5, 7))}월 초기화`}
+        title={resetLabel}
         message="이 달에 입력한 내 일정을 모두 지울까요?"
         actions={[
           { label: '초기화', destructive: true, onPress: () => resetMut.mutate() },
