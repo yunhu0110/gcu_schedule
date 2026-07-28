@@ -3,7 +3,7 @@
  * 사진은 base64로 골라 상위(post 화면)에서 업로드한다. 이 컴포넌트는 입력만.
  */
 import { useEffect, useState } from 'react';
-import { Alert, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Modal, Pressable, StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
@@ -61,6 +61,7 @@ export function CoverEditModal({ visible, initialMessage, initialImage, saving, 
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kav} behavior="padding">
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.handle} />
@@ -96,11 +97,13 @@ export function CoverEditModal({ visible, initialMessage, initialImage, saving, 
         />
         <Button label="취소" variant="ghost" block onPress={onClose} />
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  kav: { flex: 1 },
   backdrop: { flex: 1, backgroundColor: colors.light.ink60 },
   sheet: {
     backgroundColor: colors.light.paper,

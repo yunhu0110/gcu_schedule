@@ -6,15 +6,18 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
+import { Logo } from '@/components/Logo';
 import { colors, space } from '@/theme/tokens';
 import { signUpMember } from '@/api/auth';
 
 export default function JoinScreen() {
   const router = useRouter();
+  const qc = useQueryClient();
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,21 +33,21 @@ export default function JoinScreen() {
     setLoading(true);
     const res = await signUpMember({ nickname, email, password });
     setLoading(false);
-    if (!res.ok) setError(res.error ?? '가입에 실패했어요.');
-    // 성공 시 세션 생성 → 게이팅이 홈으로 이동
+    if (!res.ok) {
+      setError(res.error ?? '가입에 실패했어요.');
+      return;
+    }
+    // 가입 성공 → 방금 만든 프로필(닉네임) 즉시 반영되도록 갱신. 게이팅이 홈으로 이동.
+    qc.invalidateQueries({ queryKey: ['me'] });
+    qc.invalidateQueries({ queryKey: ['members'] });
   }
 
   return (
     <Screen scroll padded>
       <View style={styles.head}>
-        <Text variant="kicker" color={colors.light.cobalt}>
-          월간GCU · 6
-        </Text>
-        <Text variant="h1" style={{ marginTop: space.sm }}>
+        <Logo height={32} />
+        <Text variant="h1" style={{ marginTop: space.md }}>
           가입하기
-        </Text>
-        <Text variant="body" color={colors.light.textSecondary} style={{ marginTop: space.sm }}>
-          닉네임과 이메일로 바로 시작해요. 정원은 6명.
         </Text>
       </View>
 

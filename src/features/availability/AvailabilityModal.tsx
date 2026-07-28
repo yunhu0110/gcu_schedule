@@ -4,7 +4,7 @@
  * 저장(upsert)·쿼리 무효화는 호출부(calendar)가 담당. 이 컴포넌트는 입력 UI만.
  */
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
@@ -90,7 +90,7 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.kav} behavior="padding">
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.handle} />

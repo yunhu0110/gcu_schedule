@@ -3,7 +3,7 @@
  * 거기서 내 일정 입력/수정으로 넘어간다.
  */
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
@@ -67,7 +67,7 @@ export function DayDetailModal({ visible, date, rows, members, userId, onClose, 
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.kav} behavior="padding">
         <Pressable style={styles.backdrop} onPress={onClose} />
         <View style={styles.sheet}>
           <View style={styles.handle} />

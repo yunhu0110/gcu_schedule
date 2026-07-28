@@ -3,7 +3,7 @@
  * 사진 변경(갤러리, 즉시) · 고유색(20) · 닉네임. 저장/닫기는 하단 한 행.
  */
 import { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
@@ -35,7 +35,7 @@ export function ProfileEditModal({ visible, nickname, color, avatarUrl, busy, on
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.kav} behavior="padding">
         <Pressable style={styles.backdrop} onPress={onClose} />
         <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>
           <View style={styles.handle} />
