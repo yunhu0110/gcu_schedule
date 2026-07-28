@@ -10,7 +10,7 @@ import { colors, space } from '@/theme/tokens';
 export default function WikiScreen() {
   return (
     <Screen scroll>
-      <Text variant="h1">위키</Text>
+      <Text variant="h1">기록</Text>
       <SectionHeader label="RECENT PAGES" />
       <Card>
         <Text variant="body" color={colors.light.textSecondary} style={{ marginTop: space.xs }}>

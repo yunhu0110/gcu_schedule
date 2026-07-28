@@ -89,7 +89,7 @@ export default function SignInScreen() {
           block
           onPress={() => {
             setPreview(true);
-            router.replace('/calendar');
+            router.replace('/');
           }}
         />
       </View>

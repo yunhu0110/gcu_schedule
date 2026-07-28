@@ -35,7 +35,7 @@ export default function MeScreen() {
 
   return (
     <Screen scroll>
-      <Text variant="h1">나</Text>
+      <Text variant="h1">마이페이지</Text>
 
       <SectionHeader label="프로필" />
       <Card>

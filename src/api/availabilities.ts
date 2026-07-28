@@ -37,13 +37,18 @@ type SummaryRow = {
   all_available: boolean;
 };
 
-/** from~to 각 날짜를 하나의 상태로 upsert(본인). 사유(note)는 unavailable/maybe에서 주로 쓴다. */
+/**
+ * from~to 각 날짜를 하나의 상태로 upsert(본인). 사유(note)는 선택.
+ * startTime/endTime은 'HH:MM' 또는 null(하루 종일). 실사용 상태는 available/unavailable 2종.
+ */
 export async function setRange(
   memberId: string,
   from: DateStr,
   to: DateStr,
   status: AvailabilityStatus,
   note: string | null,
+  startTime: string | null,
+  endTime: string | null,
 ): Promise<void> {
   const span = diffDays(to, from);
   const start = span < 0 ? to : from; // 뒤집혀 들어와도 방어
@@ -53,6 +58,8 @@ export async function setRange(
     date: addDays(start, i),
     status,
     note: note?.trim() ? note.trim() : null,
+    start_time: startTime,
+    end_time: endTime,
   }));
   const { error } = await supabase
     .from('availabilities')

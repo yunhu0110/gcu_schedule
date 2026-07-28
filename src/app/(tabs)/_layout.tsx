@@ -1,14 +1,14 @@
 /**
- * 하단 탭 5개: 표지 · 달력 · 위키 · 정산 · 나.
- * 텍스트 중심 컨셉이라 아이콘 없이 라벨만. 활성 ink / 비활성 slate, 상단 헤어라인.
+ * 하단 탭 4개: 홈 · 달력 · 기록 · 마이페이지. 각 탭에 라인 아이콘 + 라벨.
+ * 활성 ink / 비활성 slate, 상단 헤어라인. (정산은 이후 마일스톤 — 탭에서 숨김)
  */
 import { Tabs } from 'expo-router';
 import { colors, fonts } from '@/theme/tokens';
+import { TabIcon, type TabIconName } from '@/components/TabIcon';
 
 export default function TabsLayout() {
   return (
     <Tabs
-      initialRouteName="calendar"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.light.ink,
@@ -17,16 +17,23 @@ export default function TabsLayout() {
           backgroundColor: colors.light.paper,
           borderTopColor: colors.light.hairline,
           borderTopWidth: 1,
+          height: 60,
+          paddingTop: 6,
+          paddingBottom: 8,
         },
-        tabBarLabelStyle: { fontSize: 11, lineHeight: 15, fontFamily: fonts.bodyBold },
-        tabBarIconStyle: { display: 'none' },
+        tabBarLabelStyle: { fontSize: 11, lineHeight: 14, fontFamily: fonts.bodyBold },
       }}
     >
-      <Tabs.Screen name="calendar" options={{ title: '달력' }} />
-      <Tabs.Screen name="index" options={{ title: '표지' }} />
-      <Tabs.Screen name="wiki" options={{ title: '위키' }} />
-      <Tabs.Screen name="settle" options={{ title: '정산' }} />
-      <Tabs.Screen name="me" options={{ title: '나' }} />
+      <Tabs.Screen name="index" options={{ title: '홈', tabBarIcon: icon('home') }} />
+      <Tabs.Screen name="calendar" options={{ title: '달력', tabBarIcon: icon('calendar') }} />
+      <Tabs.Screen name="wiki" options={{ title: '기록', tabBarIcon: icon('record') }} />
+      <Tabs.Screen name="me" options={{ title: '마이페이지', tabBarIcon: icon('profile') }} />
+      {/* 정산: 이후 마일스톤 — 탭에서 숨김(라우트는 유지) */}
+      <Tabs.Screen name="settle" options={{ href: null }} />
     </Tabs>
   );
+}
+
+function icon(name: TabIconName) {
+  return ({ color }: { color: string }) => <TabIcon name={name} color={color} />;
 }

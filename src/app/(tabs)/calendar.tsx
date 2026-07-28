@@ -9,6 +9,7 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
+import { Logo } from '@/components/Logo';
 import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
 import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { colors, space } from '@/theme/tokens';
@@ -56,12 +57,15 @@ export default function CalendarScreen() {
   });
 
   const mutation = useMutation({
-    mutationFn: (v: AvailabilitySubmit) => setRange(userId as string, v.from, v.to, v.status, v.note),
+    mutationFn: (v: AvailabilitySubmit) => {
+      if (!userId) throw new Error('로그인이 필요해요.');
+      return setRange(userId, v.from, v.to, v.status, v.note, v.startTime, v.endTime);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['availability-summary'] });
       setPicked(null);
     },
-    onError: () => Alert.alert('저장 실패', '잠시 후 다시 시도해주세요.'),
+    onError: (e) => Alert.alert('저장 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
   });
 
   function countsFor(date: string): DayCounts {
@@ -82,6 +86,12 @@ export default function CalendarScreen() {
 
   return (
     <Screen scroll>
+      {/* 브랜드 헤더 (로고 왼쪽 + 월간gcu) */}
+      <View style={styles.brandRow}>
+        <Logo height={22} />
+        <Text variant="brand">월간gcu</Text>
+      </View>
+
       {/* 월 이동 */}
       <View style={styles.header}>
         <Pressable onPress={() => setAnchor(addMonths(anchor, -1))} hitSlop={12}>
@@ -147,6 +157,7 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.lg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg },
   weekRow: { flexDirection: 'row', marginBottom: space.xs },
   weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },

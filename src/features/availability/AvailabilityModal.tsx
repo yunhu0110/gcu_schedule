@@ -1,11 +1,10 @@
 /**
  * AvailabilityModal — 달력에서 날짜를 누르면 뜨는 일정 입력 팝업.
- * "언제부터 언제까지 · 상태(불가/가능/미정) · 사유"를 받아 상위(달력)로 넘긴다.
+ * "언제부터 언제까지 · 불가/가능 · (선택)시간대 · 사유"를 받아 상위(달력)로 넘긴다.
  * 저장(upsert)·쿼리 무효화는 호출부(calendar)가 담당. 이 컴포넌트는 입력 UI만.
- * 참조: 05-SCHEDULING-LOGIC §1 상태 정의.
  */
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
@@ -18,6 +17,8 @@ export type AvailabilitySubmit = {
   from: DateStr;
   to: DateStr;
   note: string;
+  startTime: string | null; // 'HH:MM' | null(하루 종일)
+  endTime: string | null;
 };
 
 type Props = {
@@ -28,16 +29,26 @@ type Props = {
   onSubmit: (v: AvailabilitySubmit) => void;
 };
 
+// 불가/가능 2종만. (미정 제거)
 const OPTIONS: { key: AvailabilityStatus; label: string; color: string }[] = [
   { key: 'unavailable', label: '불가', color: colors.light.unavailable },
-  { key: 'maybe', label: '미정', color: colors.light.maybe },
   { key: 'available', label: '가능', color: colors.light.available },
 ];
+
+const STEP = 30; // 시간 스텝(분)
+const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+const toHHMM = (m: number) => {
+  const mm = ((m % 1440) + 1440) % 1440;
+  return `${String(Math.floor(mm / 60)).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`;
+};
 
 export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: Props) {
   const [status, setStatus] = useState<AvailabilityStatus>('unavailable');
   const [from, setFrom] = useState<DateStr | null>(date);
   const [to, setTo] = useState<DateStr | null>(date);
+  const [allDay, setAllDay] = useState(true);
+  const [start, setStart] = useState('18:00');
+  const [end, setEnd] = useState('21:00');
   const [note, setNote] = useState('');
 
   // 새 날짜로 열릴 때 값 초기화
@@ -46,20 +57,31 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
       setStatus('unavailable');
       setFrom(date);
       setTo(date);
+      setAllDay(true);
+      setStart('18:00');
+      setEnd('21:00');
       setNote('');
     }
   }, [visible, date]);
 
   if (!from || !to) return null;
 
-  // to가 from보다 앞서지 않게 보정
   function setFromSafe(next: DateStr) {
     setFrom(next);
     if (to && diffDays(to, next) < 0) setTo(next);
   }
   function setToSafe(next: DateStr) {
-    if (from && diffDays(next, from) < 0) return; // from보다 앞으로 못 감
+    if (from && diffDays(next, from) < 0) return;
     setTo(next);
+  }
+  // start를 넘기면 end도 최소 30분 뒤로 밀어준다
+  function setStartSafe(next: string) {
+    setStart(next);
+    if (toMin(end) <= toMin(next)) setEnd(toHHMM(toMin(next) + STEP));
+  }
+  function setEndSafe(next: string) {
+    if (toMin(next) <= toMin(start)) return;
+    setEnd(next);
   }
 
   const days = Math.abs(diffDays(to, from)) + 1;
@@ -74,7 +96,7 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
           이 기간을 아래 상태로 표시해요{days > 1 ? ` (${days}일)` : ''}.
         </Text>
 
-        {/* 상태 선택 */}
+        {/* 상태: 불가 / 가능 */}
         <View style={styles.statusRow}>
           {OPTIONS.map((o) => {
             const on = status === o.key;
@@ -97,25 +119,46 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
         </View>
 
         {/* 기간 */}
-        <View style={styles.rangeBlock}>
-          <DateStepper label="시작" value={from} onChange={setFromSafe} />
-          <DateStepper label="종료" value={to} onChange={setToSafe} min={from} />
+        <View style={styles.block}>
+          <Stepper label="시작일" value={formatKo(from)} onPrev={() => setFromSafe(addDays(from, -1))} onNext={() => setFromSafe(addDays(from, 1))} />
+          <Stepper label="종료일" value={formatKo(to)} onPrev={() => setToSafe(addDays(to, -1))} onNext={() => setToSafe(addDays(to, 1))} prevOff={diffDays(to, from) <= 0} />
         </View>
 
-        {/* 사유 */}
-        <TextField
-          label="사유 (선택)"
-          value={note}
-          onChangeText={setNote}
-          placeholder="예: 출장, 시험기간, 가족 행사"
-          style={{ marginTop: space.md }}
-        />
+        {/* 시간대 */}
+        <View style={styles.allDayRow}>
+          <Text variant="bodyBold" style={{ fontSize: 15 }}>
+            하루 종일
+          </Text>
+          <Switch
+            value={allDay}
+            onValueChange={setAllDay}
+            trackColor={{ true: colors.light.cobalt, false: colors.light.hairlineStrong }}
+          />
+        </View>
+        {!allDay && (
+          <View style={styles.block}>
+            <Stepper label="시작 시간" value={start} onPrev={() => setStartSafe(toHHMM(toMin(start) - STEP))} onNext={() => setStartSafe(toHHMM(toMin(start) + STEP))} />
+            <Stepper label="종료 시간" value={end} onPrev={() => setEndSafe(toHHMM(toMin(end) - STEP))} onNext={() => setEndSafe(toHHMM(toMin(end) + STEP))} prevOff={toMin(end) - STEP <= toMin(start)} />
+          </View>
+        )}
+
+        {/* 사유 (예시 없음) */}
+        <TextField label="사유 (선택)" value={note} onChangeText={setNote} style={{ marginTop: space.md }} />
 
         <Button
           label={saving ? '저장 중…' : '저장'}
           block
           loading={saving}
-          onPress={() => onSubmit({ status, from, to, note })}
+          onPress={() =>
+            onSubmit({
+              status,
+              from,
+              to,
+              note,
+              startTime: allDay ? null : start,
+              endTime: allDay ? null : end,
+            })
+          }
           style={{ marginTop: space.lg }}
         />
         <Button label="취소" variant="ghost" block onPress={onClose} />
@@ -124,37 +167,34 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
   );
 }
 
-function DateStepper({
+function Stepper({
   label,
   value,
-  onChange,
-  min,
+  onPrev,
+  onNext,
+  prevOff,
 }: {
   label: string;
-  value: DateStr;
-  onChange: (d: DateStr) => void;
-  min?: DateStr;
+  value: string;
+  onPrev: () => void;
+  onNext: () => void;
+  prevOff?: boolean;
 }) {
-  const atMin = min ? diffDays(value, min) <= 0 : false;
   return (
     <View style={styles.stepper}>
       <Text variant="caption" color={colors.light.textSecondary}>
         {label}
       </Text>
       <View style={styles.stepperRow}>
-        <Pressable
-          onPress={() => !atMin && onChange(addDays(value, -1))}
-          hitSlop={10}
-          style={[styles.stepBtn, atMin && styles.stepBtnOff]}
-        >
-          <Text variant="h2" color={atMin ? colors.light.ink24 : colors.light.ink}>
+        <Pressable onPress={() => !prevOff && onPrev()} hitSlop={10} style={[styles.stepBtn, prevOff && styles.stepBtnOff]}>
+          <Text variant="h2" color={prevOff ? colors.light.ink24 : colors.light.ink}>
             ‹
           </Text>
         </Pressable>
         <Text variant="bodyBold" style={styles.stepVal}>
-          {formatKo(value)}
+          {value}
         </Text>
-        <Pressable onPress={() => onChange(addDays(value, 1))} hitSlop={10} style={styles.stepBtn}>
+        <Pressable onPress={onNext} hitSlop={10} style={styles.stepBtn}>
           <Text variant="h2" color={colors.light.ink}>
             ›
           </Text>
@@ -191,7 +231,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rangeBlock: { marginTop: space.lg, gap: space.md },
+  block: { marginTop: space.lg, gap: space.md },
+  allDayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: space.lg,
+  },
   stepper: { gap: space.xs },
   stepperRow: {
     flexDirection: 'row',

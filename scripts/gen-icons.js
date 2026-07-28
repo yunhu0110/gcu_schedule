@@ -8,7 +8,8 @@ const path = require('path');
 const { Resvg } = require('@resvg/resvg-js');
 
 const ROOT = path.resolve(__dirname, '..');
-const raw = fs.readFileSync(path.join(ROOT, 'assets/gcu.svg'), 'utf8');
+// 앱 아이콘 원본은 design/assets/gcu.svg (브랜드 마크의 단일 출처).
+const raw = fs.readFileSync(path.join(ROOT, 'design/assets/gcu.svg'), 'utf8');
 
 // 원본 <svg ...>INNER</svg> 에서 INNER(defs + 그룹)만 추출 → viewBox 0 0 256 200 좌표계.
 const inner = raw.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
