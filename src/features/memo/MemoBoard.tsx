@@ -2,7 +2,7 @@
  * MemoBoard — 홈 메모장(메신저형). 글 작성/수정/삭제 + 대댓글(1단계) + 작성 시간.
  */
 import { useState } from 'react';
-import { Alert, Image, StyleSheet, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
@@ -48,9 +48,19 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
   const run = (fn: () => Promise<void>, after?: () => void) =>
     fn().then(() => { qc.invalidateQueries({ queryKey: ['memos'] }); onChange(); after?.(); }).catch(onError);
 
+  // 내 글만: 꾹 누르면 수정/삭제 메뉴
+  function openMenu() {
+    if (!mine) return;
+    Alert.alert('낙서', undefined, [
+      { text: '수정', onPress: () => setEditing(true) },
+      { text: '삭제', style: 'destructive', onPress: () => run(() => deleteMemo(memo.id)) },
+      { text: '취소', style: 'cancel' },
+    ]);
+  }
+
   return (
     <View style={[styles.bubbleWrap, isReply && styles.replyIndent]}>
-      <View style={styles.bubbleRow}>
+      <Pressable style={styles.bubbleRow} onLongPress={openMenu} delayLongPress={300}>
         {memo.avatar_url ? (
           <Image source={{ uri: memo.avatar_url }} style={styles.avatar} />
         ) : (
@@ -71,21 +81,11 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
           ) : (
             <Text variant="bodySm">{memo.body}</Text>
           )}
-          <View style={styles.actions}>
-            {!isReply ? <Text variant="caption" color={colors.light.action} onPress={() => setReplying((v) => !v)}>답글</Text> : null}
-            {mine ? <Text variant="caption" color={colors.light.textSecondary} onPress={() => setEditing((v) => !v)}>수정</Text> : null}
-            {mine ? (
-              <Text
-                variant="caption"
-                color={colors.light.danger}
-                onPress={() => Alert.alert('삭제', '이 메모를 삭제할까요?', [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => run(() => deleteMemo(memo.id)) }])}
-              >
-                삭제
-              </Text>
-            ) : null}
-          </View>
+          {!isReply ? (
+            <Text variant="caption" color={colors.light.action} onPress={() => setReplying((v) => !v)} style={styles.replyLink}>답글</Text>
+          ) : null}
         </View>
-      </View>
+      </Pressable>
 
       {replying ? (
         <View style={[styles.replyInput, styles.replyIndent]}>
@@ -122,6 +122,6 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
   editRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
   replyInput: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.sm, marginLeft: space.xl },
-  actions: { flexDirection: 'row', gap: space.lg, marginTop: space.xs },
+  replyLink: { marginTop: space.xs },
   miniBtn: { height: 40, paddingHorizontal: space.md },
 });

@@ -11,7 +11,7 @@ import { Button } from '@/components/Button';
 import { StartPollModal } from './StartPollModal';
 import { colors, radius, space } from '@/theme/tokens';
 import { formatKo, type DateStr } from '@/lib/date';
-import { castVote, confirmDate, createPoll, getPoll } from '@/api/polls';
+import { castVote, closePoll, confirmDate, createPoll, getPoll } from '@/api/polls';
 import { notifyMembers } from '@/api/notifications';
 
 type Props = {
@@ -71,6 +71,19 @@ export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, 
     onError: onErr,
   });
 
+  const closeMut = useMutation({
+    mutationFn: async () => {
+      if (!poll) return;
+      await closePoll(poll.id);
+      await notifyMembers(userId, memberIds, 'vote_closed', `${meNickname}님이 ${month}월 날짜 투표를 종료했어요.`);
+    },
+    onSuccess: refresh,
+    onError: onErr,
+  });
+
+  // 이 투표를 관리(확정·종료)할 수 있는 사람 = 투표 작성자 또는 관리자
+  const manage = poll ? poll.host_id === userId || !!isAdmin : false;
+
   function toggle(id: string) {
     const next = new Set(selected);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -111,6 +124,23 @@ export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, 
     );
   }
 
+  // 종료됨 (확정 없이 종료)
+  if (poll.status === 'closed') {
+    return (
+      <View style={styles.box}>
+        <Text variant="bodyBold" color={colors.light.textSecondary} style={{ marginBottom: space.sm }}>투표가 종료됐어요.</Text>
+        {poll.options.map((o) => (
+          <View key={o.id} style={styles.optRow}>
+            <Text variant="bodyBold" style={{ fontSize: 14 }}>{formatKo(o.date)}</Text>
+            <Text variant="mono" color={colors.light.textSecondary} style={{ fontSize: 12 }}>{o.voters.length}표</Text>
+          </View>
+        ))}
+        {manage ? <Button label="투표 새로 생성하기" variant="ghost" block onPress={() => setStartOpen(true)} style={{ marginTop: space.md }} /> : null}
+        {startModal}
+      </View>
+    );
+  }
+
   // 진행 중
   return (
     <View style={styles.box}>
@@ -129,7 +159,7 @@ export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, 
             </Pressable>
             <View style={styles.optRight}>
               <Text variant="mono" color={colors.light.textSecondary} style={{ fontSize: 12 }}>{o.voters.length}표</Text>
-              {canManage ? (
+              {manage ? (
                 <Pressable onPress={() => confirmMut.mutate({ id: o.id, date: o.date })} hitSlop={8}>
                   <Text variant="caption" color={colors.light.cobalt}>확정</Text>
                 </Pressable>
@@ -139,6 +169,9 @@ export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, 
         );
       })}
       <Button label={voteMut.isPending ? '저장 중…' : '내 투표 저장'} block loading={voteMut.isPending} onPress={() => voteMut.mutate()} style={{ marginTop: space.md }} />
+      {manage ? (
+        <Button label={closeMut.isPending ? '종료 중…' : '투표 종료'} variant="ghost" block loading={closeMut.isPending} onPress={() => closeMut.mutate()} />
+      ) : null}
     </View>
   );
 }

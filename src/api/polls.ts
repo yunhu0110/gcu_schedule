@@ -100,6 +100,12 @@ export async function confirmDate(pollId: string, date: DateStr): Promise<void> 
   if (error) throw error;
 }
 
+/** 투표 작성자: 날짜 확정 없이 투표만 종료. */
+export async function closePoll(pollId: string): Promise<void> {
+  const { error } = await supabase.from('date_polls').update({ status: 'closed' }).eq('id', pollId);
+  if (error) throw error;
+}
+
 /** 담당자/관리자: 투표 없이 날짜를 바로 확정(픽스). 기존 poll 있으면 갱신, 없으면 생성 후 확정. */
 export async function setConfirmedDate(hostId: string, year: number, month: number, date: DateStr): Promise<void> {
   const { data, error } = await supabase.from('date_polls').select('id').eq('year', year).eq('month', month).order('created_at', { ascending: false }).limit(1);

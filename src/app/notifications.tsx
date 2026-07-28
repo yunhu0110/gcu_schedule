@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/Text';
 import { colors, space } from '@/theme/tokens';
+import { formatDateTime } from '@/lib/date';
 import { useAuth } from '@/features/auth/AuthContext';
 import { listNotifications, markAllRead } from '@/api/notifications';
 
@@ -49,7 +50,7 @@ export default function NotificationsScreen() {
               <View style={[styles.dot, { backgroundColor: n.read_at ? colors.light.hairlineStrong : colors.light.neon }]} />
               <View style={{ flex: 1 }}>
                 <Text variant="body">{n.body}</Text>
-                <Text variant="caption" color={colors.light.textSecondary}>{n.created_at.slice(5, 16).replace('T', ' ')}</Text>
+                <Text variant="caption" color={colors.light.textSecondary}>{formatDateTime(n.created_at)}</Text>
               </View>
             </View>
           ))
