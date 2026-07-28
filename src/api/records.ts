@@ -9,6 +9,7 @@ export type Record = {
   member_id: string;
   year: number;
   month: number;
+  record_date: string | null;
   media_url: string | null;
   body: string | null;
   created_at: string;
@@ -18,13 +19,13 @@ export type Record = {
 };
 
 type Raw = {
-  id: string; member_id: string; year: number; month: number; media_url: string | null; body: string | null; created_at: string;
+  id: string; member_id: string; year: number; month: number; record_date: string | null; media_url: string | null; body: string | null; created_at: string;
   members: { nickname: string; avatar_url: string | null; color: string | null } | null;
 };
 
-const SELECT = 'id, member_id, year, month, media_url, body, created_at, members(nickname, avatar_url, color)';
+const SELECT = 'id, member_id, year, month, record_date, media_url, body, created_at, members(nickname, avatar_url, color)';
 const toRec = (r: Raw): Record => ({
-  id: r.id, member_id: r.member_id, year: r.year, month: r.month, media_url: r.media_url, body: r.body, created_at: r.created_at,
+  id: r.id, member_id: r.member_id, year: r.year, month: r.month, record_date: r.record_date, media_url: r.media_url, body: r.body, created_at: r.created_at,
   nickname: r.members?.nickname ?? '?', avatar_url: r.members?.avatar_url ?? null, color: r.members?.color ?? null,
 });
 
@@ -41,12 +42,14 @@ export async function getRecord(id: string): Promise<Record | null> {
   return data ? toRec(data as unknown as Raw) : null;
 }
 
-export async function createRecord(memberId: string, year: number, month: number, mediaUrl: string | null, body: string): Promise<void> {
-  const { error } = await supabase.from('records').insert({ member_id: memberId, year, month, media_url: mediaUrl, body: body.trim() || null });
+export async function createRecord(memberId: string, recordDate: string, mediaUrl: string | null, body: string): Promise<void> {
+  const year = Number(recordDate.slice(0, 4));
+  const month = Number(recordDate.slice(5, 7));
+  const { error } = await supabase.from('records').insert({ member_id: memberId, year, month, record_date: recordDate, media_url: mediaUrl, body: body.trim() || null });
   if (error) throw error;
 }
 
-export async function updateRecord(id: string, patch: { media_url?: string | null; body?: string | null }): Promise<void> {
+export async function updateRecord(id: string, patch: { media_url?: string | null; body?: string | null; record_date?: string | null; year?: number; month?: number }): Promise<void> {
   const { error } = await supabase.from('records').update(patch).eq('id', id);
   if (error) throw error;
 }

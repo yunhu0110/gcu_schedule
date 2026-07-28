@@ -12,7 +12,7 @@ import { Button } from '@/components/Button';
 import { BrandHeader } from '@/components/BrandHeader';
 import { CoverEditModal, type CoverSubmit } from '@/features/host/CoverEditModal';
 import { colors, radius, space } from '@/theme/tokens';
-import { todayStr } from '@/lib/date';
+import { formatKo } from '@/lib/date';
 import { useAuth } from '@/features/auth/AuthContext';
 import { createRecord, listRecords, uploadRecordImage, uploadRecordVideo, type Record } from '@/api/records';
 
@@ -39,11 +39,10 @@ export default function RecordScreen() {
   const createMut = useMutation({
     mutationFn: async (v: CoverSubmit) => {
       if (!userId) return;
-      const t = todayStr();
       let mediaUrl: string | null = null;
       if (v.base64) mediaUrl = await uploadRecordImage(userId, v.base64, Date.now());
       else if (v.videoUri) mediaUrl = await uploadRecordVideo(userId, v.videoUri, Date.now());
-      await createRecord(userId, Number(t.slice(0, 4)), Number(t.slice(5, 7)), mediaUrl, v.message);
+      await createRecord(userId, v.date, mediaUrl, v.message);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['records'] }); setCreating(false); },
     onError: (e) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.'),
@@ -86,6 +85,9 @@ function RecordCard({ rec, onPress }: { rec: Record; onPress: () => void }) {
         <Image source={{ uri: rec.media_url }} style={styles.cover} />
       ) : null}
       <View style={styles.body}>
+        {rec.record_date ? (
+          <Text variant="caption" color={colors.light.textSecondary} style={{ marginBottom: 4 }}>{formatKo(rec.record_date)}</Text>
+        ) : null}
         <Text variant="bodyBold" style={{ fontSize: 16 }} numberOfLines={3}>{rec.body?.trim() || '(내용 없음)'}</Text>
         <View style={styles.who}>
           <View style={[styles.dot, { backgroundColor: rec.color ?? colors.light.cobalt }]} />

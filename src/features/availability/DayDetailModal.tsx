@@ -92,7 +92,7 @@ export function DayDetailModal({ visible, date, rows, members, userId, onClose, 
 
             {/* 코멘트 */}
             <View style={styles.cHead}>
-              <Text variant="kicker" color={colors.light.textSecondary}>코멘트 {comments.length}</Text>
+              <Text variant="kicker" color={colors.light.textSecondary}>댓글 {comments.length}</Text>
             </View>
             {comments.map((c) => (
               <View key={c.id} style={styles.cRow}>
@@ -108,7 +108,7 @@ export function DayDetailModal({ visible, date, rows, members, userId, onClose, 
           {/* 코멘트 입력(@맨션) */}
           {userId ? (
             <View style={styles.inputRow}>
-              <MentionInput value={draft} onChangeText={setDraft} members={members} placeholder="코멘트 (@로 멤버 언급)" style={{ flex: 1 }} />
+              <MentionInput value={draft} onChangeText={setDraft} members={members} placeholder="댓글" style={{ flex: 1 }} />
               <Button label="등록" onPress={() => draft.trim() && commentMut.mutate()} loading={commentMut.isPending} style={styles.sendBtn} />
             </View>
           ) : null}

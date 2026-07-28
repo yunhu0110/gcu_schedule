@@ -9,23 +9,26 @@ import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { colors, radius, space } from '@/theme/tokens';
+import { addDays, formatKo, todayStr, type DateStr } from '@/lib/date';
 
-export type CoverSubmit = { message: string; base64: string | null; videoUri: string | null };
+export type CoverSubmit = { message: string; base64: string | null; videoUri: string | null; date: DateStr };
 
 type Props = {
   visible: boolean;
   initialMessage: string | null;
   initialImage: string | null;
+  initialDate?: DateStr | null;
   saving?: boolean;
   onClose: () => void;
   onSubmit: (v: CoverSubmit) => void;
 };
 
-export function CoverEditModal({ visible, initialMessage, initialImage, saving, onClose, onSubmit }: Props) {
+export function CoverEditModal({ visible, initialMessage, initialImage, initialDate, saving, onClose, onSubmit }: Props) {
   const [message, setMessage] = useState('');
   const [base64, setBase64] = useState<string | null>(null);
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [date, setDate] = useState<DateStr>(todayStr());
 
   useEffect(() => {
     if (visible) {
@@ -33,8 +36,9 @@ export function CoverEditModal({ visible, initialMessage, initialImage, saving, 
       setBase64(null);
       setVideoUri(null);
       setPreview(initialImage ?? null);
+      setDate(initialDate ?? todayStr());
     }
-  }, [visible, initialMessage, initialImage]);
+  }, [visible, initialMessage, initialImage, initialDate]);
 
   const isVideoPreview = (preview ?? '').match(/\.(mp4|mov|m4v)$/i) != null || videoUri != null;
 
@@ -65,7 +69,17 @@ export function CoverEditModal({ visible, initialMessage, initialImage, saving, 
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.handle} />
-        <Text variant="h2">표지 올리기</Text>
+        <Text variant="h2">기록 작성</Text>
+
+        {/* 날짜 */}
+        <View style={styles.dateRow}>
+          <Text variant="bodyBold" style={{ fontSize: 15 }}>날짜</Text>
+          <View style={styles.stepper}>
+            <Pressable onPress={() => setDate(addDays(date, -1))} hitSlop={10} style={styles.stepBtn}><Text variant="h2">‹</Text></Pressable>
+            <Text variant="bodyBold" style={{ fontSize: 14 }}>{formatKo(date)}</Text>
+            <Pressable onPress={() => setDate(addDays(date, 1))} hitSlop={10} style={styles.stepBtn}><Text variant="h2">›</Text></Pressable>
+          </View>
+        </View>
 
         <Pressable onPress={pickImage} style={styles.imgBox}>
           {preview && !isVideoPreview ? (
@@ -81,7 +95,7 @@ export function CoverEditModal({ visible, initialMessage, initialImage, saving, 
         ) : null}
 
         <TextField
-          label="이 달의 한마디"
+          label="내용"
           value={message}
           onChangeText={setMessage}
           multiline
@@ -89,10 +103,10 @@ export function CoverEditModal({ visible, initialMessage, initialImage, saving, 
         />
 
         <Button
-          label={saving ? '올리는 중…' : '표지 저장'}
+          label={saving ? '저장 중…' : '저장'}
           block
           loading={saving}
-          onPress={() => onSubmit({ message, base64, videoUri })}
+          onPress={() => onSubmit({ message, base64, videoUri, date })}
           style={{ marginTop: space.md }}
         />
         <Button label="취소" variant="ghost" block onPress={onClose} />
@@ -113,6 +127,9 @@ const styles = StyleSheet.create({
     paddingBottom: space.section,
   },
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.light.hairlineStrong, alignSelf: 'center', marginBottom: space.md },
+  dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.lg },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  stepBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   imgBox: {
     height: 160,
     borderRadius: radius.card,

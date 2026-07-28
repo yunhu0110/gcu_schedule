@@ -27,13 +27,10 @@ export function MemoBoard({ userId }: { userId: string }) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.head}>
-        <Text style={styles.emoji}>✏️</Text>
-        <Text variant="bodyBold" style={{ fontSize: 16 }}>낙서장</Text>
-      </View>
+      <Text variant="bodyBold" style={{ fontSize: 16, marginBottom: space.md }}>낙서장</Text>
 
       <View style={styles.inputRow}>
-        <TextField value={draft} onChangeText={setDraft} placeholder="낙서 남기기" style={{ flex: 1 }} />
+        <TextField value={draft} onChangeText={setDraft} placeholder="낙서 남기기" multiline style={styles.inputField} />
         <Button label="작성" onPress={() => draft.trim() && addMut.mutate({ body: draft, parentId: null })} loading={addMut.isPending} style={styles.sendBtn} />
       </View>
 
@@ -109,19 +106,18 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.light.surfacePlate, borderRadius: radius.soft, padding: 18, marginTop: space.xl },
-  head: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  emoji: { fontSize: 24 },
-  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.md },
+  card: { backgroundColor: colors.light.paper, borderRadius: radius.soft, borderWidth: 1.5, borderColor: colors.light.cobalt, padding: 18, marginTop: space.xl },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
+  inputField: { flex: 1, height: 88, paddingTop: space.md, textAlignVertical: 'top' },
   sendBtn: { height: 48, paddingHorizontal: space.lg },
-  bubbleWrap: { marginTop: space.md },
-  replyIndent: { marginLeft: space.xl },
+  bubbleWrap: { marginTop: space.md, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.light.hairline },
+  replyIndent: { marginLeft: space.xl, borderTopWidth: 0, paddingTop: 0 },
   bubbleRow: { flexDirection: 'row', gap: space.sm },
   avatar: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  bubble: { flex: 1, backgroundColor: colors.light.paper, borderRadius: radius.card, padding: space.md },
+  bubble: { flex: 1 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   editRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
-  replyInput: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.sm },
+  replyInput: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.sm, marginLeft: space.xl },
   actions: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
   miniBtn: { height: 44, paddingHorizontal: space.md },
 });

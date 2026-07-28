@@ -29,7 +29,7 @@ export function BrandHeader() {
         <Logo height={22} />
         <View>
           <Text variant="brand">월간GCU</Text>
-          <Text variant="caption" color={colors.light.textSecondary} style={styles.deploy}>{deployDateLabel()}</Text>
+          <Text variant="caption" color={colors.light.textSecondary} style={styles.deploy}>배포일 {deployDateLabel()}</Text>
         </View>
       </View>
       <Pressable onPress={() => router.push('/notifications')} hitSlop={10}>

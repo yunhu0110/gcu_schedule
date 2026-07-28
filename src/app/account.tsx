@@ -2,7 +2,8 @@
  * 내 정보 수정 — 비밀번호 변경(로그인 상태). 이메일은 표시만.
  */
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/Text';
@@ -46,8 +47,7 @@ export default function AccountScreen() {
           <Text variant="h2">‹ 뒤로</Text>
         </Pressable>
       </View>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.content}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.content} enableOnAndroid extraScrollHeight={24} keyboardShouldPersistTaps="handled">
           <Text variant="h1">내 정보 수정</Text>
 
           <SectionHeader label="비밀번호 변경" />
@@ -58,8 +58,7 @@ export default function AccountScreen() {
               <Button label={busy ? '변경 중…' : '비밀번호 변경'} block loading={busy} onPress={onChange} />
             </View>
           </Card>
-        </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

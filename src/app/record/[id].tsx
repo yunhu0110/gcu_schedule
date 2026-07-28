@@ -41,7 +41,13 @@ export default function RecordScreen() {
       let mediaUrl: string | undefined;
       if (v.base64) mediaUrl = await uploadRecordImage(userId, v.base64, Date.now());
       else if (v.videoUri) mediaUrl = await uploadRecordVideo(userId, v.videoUri, Date.now());
-      await updateRecord(id, { body: v.message.trim() || null, ...(mediaUrl ? { media_url: mediaUrl } : {}) });
+      await updateRecord(id, {
+        body: v.message.trim() || null,
+        record_date: v.date,
+        year: Number(v.date.slice(0, 4)),
+        month: Number(v.date.slice(5, 7)),
+        ...(mediaUrl ? { media_url: mediaUrl } : {}),
+      });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['record', id] }); qc.invalidateQueries({ queryKey: ['records'] }); setEditing(false); },
     onError: (e) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.'),
@@ -97,7 +103,7 @@ export default function RecordScreen() {
               <Text variant="kicker" color={colors.light.textSecondary} style={{ marginTop: space.lg }}>{rec.year}년 {rec.month}월 · {rec.nickname} · {formatDateTime(rec.created_at)}</Text>
               <Text variant="body" style={{ marginTop: space.sm, fontSize: 17, lineHeight: 26 }}>{rec.body?.trim() || '내용이 없어요.'}</Text>
 
-              <View style={styles.cHead}><Text variant="kicker" color={colors.light.textSecondary}>코멘트 {comments.length}</Text></View>
+              <View style={styles.cHead}><Text variant="kicker" color={colors.light.textSecondary}>댓글 {comments.length}</Text></View>
               {comments.map((c) => (
                 <View key={c.id} style={styles.comment}>
                   {c.avatar_url ? (
@@ -117,7 +123,7 @@ export default function RecordScreen() {
 
         {userId ? (
           <View style={styles.inputBar}>
-            <MentionInput value={draft} onChangeText={setDraft} members={members} placeholder="코멘트 (@로 멤버 언급)" style={{ flex: 1 }} />
+            <MentionInput value={draft} onChangeText={setDraft} members={members} placeholder="댓글" style={{ flex: 1 }} />
             <Button label="등록" onPress={() => draft.trim() && commentMut.mutate()} loading={commentMut.isPending} style={styles.sendBtn} />
           </View>
         ) : null}
@@ -127,6 +133,7 @@ export default function RecordScreen() {
         visible={editing}
         initialMessage={rec?.body ?? null}
         initialImage={rec?.media_url ?? null}
+        initialDate={rec?.record_date ?? null}
         saving={editMut.isPending}
         onClose={() => setEditing(false)}
         onSubmit={(v) => editMut.mutate(v)}
