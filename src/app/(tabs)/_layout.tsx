@@ -18,8 +18,7 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.light.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.light.paper,
-          borderTopColor: colors.light.hairline,
-          borderTopWidth: 1,
+          borderTopWidth: 0, // 하단 탭 위 구분선 제거(화면마다 있던 눈금자 정리)
           height: 58 + bottom,
           paddingTop: 6,
           paddingBottom: bottom,

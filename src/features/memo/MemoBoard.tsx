@@ -110,7 +110,7 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
 }
 
 const styles = StyleSheet.create({
-  card: { marginTop: space.xl, paddingTop: space.lg, borderTopWidth: 1, borderTopColor: colors.light.hairline },
+  card: { marginTop: space.xl, paddingTop: space.lg },
   // 밑줄만 있는 모던 입력 (네모 박스 아님)
   inputField: {
     height: 44,
@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
   },
   inlineField: { flex: 1, height: 40, fontSize: 14 },
   sendBtn: { alignSelf: 'flex-end', height: 38, paddingHorizontal: space.lg, marginTop: space.sm },
-  bubbleWrap: { marginTop: space.md, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.light.hairline },
-  replyIndent: { marginLeft: space.xl, borderTopWidth: 0, paddingTop: 0 },
+  bubbleWrap: { marginTop: space.md, paddingTop: space.md },
+  replyIndent: { marginLeft: space.xl, paddingTop: 0 },
   bubbleRow: { flexDirection: 'row', gap: space.sm },
   avatar: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   bubble: { flex: 1 },

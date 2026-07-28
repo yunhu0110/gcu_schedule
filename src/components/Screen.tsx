@@ -1,6 +1,9 @@
 /**
  * Screen — 모든 화면의 바깥 래퍼. 안전영역 + paper 배경 + 좌우 화면 여백.
- * iOS는 KeyboardAvoidingView(padding), Android는 기본 adjustResize로 키보드를 피한다.
+ *
+ * 키보드: Android도 padding으로 직접 피한다. edge-to-edge(SDK 54 기본)에서는
+ * adjustResize로 창이 줄지 않아 입력창이 키보드에 가려지기 때문.
+ * 스크롤 화면은 키보드가 뜨면 뷰포트가 줄어들어 입력창까지 스크롤할 수 있다.
  */
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
@@ -17,12 +20,14 @@ type Props = {
 export function Screen({ children, scroll = false, padded = true, edges = ['top', 'bottom'] }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         {scroll ? (
           <ScrollView
             contentContainerStyle={[styles.scrollContent, padded && styles.padded]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+            automaticallyAdjustKeyboardInsets
           >
             {children}
           </ScrollView>

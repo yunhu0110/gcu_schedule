@@ -1,10 +1,10 @@
 /**
  * S1. 표지/홈 — 브랜드 헤더 + 월별 모임(담당자·확정 날짜) + 메모장.
  * 히어로는 달 단위 페이지라 좌우로 넘기면 지난 달·다음 달 모임 일자를 보고 고칠 수 있다.
- * 기본은 다음 달(=다음 모임). 담당자 지정은 관리자, 날짜 확정·초기화는 그 달 담당자(또는 관리자).
+ * 기본은 다음 달(=다음 모임). 담당자 지정은 관리자, 날짜 확정·초기화는 그 달 모임장 본인만.
  */
 import { useMemo, useRef, useState } from 'react';
-import { Image, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Alert, Animated, Image, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
@@ -47,6 +47,8 @@ export default function HomeScreen() {
 
   const scrollRef = useRef<ScrollView>(null);
   const placed = useRef(false);
+  // 넘기는 동안 카드가 작아졌다 커지는 효과(MonthHero에서 보간).
+  const scrollX = useRef(new Animated.Value(nextIndex * pageW)).current;
 
   const { data: me } = useQuery({ queryKey: ['me', userId], queryFn: () => getMyProfile(userId as string), enabled: !!userId });
   const { data: members = [] } = useQuery({ queryKey: ['members'], queryFn: listMembers, enabled: !!userId });
@@ -58,7 +60,10 @@ export default function HomeScreen() {
   const confirmedOf = (m: string) => polls.find((p) => p.year === Number(m.slice(0, 4)) && p.month === Number(m.slice(5, 7)))?.confirmed_date ?? null;
 
   const isAdmin = !!me?.is_admin;
-  const canFixOf = (m: string) => hostOf(m)?.member_id === userId || isAdmin;
+  // 날짜 확정·변경은 그 달 모임장 본인만. (담당자 지정은 여전히 관리자)
+  const canFixOf = (m: string) => !!userId && hostOf(m)?.member_id === userId;
+
+  const onErr = (e: unknown) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.');
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['hosts-all'] });
@@ -71,16 +76,19 @@ export default function HomeScreen() {
   const hostMut = useMutation({
     mutationFn: (memberId: string) => setHost(selY, selM, memberId),
     onSuccess: () => { refresh(); setPickHost(false); },
+    onError: onErr,
   });
 
   const confirmMut = useMutation({
     mutationFn: (date: string) => setConfirmedDate(userId as string, selY, selM, date),
     onSuccess: () => { refresh(); setConfirmOpen(false); },
+    onError: onErr,
   });
 
   const clearMut = useMutation({
     mutationFn: () => clearConfirmedDate(selY, selM),
     onSuccess: () => { refresh(); setConfirmOpen(false); },
+    onError: onErr,
   });
 
   // 담당자 표시는 members(=마이페이지에서 방금 바꾼 값)를 우선한다.
@@ -122,11 +130,13 @@ export default function HomeScreen() {
       </View>
 
       {/* 히어로 — 좌우로 넘겨 달 이동 */}
-      <ScrollView
-        ref={scrollRef}
+      <Animated.ScrollView
+        ref={scrollRef as never}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true })}
         onMomentumScrollEnd={onPageEnd}
         onLayout={() => {
           if (placed.current) return;
@@ -134,18 +144,20 @@ export default function HomeScreen() {
           scrollRef.current?.scrollTo({ x: nextIndex * pageW, animated: false });
         }}
       >
-        {months.map((m) => (
+        {months.map((m, i) => (
           <MonthHero
             key={m}
             month={m}
             width={pageW}
+            pageIndex={i}
+            scrollX={scrollX}
             confirmed={confirmedOf(m)}
             canFix={canFixOf(m)}
             onOpenCalendar={() => router.push('/calendar')}
             onEditDate={() => setConfirmOpen(true)}
           />
         ))}
-      </ScrollView>
+      </Animated.ScrollView>
       <Text variant="caption" color={colors.light.textSecondary} style={styles.hint}>
         ← 옆으로 넘기면 다른 달 모임 일자 →
       </Text>

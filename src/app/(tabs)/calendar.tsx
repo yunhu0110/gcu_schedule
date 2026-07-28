@@ -15,7 +15,7 @@ import { ActionModal } from '@/components/ActionModal';
 import { GaugeCell, TIER_COLORS, type DayCounts } from '@/components/GaugeCell';
 import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { DayDetailModal } from '@/features/availability/DayDetailModal';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, memberColors, radius, space } from '@/theme/tokens';
 import { addMonths, dday, endOfMonth, formatKo, monthGrid, startOfMonth, todayStr, volLabel } from '@/lib/date';
 import { clearRange, getMonthRows, getSummary, setRange, type AvailRow } from '@/api/availabilities';
 import { listMembers } from '@/api/members';
@@ -93,7 +93,8 @@ export default function CalendarScreen() {
       const nick = members.find((m) => m.id === userId)?.nickname ?? '멤버';
       const ids = members.map((m) => m.id);
       if (v.status === 'unavailable') {
-        await clearRange(userId, v.from, v.to);
+        const removed = await clearRange(userId, v.from, v.to);
+        if (removed === 0) return; // 지울 게 없었으면 알림도 보내지 않는다
         await notifyMembers(userId, ids, 'availability_set', `${nick}님이 ${formatKo(v.from)} 가능 일정을 취소했어요.`, true);
         return;
       }
@@ -112,11 +113,12 @@ export default function CalendarScreen() {
   const resetMut = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error('로그인이 필요해요.');
-      await clearRange(userId, from, to);
+      return clearRange(userId, from, to);
     },
-    onSuccess: () => {
+    onSuccess: (removed) => {
       qc.invalidateQueries({ queryKey: ['availability-summary'] });
       qc.invalidateQueries({ queryKey: ['availability-rows'] });
+      if (removed === 0) Alert.alert('초기화', '이 달에 등록한 내 일정이 없어요.');
     },
     onError: (e) => Alert.alert('초기화 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
   });
@@ -128,15 +130,17 @@ export default function CalendarScreen() {
   }, [rows]);
 
   // 날짜별 "가능"한 멤버들의 프로필 색 — 게이지 칸을 각자 색으로 칠한다.
-  // 등록된 순서 그대로 append(정렬하지 않는다). 색이 없는 멤버는 GaugeCell이 기본색으로 채운다.
+  // 등록된 순서 그대로 append(정렬하지 않는다).
+  // 아직 고유색을 안 고른 멤버는 멤버 팔레트 순번으로 대신한다(전부 같은 파란색이 되지 않게).
   const availColorsByDate = useMemo(() => {
+    const fallback = new Map(members.map((mem, i) => [mem.id, memberColors[i % memberColors.length] as string]));
     const m: Record<string, string[]> = {};
     for (const r of rows) {
       if (r.status !== 'available') continue;
-      (m[r.date] ??= []).push(r.color ?? colors.light.available);
+      (m[r.date] ??= []).push(r.color ?? fallback.get(r.member_id) ?? colors.light.available);
     }
     return m;
-  }, [rows]);
+  }, [rows, members]);
 
   // "홍길동님 2026-07 초기화" — 지워지는 게 내 일정이라는 걸 버튼에서 바로 알 수 있게.
   const myNickname = members.find((m) => m.id === userId)?.nickname ?? '나';
@@ -149,22 +153,22 @@ export default function CalendarScreen() {
   }
 
   /**
-   * 연두 그라데이션 순위 — 가능한 날(1명 이상)만 모아 가능 인원 내림차순으로 줄 세우고,
-   * 상위 세 단계(같은 인원수는 같은 단계)에만 색을 준다. 절대 인원수가 아니라 그 달 안에서의 순위다.
+   * 연두 배경 — 가능한 날(1명 이상)은 전부 연두로 칠하고, 가능 인원이 많을수록 진하게.
+   * 그 달 안에서 가능 인원 내림차순 순위로 단계를 매기고(같은 인원수는 같은 단계),
+   * 단계가 색 수보다 많으면 가장 옅은 연두로 몰아준다. 가능 0명인 날은 색 없음.
    */
   const tierByDate = useMemo(() => {
     const m: Record<string, number> = {};
     if (!summary) return m;
-    const inMonth = cells.filter((c) => c.inMonth);
     const counts = new Map<string, number>();
-    for (const c of inMonth) {
+    for (const c of cells) {
+      if (!c.inMonth) continue;
       const n = asRegistered(summary[c.date] ?? EMPTY).available;
       if (n > 0) counts.set(c.date, n);
     }
-    const ranks = [...new Set(counts.values())].sort((a, b) => b - a).slice(0, TIER_COLORS.length);
+    const ranks = [...new Set(counts.values())].sort((a, b) => b - a);
     for (const [date, n] of counts) {
-      const i = ranks.indexOf(n);
-      if (i >= 0) m[date] = i;
+      m[date] = Math.min(ranks.indexOf(n), TIER_COLORS.length - 1);
     }
     return m;
   }, [summary, cells]);
@@ -237,16 +241,6 @@ export default function CalendarScreen() {
             marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
           />
-        ))}
-      </View>
-
-      {/* 범례 — 가능 인원 많은 순 1·2·3위 */}
-      <View style={styles.legend}>
-        {TIER_COLORS.map((c, i) => (
-          <View key={i} style={styles.legendItem}>
-            <View style={[styles.legendChip, { backgroundColor: c }]} />
-            <Text variant="caption" color={colors.light.textSecondary}>{i + 1}순위</Text>
-          </View>
         ))}
       </View>
 
@@ -328,10 +322,6 @@ const styles = StyleSheet.create({
   weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
 
-  legend: { flexDirection: 'row', justifyContent: 'center', gap: space.lg, marginTop: space.md },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendChip: { width: 14, height: 10, borderRadius: 3 },
-
   resetBtn: {
     alignSelf: 'center',
     marginTop: space.lg,
@@ -341,13 +331,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.light.hairlineStrong,
   },
-  candidates: { marginTop: space.xl, paddingTop: space.lg, borderTopWidth: 1, borderTopColor: colors.light.hairline },
+  candidates: { marginTop: space.xl, paddingTop: space.lg },
   candRow: {
     flexDirection: 'row',
     gap: space.md,
     paddingVertical: space.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.light.hairline,
   },
   candDateCol: { width: 118, gap: 2 },
   candMembers: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, alignItems: 'flex-start' },

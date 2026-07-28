@@ -101,11 +101,14 @@ export async function clearConfirmedDate(year: number, month: number): Promise<v
   if (error) throw error;
   const id = data?.[0]?.id as string | undefined;
   if (!id) return;
-  const { error: uErr } = await supabase
+  // RLS(작성자·관리자)에 막히면 에러 없이 0행이 된다 → 조용히 실패하지 않게 결과를 확인한다.
+  const { data: updated, error: uErr } = await supabase
     .from('date_polls')
     .update({ confirmed_date: null, status: 'open' })
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
   if (uErr) throw uErr;
+  if (!updated?.length) throw new Error('이 달 투표를 만든 사람 또는 관리자만 초기화할 수 있어요.');
 }
 
 /** 담당자: 후보 날짜들로 투표 생성. */
@@ -140,8 +143,13 @@ export async function castVote(memberId: string, allOptionIds: string[], selecte
 
 /** 담당자: 최종 날짜 확정 + 투표 종료. */
 export async function confirmDate(pollId: string, date: DateStr): Promise<void> {
-  const { error } = await supabase.from('date_polls').update({ confirmed_date: date, status: 'closed' }).eq('id', pollId);
+  const { data, error } = await supabase
+    .from('date_polls')
+    .update({ confirmed_date: date, status: 'closed' })
+    .eq('id', pollId)
+    .select('id');
   if (error) throw error;
+  if (!data?.length) throw new Error('이 달 투표를 만든 사람 또는 관리자만 날짜를 확정할 수 있어요.');
 }
 
 /** 투표 작성자: 날짜 확정 없이 투표만 종료. */
