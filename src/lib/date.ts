@@ -6,6 +6,7 @@
  * - `new Date("2026-08-01")`은 UTC 자정으로 파싱돼 KST에서 7월 31일이 된다. 절대 금지.
  * - 타임존은 Asia/Seoul 고정. 월 경계는 dayjs().startOf('month')로.
  */
+import { Platform } from 'react-native';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import * as Updates from 'expo-updates';
@@ -114,13 +115,23 @@ export function formatDateTime(iso: string): string {
   return dayjs.utc(iso).utcOffset(KST_OFFSET).format('M.D HH:mm');
 }
 
-/** 배포일 "YYYY.MM.DD" — 현재 실행 중인 OTA 업데이트 생성일(없으면 오늘, 개발 환경). */
+/**
+ * 배포일 "YYYY.MM.DD" — 현재 실행 중인 OTA 업데이트 생성일(없으면 오늘, 개발 환경).
+ * 웹(PWA)에는 OTA 개념이 없으므로 빌드 시 주입한 EXPO_PUBLIC_BUILD_DATE를 쓴다.
+ */
 export function deployDateLabel(): string {
   let created: Date | null = null;
-  try {
-    created = Updates.createdAt; // Date | null (개발/Expo Go에선 접근이 불안정할 수 있어 방어)
-  } catch {
-    created = null;
+  if (Platform.OS === 'web') {
+    // new Date(문자열) 직접 파싱은 금지(§CLAUDE.md). dayjs.utc로 받는다.
+    const built = process.env.EXPO_PUBLIC_BUILD_DATE;
+    const parsed = built ? dayjs.utc(built) : null;
+    created = parsed?.isValid() ? parsed.toDate() : null;
+  } else {
+    try {
+      created = Updates.createdAt; // Date | null (개발/Expo Go에선 접근이 불안정할 수 있어 방어)
+    } catch {
+      created = null;
+    }
   }
   const base = created ? dayjs.utc(created) : dayjs.utc();
   return base.utcOffset(KST_OFFSET).format('YYYY.MM.DD');

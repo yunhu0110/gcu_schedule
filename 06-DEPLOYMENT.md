@@ -7,9 +7,9 @@
 | 대상 | 방식 |
 |---|---|
 | 개발 중 | Expo Go 또는 development build + `npx expo start` |
-| Android 6명 배포 | **EAS Build 내부 배포(APK)** → 링크로 설치 |
-| iOS 6명 배포 | **TestFlight 내부 테스터** (Apple Developer Program 필요) |
-| 기능 업데이트 | **EAS Update (OTA)** — JS·이미지 변경은 빌드 없이 즉시 반영 |
+| Android 5명 배포 | **EAS Build 내부 배포(APK)** → 링크로 설치 |
+| iOS 1명 배포 | **PWA (웹앱)** — GitHub Pages + "홈 화면에 추가". 무료·무만료 (★ADR-014) |
+| 기능 업데이트 | **EAS Update (OTA)** — JS·이미지 변경은 빌드 없이 즉시 반영 (웹은 새로고침) |
 
 ## 1. Expo Go로는 끝까지 갈 수 없다
 Expo Go는 개발 서버가 켜져 있어야 하고, 커스텀 네이티브 모듈과 푸시 알림에 제약이 있다.
@@ -25,8 +25,40 @@ eas build --profile preview --platform android   # APK 산출
 - 기기에서 "알 수 없는 출처 앱 설치 허용"을 한 번 켜야 한다. 안내 문구를 미리 준비.
 - 만료 없음. 네이티브 변경이 없으면 이후엔 OTA만으로 충분.
 
-## 3. iOS — 두 가지 길
-### (A) TestFlight 내부 테스터 ← 권장
+## 3. iOS — 세 가지 길 (현재 채택: C)
+
+### (C) PWA 웹앱 ← **현재 이걸로 운영** (★ADR-014)
+아이폰 사용자가 1명뿐이라 유료 멤버십 없이 간다.
+
+```bash
+npm run fonts:web   # 폰트 원본이 바뀐 경우에만 (결과물은 저장소에 커밋되어 있다)
+npm run build:web   # expo export -p web + PWA 후처리
+```
+
+- **배포 URL**: https://yunhu0110.github.io/gcu_schedule/
+- **배포 방식**: `.github/workflows/deploy-web.yml`이 `feat/pwa-web` push 시 자동 배포.
+  Pages Source는 "GitHub Actions"로 설정되어 있다.
+- **설치 방법(사용자 안내)**: 사파리로 URL 접속 → 공유 버튼 → **"홈 화면에 추가"**.
+  이후 홈 화면 아이콘으로 주소창 없는 전체화면 실행.
+- **필요한 시크릿**: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (등록 완료).
+
+**웹에서만 갈라지는 구현**
+| 항목 | 네이티브 | 웹 |
+|---|---|---|
+| 세션 저장 | SecureStore(키체인) | localStorage (`src/lib/storage.web.ts`) |
+| 폰트 | TTF 번들 | 서브셋 woff2 2.5MB (`src/theme/fonts.web.ts`) |
+| 배포일 표시 | `Updates.createdAt` | 빌드 시각(`EXPO_PUBLIC_BUILD_DATE`) |
+| 업데이트 | EAS Update(OTA) | 새로고침 |
+| 푸시 | expo-notifications(예정) | 불가 — 인앱 알림만 |
+
+> **폰트 주의**: 원본 TTF를 그대로 웹에 올리면 32MB다. `scripts/subset-web-fonts.mjs`가
+> 한글 완성형 전체를 유지한 채 woff2로 줄여 2.5MB로 만든다. 결과물 `public/fonts/*.woff2`는
+> 저장소에 커밋되어 있으므로, **폰트를 교체하면 스크립트를 다시 돌려 커밋**할 것.
+
+> **하위경로 주의**: Pages가 `/gcu_schedule/` 아래에 서비스하므로 `app.json > experiments.baseUrl`이
+> 필요하다. 이 값이 없으면 JS 번들 경로가 404가 난다. 커스텀 도메인을 붙이면 이 값을 비워야 한다.
+
+### (A) TestFlight 내부 테스터 ← 아이폰 사용자가 늘면 이쪽
 - **Apple Developer Program 유료 멤버십 필요.**
 - 내부 테스터로 6명 초대(이메일 기준). 내부 테스팅은 별도 심사 대기가 없다.
 - **빌드에 만료 기한이 있다(약 90일).** 만료되면 새 빌드를 올려야 계속 설치·실행 가능.

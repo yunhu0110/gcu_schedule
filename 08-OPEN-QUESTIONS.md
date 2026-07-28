@@ -2,7 +2,8 @@
 
 ## 지금 막고 있는 것 (여기부터 답이 필요)
 1. ~~**앱 이름 / 모임 이름.**~~ → **결정됨: `월간gcu`.** ADR-001 참조.
-2. ~~**iOS 배포 방식.**~~ → **결정됨: iOS/Android 동시 지원.** ADR-002 참조. (단, iOS 상시 설치는 Apple Developer Program 유료 결제가 여전히 필요 — 비용 결정은 M1 iOS 배포 시점에 재확인.)
+2. ~~**iOS 배포 방식.**~~ → **결정됨: iOS/Android 동시 지원.** ADR-002 참조.
+   → **2026-07-28 갱신: 아이폰은 PWA(웹앱)로 간다.** ADR-014 참조. 실제 아이폰 사용자가 1명뿐이라 $99를 내지 않는다. TestFlight는 보류(폐기 아님).
 3. ~~**백엔드.**~~ → **결정됨: Supabase.** ADR-003 참조.
 4. ~~**로그인 수단.**~~ → **결정됨: 이메일+비밀번호 + 닉네임/프로필사진.** ADR-004 참조.
 
@@ -44,4 +45,8 @@
 - **ADR-010** · 2026-07-27 · 댓글 = **컨플루언스식 댓글 + 1단계 대댓글**(`comments.parent_id`). 작성자 프사+닉네임 함께 표시. wiki/meetup 공통. · 사용자 요구, 소모임 대화 흐름에 대댓글이면 충분 · 버린 대안: 무한 트리(과함), 평면 댓글(대댓글 불가). 영향: `01-PRD` F4, `02-DATA-MODEL` comments.
 - **ADR-011** · 2026-07-27 · 알림 = **인앱 알림 우선**. 이벤트(글 작성·등록·댓글·모임 확정 등) 발생 시 우상단 종 배지 + 알림 목록 화면. 읽음 처리로 미읽음 배지 카운트. Expo push(`expo-notifications`)는 이후(dev build 필요) · 인앱은 로컬 개발에서 즉시 검증 가능, 푸시는 네이티브 빌드 의존 · 버린 대안: 처음부터 푸시. 영향: `01-PRD` F7, `02-DATA-MODEL`(notifications 테이블 추가).
 - **ADR-012** · 2026-07-27 · 개발 루프 = **로컬 우선**. `expo start`로 로컬(시뮬레이터/실기기 dev)에서 기능 완성 후 EAS 배포. · 배포본 실행 실패(백엔드 미적용)를 겪음, APK 빌드 사이클 없이 빠르게 반복하려면 로컬이 맞음 · 버린 대안: 매번 APK 빌드해 확인.
+- **ADR-014** · 2026-07-28 · **아이폰 1명은 PWA(웹앱), 안드로이드 5명은 기존 APK 유지.** 웹 빌드(`expo export -p web`)를 GitHub Pages(`https://yunhu0110.github.io/gcu_schedule/`)에 올리고, 사파리 "홈 화면에 추가"로 쓴다. · 실제 아이폰 사용자가 1명이라 Apple Developer Program $99/년 + 90일마다 재빌드가 비용 대비 맞지 않음. 무료·무만료. · 버린 대안: TestFlight(유료, 보류이며 폐기는 아님), 애드혹(유료 멤버십 동일 필요), 6명 전원 PWA 통일(APK가 애니메이션·OTA·푸시에서 우위라 다운그레이드).
+  - **감수하는 것**: iOS 사파리 PWA는 푸시 알림 사실상 불가(ADR-011의 인앱 알림은 그대로 동작) · 네이티브 대비 애니메이션 손해 · OTA 대신 새로고침.
+  - **영향**: 세션 저장소가 웹에서 SecureStore→localStorage로 갈림(`src/lib/storage.web.ts`) · 웹 폰트는 원본 TTF 32MB라 서브셋 woff2 2.5MB로 대체(`scripts/subset-web-fonts.mjs`, `src/theme/fonts.web.ts`) · `app.json > experiments.baseUrl = "/gcu_schedule"` · 배포 워크플로 `.github/workflows/deploy-web.yml`.
+  - **후속 결정 필요**: 지금은 `feat/pwa-web` 브랜치 push에서만 배포된다. main 병합 시 트리거를 `main`으로 바꿀지 결정할 것.
 - **ADR-007** · 2026-07-27 · CI/CD = GitHub Actions + `eas update`(OTA). `main` push 시 JS/이미지/설정 변경을 `preview` 채널로 자동 배포 · 설정이 저장소 안에 보이고 투명, 무료 플랜 무리 없음 · 버린 대안: Expo 대시보드 GitHub 연동(EAS Workflows), 완전 수동. 네이티브 변경은 자동화 제외(수동 `eas build`). 워크플로 `.github/workflows/eas-update.yml`은 지금 준비만; EAS 프로젝트 + `EXPO_TOKEN` secret이 갖춰지는 M0에서 활성화.

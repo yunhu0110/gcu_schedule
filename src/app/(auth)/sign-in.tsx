@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import { prefStorage } from '@/lib/storage';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
@@ -27,7 +27,7 @@ export default function SignInScreen() {
 
   // 저장된 아이디 불러오기
   useEffect(() => {
-    SecureStore.getItemAsync(SAVED_EMAIL_KEY).then((saved) => {
+    prefStorage.getItem(SAVED_EMAIL_KEY).then((saved) => {
       if (saved) {
         setEmail(saved);
         setRemember(true);
@@ -44,15 +44,15 @@ export default function SignInScreen() {
       setError('로그인하지 못했어요. 이메일과 비밀번호를 확인해주세요.');
       return;
     }
-    if (remember) await SecureStore.setItemAsync(SAVED_EMAIL_KEY, email.trim().toLowerCase());
-    else await SecureStore.deleteItemAsync(SAVED_EMAIL_KEY);
+    if (remember) await prefStorage.setItem(SAVED_EMAIL_KEY, email.trim().toLowerCase());
+    else await prefStorage.removeItem(SAVED_EMAIL_KEY);
     // 성공 시 onAuthStateChange → 게이팅이 홈으로 이동
   }
 
   async function toggleRemember() {
     const next = !remember;
     setRemember(next);
-    if (!next) await SecureStore.deleteItemAsync(SAVED_EMAIL_KEY);
+    if (!next) await prefStorage.removeItem(SAVED_EMAIL_KEY);
   }
 
   function onForgot() {
