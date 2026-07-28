@@ -17,6 +17,7 @@ export function TextField({ label, style, ...rest }: Props) {
       ) : null}
       <TextInput
         placeholderTextColor={colors.light.slate}
+        textAlignVertical="center"
         style={[styles.input, style]}
         {...rest}
       />
@@ -32,9 +33,12 @@ const styles = StyleSheet.create({
     borderColor: colors.light.hairlineStrong,
     borderRadius: radius.button,
     paddingHorizontal: space.md,
+    paddingVertical: 0, // Android 기본 세로 패딩 제거 → 높이 48 안에서 중앙 정렬(글자 상단 잘림 방지)
     fontFamily: fonts.body,
     fontSize: 16,
+    lineHeight: 20,
     color: colors.light.textPrimary,
     backgroundColor: colors.light.paper,
+    includeFontPadding: false, // Noto Sans KR 상단 여백 클리핑 방지
   },
 });

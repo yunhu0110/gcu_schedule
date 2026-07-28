@@ -1,22 +1,29 @@
 /**
- * S2. 달력 — 6칸 게이지 월 그리드(시그니처 요소 2). 월 이동 + 요일 헤더 + 전원가능 강조.
- * 지금은 가용성 데이터가 없어 날짜 기반 결정적 플레이스홀더로 채운다.
- * 실제 집계(availability_summary)·상태 입력·범위 선택은 M1.
+ * S2. 달력 (메인) — 6칸 게이지 월 그리드. 날짜를 누르면 일정 입력 팝업이 뜬다.
+ * 로그인 상태면 availability_summary(집계)를 읽어 실제 게이지를 그리고, 입력은 본인 upsert.
+ * 미로그인 둘러보기(preview)에서는 날짜 기반 플레이스홀더로 화면만 채운다.
+ * 참조: 05-SCHEDULING-LOGIC, 02-DATA-MODEL §availabilities.
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
+import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { colors, space } from '@/theme/tokens';
-import { addMonths, monthGrid, todayStr, volLabel } from '@/lib/date';
+import { addMonths, endOfMonth, monthGrid, startOfMonth, todayStr, volLabel } from '@/lib/date';
+import { getSummary, setRange } from '@/api/availabilities';
+import { useAuth } from '@/features/auth/AuthContext';
+import { useDevStore } from '@/store/devStore';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+const EMPTY: DayCounts = { available: 0, maybe: 0, unavailable: 0, missing: 0 };
 
-// 날짜 문자열 기반 결정적 플레이스홀더 집계 (합 = 6). 실제 데이터는 M1.
+// 미로그인 둘러보기용 결정적 플레이스홀더(합 = 6). 실제 데이터는 로그인 후 집계.
 function placeholderCounts(date: string): DayCounts {
   const n = [...date].reduce((a, c) => a + c.charCodeAt(0), 0);
-  const available = n % 7; // 0..6
+  const available = n % 7;
   let remaining = 6 - available;
   const unavailable = remaining >= 2 && n % 4 === 0 ? 1 : 0;
   remaining -= unavailable;
@@ -25,15 +32,53 @@ function placeholderCounts(date: string): DayCounts {
   return { available, maybe, unavailable, missing };
 }
 
+function isAllAvailable(c: DayCounts): boolean {
+  const total = c.available + c.maybe + c.unavailable + c.missing;
+  return total > 0 && c.available === total;
+}
+
 export default function CalendarScreen() {
+  const { userId } = useAuth();
+  const preview = useDevStore((s) => s.previewMode);
+  const qc = useQueryClient();
+
   const [anchor, setAnchor] = useState(todayStr());
+  const [picked, setPicked] = useState<string | null>(null);
+
+  const from = startOfMonth(anchor);
+  const to = endOfMonth(anchor);
   const cells = monthGrid(anchor);
 
-  const allDays = cells.filter((c) => {
-    if (!c.inMonth) return false;
-    const cnt = placeholderCounts(c.date);
-    return cnt.available === 6;
+  const { data: summary } = useQuery({
+    queryKey: ['availability-summary', from, to],
+    queryFn: () => getSummary(from, to),
+    enabled: !!userId,
   });
+
+  const mutation = useMutation({
+    mutationFn: (v: AvailabilitySubmit) => setRange(userId as string, v.from, v.to, v.status, v.note),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['availability-summary'] });
+      setPicked(null);
+    },
+    onError: () => Alert.alert('저장 실패', '잠시 후 다시 시도해주세요.'),
+  });
+
+  function countsFor(date: string): DayCounts {
+    if (summary && summary[date]) return summary[date];
+    if (preview) return placeholderCounts(date);
+    return EMPTY;
+  }
+
+  const allDays = cells.filter((c) => c.inMonth && isAllAvailable(countsFor(c.date)));
+
+  function onPickDate(date: string) {
+    if (!userId) {
+      Alert.alert('로그인이 필요해요', '일정 입력은 로그인 후 이용할 수 있어요.');
+      return;
+    }
+    setPicked(date);
+  }
 
   return (
     <Screen scroll>
@@ -74,7 +119,8 @@ export default function CalendarScreen() {
             date={c.date}
             day={Number(c.date.slice(8, 10))}
             inMonth={c.inMonth}
-            counts={placeholderCounts(c.date)}
+            counts={countsFor(c.date)}
+            onPress={() => onPickDate(c.date)}
           />
         ))}
       </View>
@@ -85,9 +131,17 @@ export default function CalendarScreen() {
         <Text variant="bodySm" color={colors.light.textSecondary}>
           {allDays.length > 0
             ? `전원 가능한 날 ${allDays.length}개`
-            : '전원 가능한 날이 아직 없어요'}
+            : '날짜를 눌러 내 일정을 입력해보세요'}
         </Text>
       </View>
+
+      <AvailabilityModal
+        visible={picked != null}
+        date={picked}
+        saving={mutation.isPending}
+        onClose={() => setPicked(null)}
+        onSubmit={(v) => mutation.mutate(v)}
+      />
     </Screen>
   );
 }

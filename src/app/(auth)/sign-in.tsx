@@ -42,9 +42,12 @@ export default function SignInScreen() {
       </View>
 
       <View style={styles.head}>
-        <Text style={styles.wordmark}>월간gcu</Text>
+        <View style={styles.wordmarkRow}>
+          <Logo height={44} />
+          <Text style={styles.wordmark}>월간gcu</Text>
+        </View>
         <Text variant="body" color={colors.light.textSecondary} style={{ marginTop: space.sm }}>
-          6명의 기록과 일정을 한곳에.
+          월간GCU 스케줄 관리 앱
         </Text>
       </View>
 
@@ -86,7 +89,7 @@ export default function SignInScreen() {
           block
           onPress={() => {
             setPreview(true);
-            router.replace('/');
+            router.replace('/calendar');
           }}
         />
       </View>
@@ -97,6 +100,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space.lg },
   head: { marginTop: space.section },
+  wordmarkRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   wordmark: { fontFamily: 'Jalnan2', fontSize: 48, lineHeight: 58, color: colors.light.ink, letterSpacing: -1 },
   form: { gap: space.md, marginTop: space.section },
   footer: { marginTop: space.section },

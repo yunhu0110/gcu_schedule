@@ -18,7 +18,7 @@ export function useProtectedRoute(session: unknown, loading: boolean) {
     if (!session && !inAuthGroup && !preview) {
       router.replace('/sign-in');
     } else if (session && inAuthGroup) {
-      router.replace('/');
+      router.replace('/calendar');
     }
   }, [session, loading, segments, preview, router]);
 }

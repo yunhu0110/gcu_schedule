@@ -1,38 +1,43 @@
 /**
- * S1. 표지/홈 — "Wanted Sans 하이에너지" 시안 반영 (design/ 핸드오프 기준).
- * 콜드 스타트 시 3초 안에 "다음 모임 → 참석/불참, 이번 달 일정 입력, 최근 문서"를 보여준다.
- * 지금은 데이터 연결 전 플레이스홀더(고정값). 실제 데이터(hosts/meetups/availabilities)는 M1.
+ * S1. 표지/홈 — 브랜드 표지 + 다음 모임 상태 + 이번 달 일정 입력 유도.
+ * 다음 모임은 아직 데이터(meetups)가 없으므로 "미정"으로 두고, 현재일 기준 다음 달을 조율 대상으로 안내한다.
+ * 모든 CTA는 실제로 동작한다(달력/위키로 이동). 실제 모임/참석 데이터 연결은 M1.
  */
 import { StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { Logo } from '@/components/Logo';
 import { colors, fonts, radius, space } from '@/theme/tokens';
+import { addMonths, todayStr, volLabel } from '@/lib/date';
 
-// --- 플레이스홀더 데이터 (M1에서 서버 연결) ---
-const NEXT = { dday: 19, when: '08.15 SAT · 18:00', place: '성심당 본점', area: '대전 중구', budget: '₩25,000' };
-const SCHEDULE = { entered: 4, total: 6, deadlineD: 3 };
 const RECENT = [
   { title: '7월 모임 기록', ago: '어제' },
   { title: '가고 싶은 곳 후보', ago: '3일 전' },
 ];
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const today = todayStr();
+  const nextMonth = addMonths(today, 1);
+  const nextMonthNum = Number(nextMonth.slice(5, 7)); // 다음 달(월)
+  const monthNow = Number(today.slice(5, 7));
+
   return (
     <Screen scroll>
       {/* 브랜드 헤더 */}
       <View style={styles.brandRow}>
         <View style={styles.brandLeft}>
-          <Logo height={20} />
+          <Logo height={22} />
           <Text variant="brand">월간gcu</Text>
         </View>
         <Text variant="kicker" color={colors.light.textSecondary}>
-          2026.08 · No.8
+          {volLabel(today)} · No.{monthNow}
         </Text>
       </View>
 
-      {/* 히어로 D-day 카드 */}
+      {/* 히어로 — 다음 모임 미정 */}
       <View style={styles.hero}>
         <View style={styles.heroDeco} />
         <View style={styles.heroTop}>
@@ -42,63 +47,43 @@ export default function HomeScreen() {
             </Text>
           </View>
           <Text variant="mono" color={colors.light.paper60}>
-            {NEXT.when}
+            {volLabel(nextMonth)}
           </Text>
         </View>
 
-        <Text style={styles.dday}>D-{NEXT.dday}</Text>
+        <Text style={styles.heroBig}>미정</Text>
 
-        <View style={styles.heroDivider}>
-          <View style={{ flex: 1 }}>
-            <Text variant="bodyBold" color={colors.light.paper} style={{ fontSize: 15 }}>
-              {NEXT.place}
-            </Text>
-            <Text variant="caption" color={colors.light.paper60}>
-              {NEXT.area}
-            </Text>
-          </View>
-          <Text variant="mono" color={colors.light.moneyOnDark} style={{ fontSize: 14 }}>
-            {NEXT.budget}
-          </Text>
-        </View>
-      </View>
+        <Text variant="body" color={colors.light.paper} style={{ marginTop: space.xs }}>
+          {nextMonthNum}월 모임 일정을 모으는 중이에요.
+        </Text>
+        <Text variant="bodySm" color={colors.light.paper60} style={{ marginTop: space.xs }}>
+          달력에서 각자 가능한 날을 입력하면 후보가 잡혀요.
+        </Text>
 
-      {/* 참석 / 불참 */}
-      <View style={styles.actionRow}>
-        <Button label="참석할게요" style={{ flex: 2 }} />
-        <Button label="불참" variant="secondary" style={{ flex: 1 }} />
+        <Button
+          label="달력에서 내 일정 입력"
+          block
+          onPress={() => router.push('/calendar')}
+          style={{ marginTop: space.lg }}
+        />
       </View>
 
       {/* 이번 달 일정 입력 */}
       <View style={styles.softCard}>
         <View style={styles.softTop}>
           <Text variant="bodyBold" style={{ fontSize: 15 }}>
-            8월 일정, 아직이에요
-          </Text>
-          <View style={styles.deadlinePill}>
-            <Text style={styles.deadlineText}>마감 D-{SCHEDULE.deadlineD}</Text>
-          </View>
-        </View>
-
-        <View style={styles.avatarBlock}>
-          <View style={styles.avstack}>
-            {Array.from({ length: SCHEDULE.total }).map((_, i) => {
-              const dim = i >= SCHEDULE.entered;
-              return (
-                <View key={i} style={[styles.ava, i > 0 && styles.avaOverlap, dim && styles.avaDim]}>
-                  <Text variant="caption" color={colors.light.textSecondary}>
-                    {String.fromCharCode(65 + i)}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-          <Text variant="caption" color={colors.light.textSecondary}>
-            {SCHEDULE.entered} / {SCHEDULE.total} 입력
+            {nextMonthNum}월 일정, 아직이에요
           </Text>
         </View>
-
-        <Button label="내 일정 입력하기" block style={{ marginTop: space.lg }} />
+        <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.xs }}>
+          가능/불가/미정을 날짜별로 남겨두면 6명 게이지가 채워져요.
+        </Text>
+        <Button
+          label="내 일정 입력하기"
+          block
+          onPress={() => router.push('/calendar')}
+          style={{ marginTop: space.lg }}
+        />
       </View>
 
       {/* 최근 문서 */}
@@ -109,7 +94,7 @@ export default function HomeScreen() {
         {RECENT.map((r) => (
           <View key={r.title} style={styles.recentRow}>
             <View style={styles.recentDot} />
-            <Text variant="bodySm" style={{ flex: 1 }}>
+            <Text variant="bodySm" style={{ flex: 1 }} onPress={() => router.push('/wiki')}>
               {r.title}
             </Text>
             <Text variant="mono" color={colors.light.textSecondary} style={{ fontSize: 10 }}>
@@ -148,27 +133,14 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
   },
-  dday: {
-    fontFamily: fonts.ddayNumber,
-    fontSize: 84,
-    lineHeight: 84 * 0.86,
+  heroBig: {
+    fontFamily: fonts.display,
+    fontSize: 56,
+    lineHeight: 66,
     letterSpacing: -1,
     color: colors.light.paper,
     marginTop: space.md,
-    transform: [{ skewX: '-8deg' }],
   },
-  heroDivider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: colors.light.paper16,
-    paddingTop: space.lg,
-    marginTop: space.md,
-    gap: space.md,
-  },
-
-  actionRow: { flexDirection: 'row', gap: space.sm, marginTop: space.lg },
 
   softCard: {
     backgroundColor: colors.light.surfacePlate,
@@ -177,29 +149,6 @@ const styles = StyleSheet.create({
     marginTop: space.xl,
   },
   softTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  deadlinePill: {
-    backgroundColor: colors.light.amber,
-    borderRadius: radius.pill,
-    height: 26,
-    paddingHorizontal: 11,
-    justifyContent: 'center',
-  },
-  deadlineText: { fontFamily: fonts.monoSemibold, fontSize: 13, letterSpacing: 1, color: colors.light.ink },
-
-  avatarBlock: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.lg },
-  avstack: { flexDirection: 'row' },
-  ava: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.light.mist,
-    borderWidth: 2,
-    borderColor: colors.light.paper,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avaOverlap: { marginLeft: -8 },
-  avaDim: { opacity: 0.42 },
 
   recent: { marginTop: space.xl, gap: space.xs },
   recentRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 11 },

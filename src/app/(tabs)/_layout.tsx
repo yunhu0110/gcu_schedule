@@ -8,6 +8,7 @@ import { colors, fonts } from '@/theme/tokens';
 export default function TabsLayout() {
   return (
     <Tabs
+      initialRouteName="calendar"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.light.ink,
@@ -21,8 +22,8 @@ export default function TabsLayout() {
         tabBarIconStyle: { display: 'none' },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: '표지' }} />
       <Tabs.Screen name="calendar" options={{ title: '달력' }} />
+      <Tabs.Screen name="index" options={{ title: '표지' }} />
       <Tabs.Screen name="wiki" options={{ title: '위키' }} />
       <Tabs.Screen name="settle" options={{ title: '정산' }} />
       <Tabs.Screen name="me" options={{ title: '나' }} />
