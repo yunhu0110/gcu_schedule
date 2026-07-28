@@ -29,10 +29,10 @@ type Props = {
   onSubmit: (v: AvailabilitySubmit) => void;
 };
 
-// 불가/가능 2종만. (미정 제거)
+// 가능/불가 2종. (가능 먼저, 불가 오른쪽)
 const OPTIONS: { key: AvailabilityStatus; label: string; color: string }[] = [
-  { key: 'unavailable', label: '불가', color: colors.light.unavailable },
   { key: 'available', label: '가능', color: colors.light.available },
+  { key: 'unavailable', label: '불가', color: colors.light.unavailable },
 ];
 
 const STEP = 30; // 시간 스텝(분)

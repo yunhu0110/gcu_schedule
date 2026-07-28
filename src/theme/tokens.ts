@@ -135,9 +135,14 @@ export const layout = {
   minWidth: 320,
 } as const;
 
-// 멤버 표시색 팔레트 — 마이페이지 색상 선택 + DB 0005 기본색과 동일 순서.
+// 멤버 표시색 팔레트(20색) — 마이페이지에서 선택. 앞 6색은 DB 0005 기본 배정과 동일 순서.
 // 달력 상세/후보 목록에서 각 멤버를 이 색으로 표시한다.
-export const memberColors = ['#2140E0', '#E8318A', '#00B9F2', '#80C341', '#FCAF16', '#7A5AF8'] as const;
+export const memberColors = [
+  '#2140E0', '#E8318A', '#00B9F2', '#80C341', '#FCAF16', '#7A5AF8',
+  '#EF4444', '#F97316', '#EAB308', '#22C55E', '#14B8A6', '#06B6D4',
+  '#3B82F6', '#6366F1', '#A855F7', '#D946EF', '#EC4899', '#F43F5E',
+  '#0EA5E9', '#64748B',
+] as const;
 
 export type ColorScheme = keyof typeof colors;
 export type ThemeColors = typeof light;

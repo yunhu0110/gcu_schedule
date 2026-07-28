@@ -3,10 +3,13 @@
  * 활성 ink / 비활성 slate, 상단 헤어라인. (정산은 이후 마일스톤 — 탭에서 숨김)
  */
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts } from '@/theme/tokens';
 import { TabIcon, type TabIconName } from '@/components/TabIcon';
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const bottom = Math.max(insets.bottom, 10); // 기기 홈 인디케이터/버튼과 겹치지 않게
   return (
     <Tabs
       screenOptions={{
@@ -17,9 +20,9 @@ export default function TabsLayout() {
           backgroundColor: colors.light.paper,
           borderTopColor: colors.light.hairline,
           borderTopWidth: 1,
-          height: 60,
+          height: 58 + bottom,
           paddingTop: 6,
-          paddingBottom: 8,
+          paddingBottom: bottom,
         },
         tabBarLabelStyle: { fontSize: 11, lineHeight: 14, fontFamily: fonts.bodyBold },
       }}
