@@ -24,40 +24,42 @@ type Props = {
   inMonth: boolean;
   counts: DayCounts;
   availColors?: string[]; // 가능한 멤버들의 프로필 색 (등록 순서 그대로)
-  total?: number; // 활성 멤버 수(기본 6) — 하이라이트 단계 기준
   marked?: boolean; // 확정된 모임 날짜
   onPress?: () => void;
 };
 
-const MIN_HIGHLIGHT = 4; // 4명 미만은 하이라이트 없음
+/**
+ * 칸 수는 정원(6)으로 고정한다. 지금 가입한 멤버가 3명이어도 6칸을 그리고
+ * 남는 칸은 미등록(회색)으로 둔다 — "6명"이 이 앱의 대전제이기 때문.
+ */
+export const SLOTS = 6;
+const MIN_HIGHLIGHT = 4; // 가능 4명 미만은 하이라이트 없음
 
-/** 가능 인원 → 셀 배경색. 하이라이트가 없으면 null. */
-function highlightColor(available: number, total: number): string | null {
+/** 가능 인원 → 셀 배경색. 6명=진한 연두, 5명·4명은 채도 down, 3명 이하는 없음. */
+function highlightColor(available: number): string | null {
   if (available < MIN_HIGHLIGHT) return null;
-  const short = total - available; // 몇 명이 빠졌나
-  if (short <= 0) return colors.light.availAll;
-  if (short === 1) return colors.light.availHigh;
-  if (short === 2) return colors.light.availMid;
-  return null;
+  if (available >= SLOTS) return colors.light.availAll;
+  if (available === SLOTS - 1) return colors.light.availHigh;
+  return colors.light.availMid;
 }
 
-// 6칸을 상태 순서(가능→미정→불가→미입력)로 채운 색 배열.
+// 6칸을 상태 순서(가능→미정→불가→미입력)로 채운 색 배열. 모자라면 미등록 색으로 채운다.
 // 가능 칸은 그 멤버의 프로필 색을 쓰고, 색이 없는 멤버만 기본색으로 떨어진다.
 function gaugeColors(c: DayCounts, availColors: string[]): string[] {
   const seq: string[] = [];
   for (let i = 0; i < c.available; i++) seq.push(availColors[i] ?? colors.light.available);
   for (let i = 0; i < c.maybe; i++) seq.push(colors.light.maybe);
   for (let i = 0; i < c.unavailable; i++) seq.push(colors.light.unavailable);
-  for (let i = 0; i < c.missing; i++) seq.push(colors.light.missing);
-  return seq.slice(0, 6);
+  while (seq.length < SLOTS) seq.push(colors.light.missing);
+  return seq.slice(0, SLOTS);
 }
 
-export function GaugeCell({ date, day, inMonth, counts, availColors = [], total = 6, marked, onPress }: Props) {
-  const allAvailable = total > 0 && counts.available >= total;
-  const tint = inMonth ? highlightColor(counts.available, total) : null;
+export function GaugeCell({ date, day, inMonth, counts, availColors = [], marked, onPress }: Props) {
+  const allAvailable = counts.available >= SLOTS;
+  const tint = inMonth ? highlightColor(counts.available) : null;
   const segments = gaugeColors(counts, availColors);
 
-  const label = `${day}일, ${allAvailable ? `${total}명 모두 가능` : `가능 ${counts.available}명`}`;
+  const label = `${day}일, ${allAvailable ? `${SLOTS}명 모두 가능` : `가능 ${counts.available}명`}`;
 
   return (
     <Pressable

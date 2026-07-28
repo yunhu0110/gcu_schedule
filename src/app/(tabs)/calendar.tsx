@@ -12,7 +12,7 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { BrandHeader } from '@/components/BrandHeader';
 import { ActionModal } from '@/components/ActionModal';
-import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
+import { GaugeCell, SLOTS, type DayCounts } from '@/components/GaugeCell';
 import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { DayDetailModal } from '@/features/availability/DayDetailModal';
 import { colors, radius, space } from '@/theme/tokens';
@@ -138,7 +138,6 @@ export default function CalendarScreen() {
     return m;
   }, [rows]);
 
-  const totalMembers = members.length || 6;
   // "홍길동님 2026-07 초기화" — 지워지는 게 내 일정이라는 걸 버튼에서 바로 알 수 있게.
   const myNickname = members.find((m) => m.id === userId)?.nickname ?? '나';
   const resetLabel = `${myNickname}님 ${anchor.slice(0, 7)} 초기화`;
@@ -213,7 +212,6 @@ export default function CalendarScreen() {
             inMonth={c.inMonth}
             counts={countsFor(c.date)}
             availColors={availColorsByDate[c.date]}
-            total={totalMembers}
             marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
           />
@@ -223,9 +221,9 @@ export default function CalendarScreen() {
       {/* 범례 — 가능 인원이 많을수록 진한 연두 */}
       <View style={styles.legend}>
         {[
-          { c: colors.light.availAll, label: `${totalMembers}명` },
-          { c: colors.light.availHigh, label: `${totalMembers - 1}명` },
-          { c: colors.light.availMid, label: `${totalMembers - 2}명` },
+          { c: colors.light.availAll, label: `${SLOTS}명` },
+          { c: colors.light.availHigh, label: `${SLOTS - 1}명` },
+          { c: colors.light.availMid, label: `${SLOTS - 2}명` },
         ].map((l) => (
           <View key={l.label} style={styles.legendItem}>
             <View style={[styles.legendChip, { backgroundColor: l.c }]} />
