@@ -192,14 +192,7 @@ export default function CalendarScreen() {
         ))}
       </View>
 
-      {/* 내 일정 초기화 (해당 월) */}
-      {userId ? (
-        <Pressable style={styles.resetBtn} onPress={() => setResetOpen(true)}>
-          <Text variant="bodySm" color={colors.light.textSecondary}>{anchor.slice(0, 7)}월 초기화</Text>
-        </Pressable>
-      ) : null}
-
-      {/* 하단: 가능한 날 후보 (날짜 · 멤버 · 시간) */}
+      {/* 가능한 날 후보 (날짜 · 멤버 · 시간) */}
       <View style={styles.candidates}>
         <Text variant="kicker" color={colors.light.textSecondary}>가능한 날</Text>
         {candidates.length === 0 ? (
@@ -229,6 +222,13 @@ export default function CalendarScreen() {
           })
         )}
       </View>
+
+      {/* 내 일정 초기화 (해당 월) */}
+      {userId ? (
+        <Pressable style={styles.resetBtn} onPress={() => setResetOpen(true)}>
+          <Text variant="bodySm" color={colors.light.textSecondary}>{anchor.slice(0, 7)}월 초기화</Text>
+        </Pressable>
+      ) : null}
 
       <DayDetailModal
         visible={detailDate != null}

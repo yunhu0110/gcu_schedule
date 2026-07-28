@@ -1,9 +1,11 @@
 /**
- * S1. 표지/홈 — 브랜드 헤더 + 다음 모임(다음 달) 담당자·확정 날짜 + 아이디어 창고.
- * 담당자는 관리자가 지정하고, 모임 날짜는 투표로 확정되면 여기 표시된다(마이페이지 투표).
+ * S1. 표지/홈 — 브랜드 헤더 + 모임(기본: 다음 달) 모임장·확정 날짜 + 낙서장.
+ * 모임장은 관리자가 지정하고, 모임 날짜는 투표로 확정되면 여기 표시된다(마이페이지 투표).
+ * 히어로는 좌우 스와이프(또는 ‹ › 탭)로 이전/다음 달 모임을 넘겨 볼 수 있다.
  */
 import { useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
@@ -26,11 +28,24 @@ export default function HomeScreen() {
   const qc = useQueryClient();
   const [pickHost, setPickHost] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // 히어로가 보고 있는 달. 0 = 이번 달, 1 = 다음 달(기본). 스와이프로 이동.
+  const [offset, setOffset] = useState(1);
 
   const today = todayStr();
-  const nextMonth = addMonths(today, 1);
-  const nMonth = Number(nextMonth.slice(5, 7));
-  const nYear = Number(nextMonth.slice(0, 4));
+  const shownMonth = addMonths(today, offset);
+  const nMonth = Number(shownMonth.slice(5, 7));
+  const nYear = Number(shownMonth.slice(0, 4));
+
+  const step = (d: number) => setOffset((v) => Math.min(12, Math.max(-11, v + d)));
+  // 좌우로 충분히 끌었을 때만 발동 — 세로 스크롤과 충돌하지 않게 activeOffsetX로 축을 고정.
+  const swipe = Gesture.Pan()
+    .activeOffsetX([-16, 16])
+    .failOffsetY([-12, 12])
+    .runOnJS(true)
+    .onEnd((e) => {
+      if (e.translationX <= -40) step(1);
+      else if (e.translationX >= 40) step(-1);
+    });
 
   const { data: me } = useQuery({ queryKey: ['me', userId], queryFn: () => getMyProfile(userId as string), enabled: !!userId });
   const { data: members = [] } = useQuery({ queryKey: ['members'], queryFn: listMembers, enabled: !!userId });
@@ -58,10 +73,10 @@ export default function HomeScreen() {
       <BrandHeader />
       <Text variant="kicker" color={colors.light.textSecondary}>{volLabel(today)}</Text>
 
-      {/* 다음 모임 담당자 */}
+      {/* 모임장 */}
       <View style={styles.hostCard}>
         <View style={{ flex: 1 }}>
-          <Text variant="kicker" color={colors.light.textSecondary}>{nMonth}월 모임 담당자</Text>
+          <Text variant="kicker" color={colors.light.textSecondary}>{nMonth}월 모임장</Text>
           {host ? (
             <View style={styles.hostRow}>
               {host.avatar_url ? (
@@ -80,22 +95,34 @@ export default function HomeScreen() {
         {isAdmin ? <Button label={host ? '변경' : '지정'} variant="secondary" onPress={() => setPickHost(true)} style={styles.hostBtn} /> : null}
       </View>
 
-      {/* 히어로 — 다음 모임 날짜 */}
-      <View style={styles.hero}>
-        <View style={styles.heroDeco} />
-        <View style={styles.heroTop}>
-          <View style={styles.chip}><Text variant="kicker" color={colors.light.paper}>◆ 다음 모임</Text></View>
-          <Text variant="mono" color={colors.light.paper60}>{volLabel(nextMonth)}</Text>
+      {/* 히어로 — 모임 날짜 (좌우 스와이프로 달 이동) */}
+      <GestureDetector gesture={swipe}>
+        <View style={styles.hero}>
+          <View style={styles.heroDeco} />
+          <View style={styles.heroTop}>
+            <View style={styles.chip}>
+              <Text variant="kicker" color={colors.light.paper}>◆ {offset === 1 ? '다음 모임' : `${nMonth}월 모임`}</Text>
+            </View>
+            <View style={styles.heroNav}>
+              <Pressable onPress={() => step(-1)} hitSlop={12}>
+                <Text variant="h2" color={colors.light.paper60}>‹</Text>
+              </Pressable>
+              <Text variant="mono" color={colors.light.paper60}>{volLabel(shownMonth)}</Text>
+              <Pressable onPress={() => step(1)} hitSlop={12}>
+                <Text variant="h2" color={colors.light.paper60}>›</Text>
+              </Pressable>
+            </View>
+          </View>
+          <Text style={styles.heroBig}>{ddayLabel}</Text>
+          <Text variant="body" color={colors.light.paper} style={{ marginTop: space.xs }}>
+            {confirmed ? `${formatKo(confirmed)} 모임` : `${nMonth}월 모임 날짜 미정`}
+          </Text>
+          <Button label="달력에서 내 일정 입력" block onPress={() => router.push('/calendar')} style={{ marginTop: space.lg }} />
+          {canFix ? (
+            <Button label={confirmed ? '날짜 변경' : '날짜 확정하기'} variant="ghost" block onPress={() => setConfirmOpen(true)} />
+          ) : null}
         </View>
-        <Text style={styles.heroBig}>{ddayLabel}</Text>
-        <Text variant="body" color={colors.light.paper} style={{ marginTop: space.xs }}>
-          {confirmed ? `${formatKo(confirmed)} 모임` : `${nMonth}월 모임 날짜 미정`}
-        </Text>
-        <Button label="달력에서 내 일정 입력" block onPress={() => router.push('/calendar')} style={{ marginTop: space.lg }} />
-        {canFix ? (
-          <Button label={confirmed ? '날짜 변경' : '날짜 확정하기'} variant="ghost" block onPress={() => setConfirmOpen(true)} />
-        ) : null}
-      </View>
+      </GestureDetector>
 
       {/* 메모장 */}
       {userId ? <MemoBoard userId={userId} /> : null}
@@ -130,6 +157,7 @@ const styles = StyleSheet.create({
   hero: { backgroundColor: colors.light.heroBg, borderRadius: radius.hero, padding: 22, overflow: 'hidden' },
   heroDeco: { position: 'absolute', right: -30, top: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: colors.light.cobalt22 },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroNav: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   chip: { backgroundColor: colors.light.cobalt, borderRadius: radius.pill, paddingVertical: 5, paddingHorizontal: 10 },
   heroBig: { fontFamily: fonts.display, fontSize: 44, lineHeight: 54, letterSpacing: -1, color: colors.light.paper, marginTop: space.md },
 });

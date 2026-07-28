@@ -1,9 +1,10 @@
 /**
  * GaugeCell — 시그니처 요소 2. 달력 한 칸: 날짜 + 하단 6칸 미니 게이지.
  * 6명이라는 사실을 채도가 아니라 "칸 수"로 보여준다.
- * 전원 가능(all)한 날은 셀 전체 neon + 숫자 흰색 반전.
+ * 전원 가능(all)한 날은 셀 전체를 cobalt→neon 그라데이션으로 채우고 숫자를 흰색 반전.
  */
 import { Pressable, StyleSheet, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { colors } from '@/theme/tokens';
 import { Text } from './Text';
 import type { DateStr } from '@/lib/date';
@@ -48,6 +49,19 @@ export function GaugeCell({ date, day, inMonth, counts, marked, onPress }: Props
       accessibilityLabel={label}
       style={[styles.cell, !inMonth && styles.outMonth, allAvailable && styles.allCell, marked && styles.markedCell]}
     >
+      {allAvailable && (
+        <View style={styles.gradFill} pointerEvents="none">
+          <Svg width="100%" height="100%">
+            <Defs>
+              <LinearGradient id={`all-${date}`} x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor={colors.light.cobalt} />
+                <Stop offset="1" stopColor={colors.light.neon} />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" rx={8} fill={`url(#all-${date})`} />
+          </Svg>
+        </View>
+      )}
       <Text
         variant="mono"
         style={styles.num}
@@ -78,10 +92,11 @@ const styles = StyleSheet.create({
   outMonth: { opacity: 0.5 },
   markedCell: { borderWidth: 2, borderColor: colors.light.cobalt, borderRadius: 8 },
   allCell: {
-    backgroundColor: colors.light.neon,
     borderRadius: 8,
     justifyContent: 'center',
   },
+  // 그라데이션은 셀 padding까지 덮되, 이웃 칸과 1~2px 틈을 남긴다
+  gradFill: { position: 'absolute', left: 2, right: 2, top: 1, bottom: 1 },
   num: { fontSize: 13, letterSpacing: 0 },
   gauge: { flexDirection: 'row', gap: 1, marginTop: 8, width: '86%' },
   seg: { flex: 1, height: 4, borderRadius: 1 },
