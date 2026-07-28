@@ -127,6 +127,17 @@ export default function CalendarScreen() {
     return m;
   }, [rows]);
 
+  // 날짜별 "가능"한 멤버들의 프로필 색 — 게이지 칸을 각자 색으로 칠한다.
+  // 등록된 순서 그대로 append(정렬하지 않는다). 색이 없는 멤버는 GaugeCell이 기본색으로 채운다.
+  const availColorsByDate = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const r of rows) {
+      if (r.status !== 'available') continue;
+      (m[r.date] ??= []).push(r.color ?? colors.light.available);
+    }
+    return m;
+  }, [rows]);
+
   const totalMembers = members.length || 6;
 
   function countsFor(date: string): DayCounts {
@@ -198,6 +209,7 @@ export default function CalendarScreen() {
             day={Number(c.date.slice(8, 10))}
             inMonth={c.inMonth}
             counts={countsFor(c.date)}
+            availColors={availColorsByDate[c.date]}
             total={totalMembers}
             marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
