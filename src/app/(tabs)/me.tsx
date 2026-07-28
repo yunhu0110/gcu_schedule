@@ -3,7 +3,7 @@
  * 프사를 누르면 편집 팝업이 뜨고 거기서 사진/고유색/닉네임을 바꾼다.
  */
 import { useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Image, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -148,6 +148,24 @@ export default function MeScreen() {
 
       <Button label={preview ? '로그인 화면으로' : '로그아웃'} variant="secondary" block onPress={onLogout} style={styles.logout} />
 
+      {/* 저작권 — 만든 사람 */}
+      <View style={styles.footer}>
+        <Text variant="caption" color={colors.light.textSecondary} style={styles.footerLine}>
+          © {new Date().getFullYear()} 김윤후
+        </Text>
+        <Text variant="caption" color={colors.light.textSecondary} style={styles.footerLine}>
+          가천대학교 응용통계학과 10학번
+        </Text>
+        <Text
+          variant="caption"
+          color={colors.light.textSecondary}
+          style={styles.footerLine}
+          onPress={() => Linking.openURL('mailto:yunhu0110@gmail.com')}
+        >
+          yunhu0110@gmail.com
+        </Text>
+      </View>
+
       <ProfileEditModal
         visible={editOpen}
         nickname={me?.nickname ?? ''}
@@ -168,4 +186,13 @@ const styles = StyleSheet.create({
   avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   linkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   logout: { marginTop: space.section },
+  footer: {
+    alignItems: 'center',
+    gap: 2,
+    marginTop: space.xl,
+    paddingTop: space.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.light.hairline,
+  },
+  footerLine: { textAlign: 'center' },
 });
