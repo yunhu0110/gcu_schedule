@@ -119,6 +119,7 @@ export default function MeScreen() {
               userId={userId}
               meNickname={me?.nickname ?? '멤버'}
               isHost={nextHost?.member_id === userId}
+              isAdmin={!!me?.is_admin}
               year={vYear}
               month={vMonth}
               memberIds={members.map((m) => m.id)}

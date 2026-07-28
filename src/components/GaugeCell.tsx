@@ -20,6 +20,7 @@ type Props = {
   day: number; // 표시 숫자 (1~31)
   inMonth: boolean;
   counts: DayCounts;
+  marked?: boolean; // 확정된 모임 날짜
   onPress?: () => void;
 };
 
@@ -33,7 +34,7 @@ function gaugeColors(c: DayCounts): string[] {
   return seq.slice(0, 6);
 }
 
-export function GaugeCell({ date, day, inMonth, counts, onPress }: Props) {
+export function GaugeCell({ date, day, inMonth, counts, marked, onPress }: Props) {
   const total = counts.available + counts.maybe + counts.unavailable + counts.missing;
   const allAvailable = total > 0 && counts.available === total;
   const segments = gaugeColors(counts);
@@ -45,7 +46,7 @@ export function GaugeCell({ date, day, inMonth, counts, onPress }: Props) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={[styles.cell, !inMonth && styles.outMonth, allAvailable && styles.allCell]}
+      style={[styles.cell, !inMonth && styles.outMonth, allAvailable && styles.allCell, marked && styles.markedCell]}
     >
       <Text
         variant="mono"
@@ -75,6 +76,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   outMonth: { opacity: 0.5 },
+  markedCell: { borderWidth: 2, borderColor: colors.light.cobalt, borderRadius: 8 },
   allCell: {
     backgroundColor: colors.light.neon,
     borderRadius: 8,

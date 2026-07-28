@@ -12,15 +12,13 @@ import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { Logo } from '@/components/Logo';
 import { colors, space } from '@/theme/tokens';
-import { todayStr } from '@/lib/date';
+import { deployDateLabel } from '@/lib/date';
 import { signIn } from '@/api/auth';
-import { useDevStore } from '@/store/devStore';
 
 const SAVED_EMAIL_KEY = 'saved_email';
 
 export default function SignInScreen() {
   const router = useRouter();
-  const setPreview = useDevStore((s) => s.setPreview);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -65,7 +63,7 @@ export default function SignInScreen() {
     <Screen scroll padded>
       <View style={styles.top}>
         <Text variant="kicker" color={colors.light.textSecondary}>
-          {todayStr().replace(/-/g, '.')}
+          {deployDateLabel()}
         </Text>
       </View>
 
@@ -104,18 +102,6 @@ export default function SignInScreen() {
         {error ? <Text variant="bodySm" color={colors.light.neon}>{error}</Text> : null}
         <Button label="로그인" block loading={loading} onPress={onSubmit} style={{ marginTop: space.xs }} />
         <Button label="가입하기" variant="ghost" block onPress={() => router.push('/join')} />
-      </View>
-
-      <View style={styles.footer}>
-        <Button
-          label="백엔드 없이 둘러보기 (임시)"
-          variant="ghost"
-          block
-          onPress={() => {
-            setPreview(true);
-            router.replace('/');
-          }}
-        />
       </View>
     </Screen>
   );

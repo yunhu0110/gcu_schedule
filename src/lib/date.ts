@@ -9,6 +9,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import * as Updates from 'expo-updates';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -108,4 +109,11 @@ export function volLabel(date: DateStr): string {
 /** timestamptz(ISO) → KST "M.D HH:mm" (메모/코멘트 시간 표시용). */
 export function formatDateTime(iso: string): string {
   return dayjs(iso).tz(TZ).format('M.D HH:mm');
+}
+
+/** 배포일 "YYYY.MM.DD" — 현재 실행 중인 OTA 업데이트 생성일(없으면 오늘, 개발 환경). */
+export function deployDateLabel(): string {
+  const created = Updates.createdAt; // Date | null
+  const base = created ? dayjs(created) : dayjs();
+  return base.tz(TZ).format('YYYY.MM.DD');
 }

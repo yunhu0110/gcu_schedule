@@ -12,10 +12,11 @@ import { BrandHeader } from '@/components/BrandHeader';
 import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
 import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { DayDetailModal } from '@/features/availability/DayDetailModal';
-import { colors, space } from '@/theme/tokens';
-import { addMonths, endOfMonth, formatKo, monthGrid, startOfMonth, todayStr, volLabel } from '@/lib/date';
+import { colors, radius, space } from '@/theme/tokens';
+import { addMonths, dday, endOfMonth, formatKo, monthGrid, startOfMonth, todayStr, volLabel } from '@/lib/date';
 import { getMonthRows, getSummary, setRange, type AvailRow } from '@/api/availabilities';
 import { listMembers } from '@/api/members';
+import { getPoll } from '@/api/polls';
 import { notifyMembers } from '@/api/notifications';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useDevStore } from '@/store/devStore';
@@ -68,6 +69,14 @@ export default function CalendarScreen() {
     queryFn: listMembers,
     enabled: !!userId,
   });
+  const aY = Number(anchor.slice(0, 4));
+  const aM = Number(anchor.slice(5, 7));
+  const { data: poll } = useQuery({
+    queryKey: ['next-meeting', aY, aM],
+    queryFn: () => getPoll(aY, aM),
+    enabled: !!userId,
+  });
+  const confirmedDate = poll?.confirmed_date ?? null;
 
   const mutation = useMutation({
     mutationFn: async (v: AvailabilitySubmit) => {
@@ -132,6 +141,17 @@ export default function CalendarScreen() {
         </Pressable>
       </View>
 
+      {confirmedDate ? (
+        <View style={styles.confirmBanner}>
+          <Text variant="bodyBold" color={colors.light.paper} style={{ fontSize: 14 }}>
+            📌 확정 모임 · {formatKo(confirmedDate)}
+          </Text>
+          <Text variant="mono" color={colors.light.paper}>
+            {(() => { const n = dday(confirmedDate); return n > 0 ? `D-${n}` : n === 0 ? 'D-DAY' : `D+${-n}`; })()}
+          </Text>
+        </View>
+      ) : null}
+
       {/* 요일 헤더 */}
       <View style={styles.weekRow}>
         {WEEKDAYS.map((w, i) => (
@@ -150,6 +170,7 @@ export default function CalendarScreen() {
             day={Number(c.date.slice(8, 10))}
             inMonth={c.inMonth}
             counts={countsFor(c.date)}
+            marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
           />
         ))}
@@ -211,6 +232,7 @@ export default function CalendarScreen() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg },
+  confirmBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.light.cobalt, borderRadius: radius.button, paddingHorizontal: space.md, paddingVertical: space.sm, marginBottom: space.md },
   weekRow: { flexDirection: 'row', marginBottom: space.xs },
   weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },

@@ -8,6 +8,7 @@ import { Logo } from './Logo';
 import { Text } from './Text';
 import { TabIcon } from './TabIcon';
 import { colors, space } from '@/theme/tokens';
+import { deployDateLabel } from '@/lib/date';
 import { useAuth } from '@/features/auth/AuthContext';
 import { unreadCount } from '@/api/notifications';
 
@@ -26,7 +27,10 @@ export function BrandHeader() {
     <View style={styles.row}>
       <View style={styles.left}>
         <Logo height={22} />
-        <Text variant="brand">월간GCU</Text>
+        <View>
+          <Text variant="brand">월간GCU</Text>
+          <Text variant="caption" color={colors.light.textSecondary} style={styles.deploy}>{deployDateLabel()}</Text>
+        </View>
       </View>
       <Pressable onPress={() => router.push('/notifications')} hitSlop={10}>
         <TabIcon name="bell" color={colors.light.ink} size={24} />
@@ -39,6 +43,7 @@ export function BrandHeader() {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: space.lg },
   left: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  deploy: { fontSize: 10, lineHeight: 13, marginTop: -1 },
   dot: {
     position: 'absolute',
     right: -2,

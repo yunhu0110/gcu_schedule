@@ -12,18 +12,20 @@ import { Button } from '@/components/Button';
 import { BrandHeader } from '@/components/BrandHeader';
 import { HostPickerModal } from '@/features/host/HostPickerModal';
 import { MemoBoard } from '@/features/memo/MemoBoard';
+import { ConfirmDateModal } from '@/features/vote/ConfirmDateModal';
 import { colors, fonts, radius, space } from '@/theme/tokens';
-import { addMonths, formatKo, todayStr, volLabel } from '@/lib/date';
+import { addMonths, dday, formatKo, todayStr, volLabel } from '@/lib/date';
 import { useAuth } from '@/features/auth/AuthContext';
 import { getMyProfile, listMembers } from '@/api/members';
 import { getHost, setHost } from '@/api/hosts';
-import { getPoll } from '@/api/polls';
+import { getPoll, setConfirmedDate } from '@/api/polls';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { userId } = useAuth();
   const qc = useQueryClient();
   const [pickHost, setPickHost] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const today = todayStr();
   const nextMonth = addMonths(today, 1);
@@ -40,8 +42,16 @@ export default function HomeScreen() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['host', nYear, nMonth] }); setPickHost(false); },
   });
 
+  const confirmMut = useMutation({
+    mutationFn: (date: string) => setConfirmedDate(userId as string, nYear, nMonth, date),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['next-meeting', nYear, nMonth] }); setConfirmOpen(false); },
+  });
+
   const isAdmin = !!me?.is_admin;
   const confirmed = poll?.confirmed_date ?? null;
+  const canFix = host?.member_id === userId || isAdmin;
+  const dleft = confirmed ? dday(confirmed) : null;
+  const ddayLabel = dleft == null ? '미정' : dleft > 0 ? `D-${dleft}` : dleft === 0 ? 'D-DAY' : `D+${-dleft}`;
 
   return (
     <Screen scroll>
@@ -77,11 +87,17 @@ export default function HomeScreen() {
           <View style={styles.chip}><Text variant="kicker" color={colors.light.paper}>◆ 다음 모임</Text></View>
           <Text variant="mono" color={colors.light.paper60}>{volLabel(nextMonth)}</Text>
         </View>
-        <Text style={styles.heroBig}>{confirmed ? formatKo(confirmed) : '미정'}</Text>
+        <Text style={styles.heroBig}>{ddayLabel}</Text>
+        <Text variant="body" color={colors.light.paper} style={{ marginTop: space.xs }}>
+          {confirmed ? `${formatKo(confirmed)} 모임` : `${nMonth}월 모임 날짜 미정`}
+        </Text>
         <Text variant="bodySm" color={colors.light.paper60} style={{ marginTop: space.xs }}>
-          {confirmed ? `${nMonth}월 모임 날짜가 확정됐어요.` : `${nMonth}월 날짜를 투표로 정해요. 달력에서 가능한 날을 먼저 입력!`}
+          {confirmed ? '달력에도 표시돼 있어요.' : '달력에서 가능한 날을 입력하고 투표로 정해요.'}
         </Text>
         <Button label="달력에서 내 일정 입력" block onPress={() => router.push('/calendar')} style={{ marginTop: space.lg }} />
+        {canFix ? (
+          <Button label={confirmed ? '날짜 변경' : '날짜 확정하기'} variant="ghost" block onPress={() => setConfirmOpen(true)} />
+        ) : null}
       </View>
 
       {/* 메모장 */}
@@ -95,6 +111,14 @@ export default function HomeScreen() {
         saving={hostMut.isPending}
         onClose={() => setPickHost(false)}
         onSelect={(id) => hostMut.mutate(id)}
+      />
+      <ConfirmDateModal
+        visible={confirmOpen}
+        year={nYear}
+        month={nMonth}
+        saving={confirmMut.isPending}
+        onClose={() => setConfirmOpen(false)}
+        onSubmit={(date) => confirmMut.mutate(date)}
       />
     </Screen>
   );

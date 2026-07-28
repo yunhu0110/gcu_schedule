@@ -18,15 +18,17 @@ type Props = {
   userId: string;
   meNickname: string;
   isHost: boolean;
+  isAdmin?: boolean;
   year: number;
   month: number;
   memberIds: string[];
 };
 
-export function VoteSection({ userId, meNickname, isHost, year, month, memberIds }: Props) {
+export function VoteSection({ userId, meNickname, isHost, isAdmin, year, month, memberIds }: Props) {
   const qc = useQueryClient();
   const [startOpen, setStartOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const canManage = isHost || !!isAdmin;
 
   const { data: poll } = useQuery({ queryKey: ['poll', year, month], queryFn: () => getPoll(year, month), enabled: !!userId });
 
@@ -75,21 +77,25 @@ export function VoteSection({ userId, meNickname, isHost, year, month, memberIds
     setSelected(next);
   }
 
+  const startModal = (
+    <StartPollModal visible={startOpen} year={year} month={month} saving={createMut.isPending} onClose={() => setStartOpen(false)} onSubmit={(dates, deadline) => createMut.mutate({ dates, deadline })} />
+  );
+
   // 투표 없음
   if (!poll) {
     return (
       <View style={styles.box}>
-        {isHost ? (
+        {canManage ? (
           <>
             <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginBottom: space.md }}>
-              담당자로서 이 달 날짜 투표를 시작할 수 있어요.
+              날짜 후보로 투표를 만들어요.
             </Text>
-            <Button label="날짜 투표 시작" block onPress={() => setStartOpen(true)} />
+            <Button label="투표 생성하기" block onPress={() => setStartOpen(true)} />
           </>
         ) : (
           <Text variant="bodySm" color={colors.light.textSecondary}>아직 진행 중인 투표가 없어요.</Text>
         )}
-        <StartPollModal visible={startOpen} year={year} month={month} saving={createMut.isPending} onClose={() => setStartOpen(false)} onSubmit={(dates, deadline) => createMut.mutate({ dates, deadline })} />
+        {startModal}
       </View>
     );
   }
@@ -99,6 +105,8 @@ export function VoteSection({ userId, meNickname, isHost, year, month, memberIds
     return (
       <View style={styles.box}>
         <Text variant="bodyBold" color={colors.light.action}>✅ {formatKo(poll.confirmed_date)}로 확정</Text>
+        {canManage ? <Button label="투표 새로 생성하기" variant="ghost" block onPress={() => setStartOpen(true)} style={{ marginTop: space.sm }} /> : null}
+        {startModal}
       </View>
     );
   }
@@ -121,7 +129,7 @@ export function VoteSection({ userId, meNickname, isHost, year, month, memberIds
             </Pressable>
             <View style={styles.optRight}>
               <Text variant="mono" color={colors.light.textSecondary} style={{ fontSize: 12 }}>{o.voters.length}표</Text>
-              {isHost ? (
+              {canManage ? (
                 <Pressable onPress={() => confirmMut.mutate({ id: o.id, date: o.date })} hitSlop={8}>
                   <Text variant="caption" color={colors.light.cobalt}>확정</Text>
                 </Pressable>

@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '@/features/auth/AuthContext';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
@@ -16,7 +15,6 @@ import { updatePassword } from '@/api/auth';
 
 export default function AccountScreen() {
   const router = useRouter();
-  const { session } = useAuth();
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
   const [busy, setBusy] = useState(false);
@@ -51,11 +49,6 @@ export default function AccountScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.content}>
           <Text variant="h1">내 정보 수정</Text>
-
-          <SectionHeader label="이메일" />
-          <Card>
-            <Text variant="body">{session?.user.email ?? '-'}</Text>
-          </Card>
 
           <SectionHeader label="비밀번호 변경" />
           <Card>

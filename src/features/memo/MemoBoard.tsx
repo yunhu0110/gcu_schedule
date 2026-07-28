@@ -28,17 +28,17 @@ export function MemoBoard({ userId }: { userId: string }) {
   return (
     <View style={styles.card}>
       <View style={styles.head}>
-        <Text style={styles.emoji}>📝</Text>
-        <Text variant="bodyBold" style={{ fontSize: 16 }}>메모장</Text>
+        <Text style={styles.emoji}>✏️</Text>
+        <Text variant="bodyBold" style={{ fontSize: 16 }}>낙서장</Text>
       </View>
 
       <View style={styles.inputRow}>
-        <TextField value={draft} onChangeText={setDraft} placeholder="메모 남기기" style={{ flex: 1 }} />
+        <TextField value={draft} onChangeText={setDraft} placeholder="낙서 남기기" style={{ flex: 1 }} />
         <Button label="작성" onPress={() => draft.trim() && addMut.mutate({ body: draft, parentId: null })} loading={addMut.isPending} style={styles.sendBtn} />
       </View>
 
       {memos.length === 0 ? (
-        <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.md }}>첫 메모를 남겨보세요.</Text>
+        <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.md }}>첫 낙서를 남겨보세요.</Text>
       ) : (
         memos.map((m) => <Bubble key={m.id} memo={m} userId={userId} onChange={invalidate} onError={onErr} />)
       )}
