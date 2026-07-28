@@ -27,6 +27,13 @@ import { useDevStore } from '@/store/devStore';
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const EMPTY: DayCounts = { available: 0, maybe: 0, unavailable: 0, missing: 0 };
 const CANDIDATE_LIMIT = 10;
+// 이제 상태는 '가능'과 '미등록'뿐이다. 예전에 저장된 불가/미정 행은 미등록으로 합쳐 보여준다.
+const asRegistered = (c: DayCounts): DayCounts => ({
+  available: c.available,
+  maybe: 0,
+  unavailable: 0,
+  missing: c.missing + c.unavailable + c.maybe,
+});
 const fmtTime = (s: string | null) => (s ? s.slice(0, 5) : null);
 const timeLabel = (r: AvailRow) => {
   const a = fmtTime(r.start_time);
@@ -123,7 +130,7 @@ export default function CalendarScreen() {
   const totalMembers = members.length || 6;
 
   function countsFor(date: string): DayCounts {
-    if (summary && summary[date]) return summary[date];
+    if (summary && summary[date]) return asRegistered(summary[date]);
     if (preview) return placeholderCounts(date);
     return EMPTY;
   }
@@ -133,7 +140,7 @@ export default function CalendarScreen() {
     if (!summary) return [];
     return cells
       .filter((c) => c.inMonth)
-      .map((c) => ({ date: c.date, counts: summary[c.date] ?? EMPTY }))
+      .map((c) => ({ date: c.date, counts: asRegistered(summary[c.date] ?? EMPTY) }))
       .filter((c) => c.counts.available > 0)
       .sort((a, b) => b.counts.available - a.counts.available || (a.date < b.date ? -1 : 1))
       .slice(0, CANDIDATE_LIMIT);
