@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
+import { ActionModal } from '@/components/ActionModal';
 import { colors, space } from '@/theme/tokens';
 import { formatDateTime } from '@/lib/date';
 import { addMemo, deleteMemo, listMemos, updateMemo, type Memo } from '@/api/memos';
@@ -44,18 +45,14 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
   const [editText, setEditText] = useState(memo.body);
   const [replying, setReplying] = useState(false);
   const [reply, setReply] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const run = (fn: () => Promise<void>, after?: () => void) =>
     fn().then(() => { qc.invalidateQueries({ queryKey: ['memos'] }); onChange(); after?.(); }).catch(onError);
 
   // 내 글만: 꾹 누르면 수정/삭제 메뉴
   function openMenu() {
-    if (!mine) return;
-    Alert.alert('낙서', undefined, [
-      { text: '수정', onPress: () => setEditing(true) },
-      { text: '삭제', style: 'destructive', onPress: () => run(() => deleteMemo(memo.id)) },
-      { text: '취소', style: 'cancel' },
-    ]);
+    if (mine) setMenuOpen(true);
   }
 
   return (
@@ -95,6 +92,19 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
       ) : null}
 
       {memo.replies.map((r) => <Bubble key={r.id} memo={r} userId={userId} onChange={onChange} onError={onError} isReply />)}
+
+      {menuOpen ? (
+        <ActionModal
+          visible={menuOpen}
+          title="낙서"
+          actions={[
+            { label: '수정', onPress: () => setEditing(true) },
+            { label: '삭제', destructive: true, onPress: () => run(() => deleteMemo(memo.id)) },
+            { label: '취소', cancel: true },
+          ]}
+          onClose={() => setMenuOpen(false)}
+        />
+      ) : null}
     </View>
   );
 }

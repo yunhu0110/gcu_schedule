@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { MentionInput } from '@/components/MentionInput';
+import { ActionModal } from '@/components/ActionModal';
 import { CoverEditModal, type CoverSubmit } from '@/features/host/CoverEditModal';
 import { colors, radius, space } from '@/theme/tokens';
 import { parseMentionIds } from '@/lib/mentions';
@@ -26,6 +27,7 @@ export default function RecordScreen() {
   const { userId } = useAuth();
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const [delOpen, setDelOpen] = useState(false);
   const [draft, setDraft] = useState('');
 
   const { data: rec } = useQuery({ queryKey: ['record', id], queryFn: () => getRecord(id), enabled: !!id });
@@ -72,7 +74,7 @@ export default function RecordScreen() {
   });
 
   function confirmDelete() {
-    Alert.alert('삭제', '이 기록을 삭제할까요?', [{ text: '취소' }, { text: '삭제', style: 'destructive', onPress: () => delMut.mutate() }]);
+    setDelOpen(true);
   }
 
   return (
@@ -137,6 +139,16 @@ export default function RecordScreen() {
         saving={editMut.isPending}
         onClose={() => setEditing(false)}
         onSubmit={(v) => editMut.mutate(v)}
+      />
+      <ActionModal
+        visible={delOpen}
+        title="기록 삭제"
+        message="이 기록을 삭제할까요?"
+        actions={[
+          { label: '삭제', destructive: true, onPress: () => delMut.mutate() },
+          { label: '취소', cancel: true },
+        ]}
+        onClose={() => setDelOpen(false)}
       />
     </SafeAreaView>
   );
