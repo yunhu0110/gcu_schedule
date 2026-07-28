@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { MentionInput } from '@/components/MentionInput';
+import { MentionText } from '@/components/MentionText';
 import { colors, radius, space } from '@/theme/tokens';
 import { formatKo, type DateStr } from '@/lib/date';
 import { parseMentionIds } from '@/lib/mentions';
@@ -99,7 +100,7 @@ export function DayDetailModal({ visible, date, rows, members, userId, onClose, 
                 <View style={[styles.cDot, { backgroundColor: c.color ?? colors.light.cobalt }]} />
                 <View style={{ flex: 1 }}>
                   <Text variant="caption" color={colors.light.textSecondary}>{c.nickname}</Text>
-                  <Text variant="bodySm">{c.body}</Text>
+                  <MentionText body={c.body} members={members} variant="bodySm" />
                 </View>
               </View>
             ))}

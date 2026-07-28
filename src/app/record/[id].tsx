@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { MentionInput } from '@/components/MentionInput';
+import { MentionText } from '@/components/MentionText';
 import { ActionModal } from '@/components/ActionModal';
 import { CoverEditModal, type CoverSubmit } from '@/features/host/CoverEditModal';
 import { colors, radius, space } from '@/theme/tokens';
@@ -115,7 +116,7 @@ export default function RecordScreen() {
                   )}
                   <View style={{ flex: 1 }}>
                     <Text variant="caption" color={colors.light.textSecondary}>{c.nickname} · {formatDateTime(c.created_at)}</Text>
-                    <Text variant="body">{c.body}</Text>
+                    <MentionText body={c.body} members={members} variant="body" />
                   </View>
                 </View>
               ))}

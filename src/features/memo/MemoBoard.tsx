@@ -8,10 +8,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
+import { MentionText } from '@/components/MentionText';
 import { ActionModal } from '@/components/ActionModal';
 import { colors, radius, space } from '@/theme/tokens';
 import { formatDateTime } from '@/lib/date';
 import { addMemo, deleteMemo, listMemos, updateMemo, type Memo } from '@/api/memos';
+import { listMembers, type Member } from '@/api/members';
 
 const PAGE = 10; // 처음엔 최신 10개, 더보기마다 10개씩
 
@@ -21,6 +23,7 @@ export function MemoBoard({ userId }: { userId: string }) {
   const [visible, setVisible] = useState(PAGE);
 
   const { data: memos = [] } = useQuery({ queryKey: ['memos'], queryFn: listMemos, enabled: !!userId });
+  const { data: members = [] } = useQuery({ queryKey: ['members'], queryFn: listMembers, enabled: !!userId });
   const invalidate = () => qc.invalidateQueries({ queryKey: ['memos'] });
   const onErr = (e: unknown) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.');
 
@@ -37,7 +40,7 @@ export function MemoBoard({ userId }: { userId: string }) {
     <View style={styles.card}>
       <Text variant="h2" style={{ marginBottom: space.sm }}>낙서장</Text>
 
-      {shown.map((m) => <Bubble key={m.id} memo={m} userId={userId} onChange={invalidate} onError={onErr} />)}
+      {shown.map((m) => <Bubble key={m.id} memo={m} userId={userId} members={members} onChange={invalidate} onError={onErr} />)}
 
       {hasMore ? (
         <Pressable style={styles.moreBtn} onPress={() => setVisible((v) => v + PAGE)}>
@@ -55,7 +58,7 @@ export function MemoBoard({ userId }: { userId: string }) {
   );
 }
 
-function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; userId: string; onChange: () => void; onError: (e: unknown) => void; isReply?: boolean }) {
+function Bubble({ memo, userId, members, onChange, onError, isReply }: { memo: Memo; userId: string; members: Member[]; onChange: () => void; onError: (e: unknown) => void; isReply?: boolean }) {
   const qc = useQueryClient();
   const mine = memo.member_id === userId;
   const [editing, setEditing] = useState(false);
@@ -95,7 +98,7 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
               <Button label="저장" onPress={() => editText.trim() && run(() => updateMemo(memo.id, editText), () => setEditing(false))} style={styles.miniBtn} />
             </View>
           ) : (
-            <Text variant="bodySm">{memo.body}</Text>
+            <MentionText body={memo.body} members={members} variant="bodySm" />
           )}
           {!isReply ? (
             <Text variant="caption" color={colors.light.action} onPress={() => setReplying((v) => !v)} style={styles.replyLink}>답글</Text>
@@ -112,7 +115,7 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
         </View>
       ) : null}
 
-      {memo.replies.map((r) => <Bubble key={r.id} memo={r} userId={userId} onChange={onChange} onError={onError} isReply />)}
+      {memo.replies.map((r) => <Bubble key={r.id} memo={r} userId={userId} members={members} onChange={onChange} onError={onError} isReply />)}
 
       {menuOpen ? (
         <ActionModal
