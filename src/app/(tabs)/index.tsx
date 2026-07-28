@@ -22,9 +22,8 @@ import { getMyProfile, listMembers } from '@/api/members';
 import { listMonthlyPosts, setHost } from '@/api/hosts';
 import { clearConfirmedDate, listPolls, setConfirmedDate } from '@/api/polls';
 
-// 히어로에서 넘겨볼 수 있는 범위 — 지난 6개월 ~ 다음 3개월.
+// 히어로에서 넘겨볼 수 있는 범위 — 지난 6개월부터 "내년 12월"까지.
 const BACK = 6;
-const FWD = 3;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -37,7 +36,16 @@ export default function HomeScreen() {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const today = todayStr();
-  const months = useMemo(() => Array.from({ length: BACK + FWD + 1 }, (_, i) => addMonths(today, i - BACK)), [today]);
+  const months = useMemo(() => {
+    const last = `${Number(today.slice(0, 4)) + 1}-12`; // 내년 12월까지
+    const list: string[] = [];
+    let cur = addMonths(today, -BACK);
+    while (cur.slice(0, 7) <= last && list.length < 60) {
+      list.push(cur);
+      cur = addMonths(cur, 1);
+    }
+    return list;
+  }, [today]);
   const nextIndex = BACK + 1; // 기본 페이지 = 다음 달
   const [index, setIndex] = useState(nextIndex);
 
@@ -158,9 +166,6 @@ export default function HomeScreen() {
           />
         ))}
       </Animated.ScrollView>
-      <Text variant="caption" color={colors.light.textSecondary} style={styles.hint}>
-        ← 옆으로 넘기면 다른 달 모임 일자 →
-      </Text>
 
       {/* 메모장 */}
       {userId ? <MemoBoard userId={userId} /> : null}
@@ -194,5 +199,4 @@ const styles = StyleSheet.create({
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: 6 },
   hostAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   hostBtn: { height: 40, paddingHorizontal: space.lg },
-  hint: { textAlign: 'center', marginTop: space.sm },
 });

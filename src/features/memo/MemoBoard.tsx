@@ -30,10 +30,22 @@ export function MemoBoard({ userId }: { userId: string }) {
     <View style={styles.card}>
       <Text variant="bodyBold" style={{ fontSize: 15, marginBottom: space.sm }}>낙서장</Text>
 
-      <TextField value={draft} onChangeText={setDraft} style={styles.inputField} />
-      <Button label="작성" onPress={() => draft.trim() && addMut.mutate({ body: draft, parentId: null })} loading={addMut.isPending} style={styles.sendBtn} />
-
       {memos.map((m) => <Bubble key={m.id} memo={m} userId={userId} onChange={invalidate} onError={onErr} />)}
+
+      {/* 입력은 목록 아래 한 줄에 (메신저처럼) */}
+      <View style={styles.composeRow}>
+        {/* TextField의 style은 TextInput에만 걸려서, 가로로 늘리려면 바깥을 감싸야 한다 */}
+        <View style={{ flex: 1 }}>
+          <TextField value={draft} onChangeText={setDraft} style={styles.inputField} />
+        </View>
+        <Button
+          label="작성"
+          variant="ghost"
+          onPress={() => draft.trim() && addMut.mutate({ body: draft, parentId: null })}
+          loading={addMut.isPending}
+          style={styles.sendBtn}
+        />
+      </View>
     </View>
   );
 }
@@ -111,6 +123,7 @@ function Bubble({ memo, userId, onChange, onError, isReply }: { memo: Memo; user
 
 const styles = StyleSheet.create({
   card: { marginTop: space.xl, paddingTop: space.lg },
+  composeRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.lg },
   // 밑줄만 있는 모던 입력 (네모 박스 아님)
   inputField: {
     height: 44,
@@ -123,7 +136,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   inlineField: { flex: 1, height: 40, fontSize: 14 },
-  sendBtn: { alignSelf: 'flex-end', height: 38, paddingHorizontal: space.lg, marginTop: space.sm },
+  sendBtn: { height: 44, paddingHorizontal: space.md, backgroundColor: colors.light.paper },
   bubbleWrap: { marginTop: space.md, paddingTop: space.md },
   replyIndent: { marginLeft: space.xl, paddingTop: 0 },
   bubbleRow: { flexDirection: 'row', gap: space.sm },

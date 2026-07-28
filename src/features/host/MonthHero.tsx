@@ -36,7 +36,7 @@ export function MonthHero({ month, width, pageIndex, scrollX, confirmed, canFix,
         <View style={styles.heroDeco} />
         <View style={styles.heroTop}>
           <View style={styles.chip}>
-            <Text variant="kicker" color={colors.light.paper}>◆ {m}월 모임</Text>
+            <Text variant="kicker" color={colors.light.paper}>{m}월 모임</Text>
           </View>
           <Text variant="mono" color={colors.light.paper60}>{volLabel(month)}</Text>
         </View>

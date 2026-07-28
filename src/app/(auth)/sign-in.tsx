@@ -73,7 +73,7 @@ export default function SignInScreen() {
           <Text style={styles.wordmark}>월간GCU</Text>
         </View>
         <Text variant="body" color={colors.light.textSecondary} style={{ marginTop: space.sm }}>
-          월간GCU 스케줄 관리 앱
+          이번달엔 뭐할꺼야?
         </Text>
       </View>
 
