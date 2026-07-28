@@ -113,7 +113,12 @@ export function formatDateTime(iso: string): string {
 
 /** 배포일 "YYYY.MM.DD" — 현재 실행 중인 OTA 업데이트 생성일(없으면 오늘, 개발 환경). */
 export function deployDateLabel(): string {
-  const created = Updates.createdAt; // Date | null
+  let created: Date | null = null;
+  try {
+    created = Updates.createdAt; // Date | null (개발/Expo Go에선 접근이 불안정할 수 있어 방어)
+  } catch {
+    created = null;
+  }
   const base = created ? dayjs(created) : dayjs();
   return base.tz(TZ).format('YYYY.MM.DD');
 }

@@ -3,8 +3,7 @@
  * 관리자는 알림 페이지에서 확인한다.
  */
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -56,7 +55,8 @@ export default function FeedbackScreen() {
           <Text variant="h2">‹ 뒤로</Text>
         </Pressable>
       </View>
-      <KeyboardAwareScrollView contentContainerStyle={styles.content} enableOnAndroid extraScrollHeight={24} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Text variant="h1">문의</Text>
           <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.xs }}>
             버그·문의를 관리자에게 알림으로 전달해요.
@@ -67,7 +67,8 @@ export default function FeedbackScreen() {
             <TextField label="내용" value={body} onChangeText={setBody} placeholder="버그 상황이나 문의 내용을 적어주세요." multiline style={styles.textArea} />
             <Button label={sendMut.isPending ? '보내는 중…' : '문의 보내기'} block loading={sendMut.isPending} onPress={send} style={{ marginTop: space.sm }} />
           </View>
-      </KeyboardAwareScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

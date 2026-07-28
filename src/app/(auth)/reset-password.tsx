@@ -3,8 +3,7 @@
  * 인증코드 요청 시 관리자에게 알림으로 코드가 전달된다(메일 아님).
  */
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/Text';
@@ -59,7 +58,8 @@ export default function ResetPasswordScreen() {
           <Text variant="h2">‹ 뒤로</Text>
         </Pressable>
       </View>
-      <KeyboardAwareScrollView contentContainerStyle={styles.content} enableOnAndroid extraScrollHeight={24} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Text variant="h1">비밀번호 찾기</Text>
           <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.xs }}>
             인증코드를 요청하면 관리자에게 코드가 전달돼요. 관리자에게 문의해 코드를 받아 입력하세요.
@@ -73,7 +73,8 @@ export default function ResetPasswordScreen() {
             <TextField label="새 비밀번호 (6자 이상)" value={pw} onChangeText={setPw} secureTextEntry placeholder="••••••••" />
             <Button label={busy ? '변경 중…' : '비밀번호 변경'} block loading={busy} onPress={onReset} />
           </View>
-      </KeyboardAwareScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
