@@ -62,4 +62,12 @@ jobs:
 
       - name: Publish OTA update (preview channel)
         if: ${{ env.EXPO_TOKEN != '' }}
-        run: eas update --branch preview --message "${{ github.event.head_commit.message || 'manual update' }}" --non-interactive
+        env:
+          # 커밋 메시지를 셸 명령에 직접 끼워넣으면 따옴표/줄바꿈/특수문자로 파싱이 깨진다.
+          # env 변수로 받아 첫 줄만 안전하게 --message 로 넘긴다.
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          MSG=$(printf '%s' "$COMMIT_MSG" | head -n 1)
+          [ -z "$MSG" ] && MSG="manual update"
+          # --environment preview: CI엔 .env가 없으므로 EAS 서버의 preview 환경변수(SUPABASE URL/KEY)를 주입
+          eas update --branch preview --environment preview --message "$MSG" --non-interactive
