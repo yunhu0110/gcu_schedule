@@ -21,6 +21,9 @@ export type Poll = {
   options: PollOption[];
 };
 
+/** 삭제된 투표 표시값 — delete 권한이 없는 환경에서의 폴백(deletePoll 참조). */
+const DELETED = 'deleted';
+
 /** (year, month)의 가장 최근 투표 + 옵션 + 투표자. 없으면 null. */
 export async function getPoll(year: number, month: number): Promise<Poll | null> {
   const { data: polls, error } = await supabase
@@ -28,6 +31,7 @@ export async function getPoll(year: number, month: number): Promise<Poll | null>
     .select('id, year, month, host_id, status, deadline, confirmed_date')
     .eq('year', year)
     .eq('month', month)
+    .neq('status', DELETED)
     .order('created_at', { ascending: false })
     .limit(1);
   if (error) throw error;
@@ -64,6 +68,49 @@ export async function getPoll(year: number, month: number): Promise<Poll | null>
   };
 }
 
+/** 홈에서 달을 넘겨 볼 때 쓰는 전체 요약(월별 확정 날짜). 삭제된 건 제외, 최신 먼저. */
+export type PollBrief = {
+  id: string;
+  year: number;
+  month: number;
+  host_id: string;
+  status: string;
+  confirmed_date: DateStr | null;
+};
+
+export async function listPolls(): Promise<PollBrief[]> {
+  const { data, error } = await supabase
+    .from('date_polls')
+    .select('id, year, month, host_id, status, confirmed_date')
+    .neq('status', DELETED)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as PollBrief[];
+}
+
+/** 담당자/관리자: 그 달 확정 날짜를 지운다(미정으로 되돌림). 투표는 다시 진행 중으로. */
+export async function clearConfirmedDate(year: number, month: number): Promise<void> {
+  const { data, error } = await supabase
+    .from('date_polls')
+    .select('id')
+    .eq('year', year)
+    .eq('month', month)
+    .neq('status', DELETED)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const id = data?.[0]?.id as string | undefined;
+  if (!id) return;
+  // RLS(작성자·관리자)에 막히면 에러 없이 0행이 된다 → 조용히 실패하지 않게 결과를 확인한다.
+  const { data: updated, error: uErr } = await supabase
+    .from('date_polls')
+    .update({ confirmed_date: null, status: 'open' })
+    .eq('id', id)
+    .select('id');
+  if (uErr) throw uErr;
+  if (!updated?.length) throw new Error('이 달 투표를 만든 사람 또는 관리자만 초기화할 수 있어요.');
+}
+
 /** 담당자: 후보 날짜들로 투표 생성. */
 export async function createPoll(hostId: string, year: number, month: number, dates: DateStr[], deadline: DateStr | null): Promise<string> {
   const { data: poll, error } = await supabase
@@ -96,8 +143,13 @@ export async function castVote(memberId: string, allOptionIds: string[], selecte
 
 /** 담당자: 최종 날짜 확정 + 투표 종료. */
 export async function confirmDate(pollId: string, date: DateStr): Promise<void> {
-  const { error } = await supabase.from('date_polls').update({ confirmed_date: date, status: 'closed' }).eq('id', pollId);
+  const { data, error } = await supabase
+    .from('date_polls')
+    .update({ confirmed_date: date, status: 'closed' })
+    .eq('id', pollId)
+    .select('id');
   if (error) throw error;
+  if (!data?.length) throw new Error('이 달 투표를 만든 사람 또는 관리자만 날짜를 확정할 수 있어요.');
 }
 
 /** 투표 작성자: 날짜 확정 없이 투표만 종료. */
@@ -106,9 +158,20 @@ export async function closePoll(pollId: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * 투표 작성자/관리자: 투표를 통째로 삭제. 옵션·표는 FK cascade로 함께 사라진다.
+ * date_polls의 delete 권한(0015 마이그레이션) 이전 환경에서는 status='deleted'로 숨긴다.
+ */
+export async function deletePoll(pollId: string): Promise<void> {
+  const { error, count } = await supabase.from('date_polls').delete({ count: 'exact' }).eq('id', pollId);
+  if (!error && count) return;
+  const { error: uErr } = await supabase.from('date_polls').update({ status: DELETED }).eq('id', pollId);
+  if (uErr) throw error ?? uErr;
+}
+
 /** 담당자/관리자: 투표 없이 날짜를 바로 확정(픽스). 기존 poll 있으면 갱신, 없으면 생성 후 확정. */
 export async function setConfirmedDate(hostId: string, year: number, month: number, date: DateStr): Promise<void> {
-  const { data, error } = await supabase.from('date_polls').select('id').eq('year', year).eq('month', month).order('created_at', { ascending: false }).limit(1);
+  const { data, error } = await supabase.from('date_polls').select('id').eq('year', year).eq('month', month).neq('status', DELETED).order('created_at', { ascending: false }).limit(1);
   if (error) throw error;
   let pollId = data?.[0]?.id as string | undefined;
   if (!pollId) {
