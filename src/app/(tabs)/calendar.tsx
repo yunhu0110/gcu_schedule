@@ -104,12 +104,15 @@ export default function CalendarScreen() {
       if (!userId) throw new Error('로그인이 필요해요.');
       await clearRange(userId, from, to);
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['availability-summary'] });
-      qc.invalidateQueries({ queryKey: ['availability-rows'] });
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['availability-summary'] });
+      await qc.invalidateQueries({ queryKey: ['availability-rows'] });
+      Alert.alert('초기화 완료', `${anchor.slice(0, 7)} 내 일정을 모두 지웠어요.`);
     },
     onError: (e) => Alert.alert('초기화 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
   });
+
+  const myNick = members.find((m) => m.id === userId)?.nickname ?? '나';
 
   const rowsByDate = useMemo(() => {
     const m: Record<string, AvailRow[]> = {};
@@ -270,7 +273,7 @@ export default function CalendarScreen() {
       {/* 내 일정 초기화 (해당 월) */}
       {userId ? (
         <Pressable style={styles.resetBtn} onPress={() => setResetOpen(true)}>
-          <Text variant="bodySm" color={colors.light.textSecondary}>{anchor.slice(0, 7)}월 초기화</Text>
+          <Text variant="bodySm" color={colors.light.textSecondary}>{myNick}님 {anchor.slice(0, 7)} 초기화</Text>
         </Pressable>
       ) : null}
 
@@ -295,7 +298,7 @@ export default function CalendarScreen() {
       />
       <ActionModal
         visible={resetOpen}
-        title={`${anchor.slice(0, 7)}월 초기화`}
+        title={`${myNick}님 ${anchor.slice(0, 7)} 초기화`}
         message="이 달에 입력한 내 일정을 모두 지울까요?"
         actions={[
           { label: '초기화', destructive: true, onPress: () => resetMut.mutate() },

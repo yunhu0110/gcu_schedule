@@ -8,28 +8,46 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
+import { MentionInput } from '@/components/MentionInput';
 import { MentionText } from '@/components/MentionText';
 import { ActionModal } from '@/components/ActionModal';
+import { useScreenScroll } from '@/components/Screen';
 import { colors, radius, space } from '@/theme/tokens';
 import { formatDateTime } from '@/lib/date';
+import { parseMentionIds } from '@/lib/mentions';
 import { addMemo, deleteMemo, listMemos, updateMemo, type Memo } from '@/api/memos';
 import { listMembers, type Member } from '@/api/members';
+import { notifyMembers } from '@/api/notifications';
+
+/** 낙서장에서 언급된 멤버에게 알림. */
+async function notifyMentions(actorId: string, actorNick: string, body: string, members: Member[]) {
+  const ids = parseMentionIds(body, members);
+  if (ids.length) await notifyMembers(actorId, ids, 'mention', `${actorNick}님이 낙서장에서 회원님을 언급했어요: ${body.trim()}`);
+}
 
 const PAGE = 10; // 처음엔 최신 10개, 더보기마다 10개씩
 
 export function MemoBoard({ userId }: { userId: string }) {
   const qc = useQueryClient();
+  const scrollRef = useScreenScroll();
   const [draft, setDraft] = useState('');
   const [visible, setVisible] = useState(PAGE);
 
   const { data: memos = [] } = useQuery({ queryKey: ['memos'], queryFn: listMemos, enabled: !!userId });
   const { data: members = [] } = useQuery({ queryKey: ['members'], queryFn: listMembers, enabled: !!userId });
+  const myNick = members.find((m) => m.id === userId)?.nickname ?? '멤버';
   const invalidate = () => qc.invalidateQueries({ queryKey: ['memos'] });
   const onErr = (e: unknown) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.');
 
+  // 입력칸이 키보드에 가리지 않게, 포커스되면 맨 아래로 스크롤(약간 지연 → 키보드 인셋 반영 후).
+  const scrollToComposer = () => setTimeout(() => scrollRef?.current?.scrollToEnd({ animated: true }), 100);
+
   const addMut = useMutation({
-    mutationFn: (v: { body: string; parentId: string | null }) => addMemo(userId, v.body, v.parentId),
-    onSuccess: () => { setDraft(''); invalidate(); },
+    mutationFn: async (v: { body: string; parentId: string | null }) => {
+      await addMemo(userId, v.body, v.parentId);
+      await notifyMentions(userId, myNick, v.body, members);
+    },
+    onSuccess: () => { setDraft(''); invalidate(); qc.invalidateQueries({ queryKey: ['unread'] }); },
     onError: onErr,
   });
 
@@ -40,7 +58,7 @@ export function MemoBoard({ userId }: { userId: string }) {
     <View style={styles.card}>
       <Text variant="h2" style={{ marginBottom: space.sm }}>낙서장</Text>
 
-      {shown.map((m) => <Bubble key={m.id} memo={m} userId={userId} members={members} onChange={invalidate} onError={onErr} />)}
+      {shown.map((m) => <Bubble key={m.id} memo={m} userId={userId} members={members} myNick={myNick} onChange={invalidate} onError={onErr} />)}
 
       {hasMore ? (
         <Pressable style={styles.moreBtn} onPress={() => setVisible((v) => v + PAGE)}>
@@ -50,7 +68,7 @@ export function MemoBoard({ userId }: { userId: string }) {
 
       <View style={styles.composeRow}>
         <View style={styles.grow}>
-          <TextField value={draft} onChangeText={setDraft} placeholder="작성" style={styles.inputField} />
+          <MentionInput value={draft} onChangeText={setDraft} members={members} placeholder="작성 (@로 멤버 언급)" inputStyle={styles.inputField} onFocus={scrollToComposer} />
         </View>
         <Button label="작성" onPress={() => draft.trim() && addMut.mutate({ body: draft, parentId: null })} loading={addMut.isPending} style={styles.sendBtn} />
       </View>
@@ -58,7 +76,7 @@ export function MemoBoard({ userId }: { userId: string }) {
   );
 }
 
-function Bubble({ memo, userId, members, onChange, onError, isReply }: { memo: Memo; userId: string; members: Member[]; onChange: () => void; onError: (e: unknown) => void; isReply?: boolean }) {
+function Bubble({ memo, userId, members, myNick, onChange, onError, isReply }: { memo: Memo; userId: string; members: Member[]; myNick: string; onChange: () => void; onError: (e: unknown) => void; isReply?: boolean }) {
   const qc = useQueryClient();
   const mine = memo.member_id === userId;
   const [editing, setEditing] = useState(false);
@@ -109,13 +127,20 @@ function Bubble({ memo, userId, members, onChange, onError, isReply }: { memo: M
       {replying ? (
         <View style={[styles.replyInput, styles.replyIndent]}>
           <View style={styles.grow}>
-            <TextField value={reply} onChangeText={setReply} placeholder="답글" style={styles.inlineField} />
+            <MentionInput value={reply} onChangeText={setReply} members={members} placeholder="답글 (@로 언급)" inputStyle={styles.inlineField} />
           </View>
-          <Button label="등록" onPress={() => reply.trim() && run(() => addMemo(userId, reply, memo.id), () => { setReply(''); setReplying(false); })} style={styles.miniBtn} />
+          <Button
+            label="등록"
+            onPress={() => reply.trim() && run(
+              async () => { await addMemo(userId, reply, memo.id); await notifyMentions(userId, myNick, reply, members); },
+              () => { setReply(''); setReplying(false); },
+            )}
+            style={styles.miniBtn}
+          />
         </View>
       ) : null}
 
-      {memo.replies.map((r) => <Bubble key={r.id} memo={r} userId={userId} members={members} onChange={onChange} onError={onError} isReply />)}
+      {memo.replies.map((r) => <Bubble key={r.id} memo={r} userId={userId} members={members} myNick={myNick} onChange={onChange} onError={onError} isReply />)}
 
       {menuOpen ? (
         <ActionModal

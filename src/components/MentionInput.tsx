@@ -13,10 +13,12 @@ type Props = {
   onChangeText: (t: string) => void;
   members: MemberLite[];
   placeholder?: string;
-  style?: object;
+  style?: object; // 바깥 컨테이너
+  inputStyle?: object; // 안쪽 TextField
+  onFocus?: () => void;
 };
 
-export function MentionInput({ value, onChangeText, members, placeholder, style }: Props) {
+export function MentionInput({ value, onChangeText, members, placeholder, style, inputStyle, onFocus }: Props) {
   const match = value.match(/@([^\s@]{0,20})$/);
   const query = match?.[1] ?? null;
   // 대소문자 무시하고 "같은 글자로 시작하면" 바로 뜨게(startsWith). @만 치면 전체가 뜬다.
@@ -43,7 +45,7 @@ export function MentionInput({ value, onChangeText, members, placeholder, style 
           ))}
         </View>
       ) : null}
-      <TextField value={value} onChangeText={onChangeText} placeholder={placeholder} />
+      <TextField value={value} onChangeText={onChangeText} placeholder={placeholder} style={inputStyle} onFocus={onFocus} />
     </View>
   );
 }
