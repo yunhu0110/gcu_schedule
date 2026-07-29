@@ -22,7 +22,6 @@ type Props = {
   counts: DayCounts;
   marked?: boolean; // 확정된 모임 날짜
   onPress?: () => void;
-  onLongPress?: () => void; // 꾹 누르기 — 일정 입력(가능/불가능/초기화) 메뉴
 };
 
 /**
@@ -44,7 +43,7 @@ function row(n: number): boolean[] {
   return Array.from({ length: SLOTS }, (_, i) => i < n);
 }
 
-export function GaugeCell({ date, day, inMonth, counts, marked, onPress, onLongPress }: Props) {
+export function GaugeCell({ date, day, inMonth, counts, marked, onPress }: Props) {
   const allAvailable = counts.available >= SLOTS;
   const tint = inMonth ? countTint(counts.available) : null;
   const avail = row(counts.available);
@@ -55,8 +54,6 @@ export function GaugeCell({ date, day, inMonth, counts, marked, onPress, onLongP
   return (
     <Pressable
       onPress={onPress}
-      onLongPress={onLongPress}
-      delayLongPress={350}
       accessibilityRole="button"
       accessibilityLabel={label}
       style={[
