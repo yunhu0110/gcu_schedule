@@ -1,9 +1,7 @@
 /**
- * S2. 달력 — 6칸 게이지 월 그리드 + 날짜 상세(누가 가능한지) + 하단 "가능한 날" 후보.
- * 날짜 탭 → 상세 팝업(가능/미등록 · 시간), 거기서 내 일정 입력/수정.
- *
- * 모델: 등록되는 건 "가능"뿐이다. 불가는 별도 상태가 아니라 등록해둔 가능을 지우는 동작(삭제).
- * 하단엔 이번 달 후보를 가능 인원 많은 순(내림차순)으로 멤버·시간과 함께 보여준다.
+ * S2. 달력 — 6칸 게이지 월 그리드 + 날짜 상세(누가 가능/불가) + 하단 "가능한 날" 후보.
+ * 날짜 탭 → 상세 팝업(가능/불가/미입력 · 시간), 거기서 내 일정 입력/수정.
+ * 하단엔 이번 달 후보(불가 0명 & 가능 1명 이상)를 멤버·시간과 함께 보여준다.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
@@ -13,10 +11,10 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { BrandHeader } from '@/components/BrandHeader';
 import { ActionModal } from '@/components/ActionModal';
-import { GaugeCell, TIER_COLORS, type DayCounts } from '@/components/GaugeCell';
+import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
 import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { DayDetailModal } from '@/features/availability/DayDetailModal';
-import { colors, memberColors, radius, space } from '@/theme/tokens';
+import { colors, radius, space } from '@/theme/tokens';
 import { addMonths, dday, endOfMonth, formatKo, monthGrid, startOfMonth, todayStr, volLabel } from '@/lib/date';
 import { clearRange, getMonthRows, getSummary, setRange, type AvailRow } from '@/api/availabilities';
 import { listMembers } from '@/api/members';
@@ -27,14 +25,6 @@ import { useDevStore } from '@/store/devStore';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const EMPTY: DayCounts = { available: 0, maybe: 0, unavailable: 0, missing: 0 };
-const CANDIDATE_LIMIT = 10;
-// 이제 상태는 '가능'과 '미등록'뿐이다. 예전에 저장된 불가/미정 행은 미등록으로 합쳐 보여준다.
-const asRegistered = (c: DayCounts): DayCounts => ({
-  available: c.available,
-  maybe: 0,
-  unavailable: 0,
-  missing: c.missing + c.unavailable + c.maybe,
-});
 const fmtTime = (s: string | null) => (s ? s.slice(0, 5) : null);
 const timeLabel = (r: AvailRow) => {
   const a = fmtTime(r.start_time);
@@ -42,11 +32,15 @@ const timeLabel = (r: AvailRow) => {
   return a && b ? `${a}–${b}` : '종일';
 };
 
-// 둘러보기(미로그인) 모드에서 빈 달력이 심심하지 않도록 만드는 가짜 집계.
 function placeholderCounts(date: string): DayCounts {
   const n = [...date].reduce((a, c) => a + c.charCodeAt(0), 0);
   const available = n % 7;
-  return { available, maybe: 0, unavailable: 0, missing: Math.max(0, 6 - available) };
+  let remaining = 6 - available;
+  const unavailable = remaining >= 2 && n % 4 === 0 ? 1 : 0;
+  remaining -= unavailable;
+  const maybe = remaining >= 1 && n % 5 === 0 ? 1 : 0;
+  const missing = 6 - available - unavailable - maybe;
+  return { available, maybe, unavailable, missing };
 }
 
 export default function CalendarScreen() {
@@ -55,13 +49,12 @@ export default function CalendarScreen() {
   const qc = useQueryClient();
 
   const [anchor, setAnchor] = useState(todayStr());
-  // 달력에 들어올 때는 항상 오늘이 속한 달부터 보여준다.
-  // (탭 화면은 언마운트되지 않아서, 넘겨둔 달이 그대로 남아 있는 걸 막는다. 날짜가 바뀐 경우도 포함)
-  useFocusEffect(useCallback(() => setAnchor(todayStr()), []));
-
   const [detailDate, setDetailDate] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
+
+  // 달력 탭에 들어올 때마다 접속일 기준 이번 달로 맞춘다.
+  useFocusEffect(useCallback(() => { setAnchor(todayStr()); }, []));
 
   const from = startOfMonth(anchor);
   const to = endOfMonth(anchor);
@@ -91,20 +84,13 @@ export default function CalendarScreen() {
   });
   const confirmedDate = poll?.confirmed_date ?? null;
 
-  // 가능 = 등록(upsert), 불가 = 등록해둔 가능을 지움(delete). 불가라는 상태는 저장하지 않는다.
   const mutation = useMutation({
     mutationFn: async (v: AvailabilitySubmit) => {
       if (!userId) throw new Error('로그인이 필요해요.');
+      await setRange(userId, v.from, v.to, v.status, v.note, v.startTime, v.endTime);
       const nick = members.find((m) => m.id === userId)?.nickname ?? '멤버';
-      const ids = members.map((m) => m.id);
-      if (v.status === 'unavailable') {
-        const removed = await clearRange(userId, v.from, v.to);
-        if (removed === 0) return; // 지울 게 없었으면 알림도 보내지 않는다
-        await notifyMembers(userId, ids, 'availability_set', `${nick}님이 ${formatKo(v.from)} 가능 일정을 취소했어요.`, true);
-        return;
-      }
-      await setRange(userId, v.from, v.to, 'available', v.note, v.startTime, v.endTime);
-      await notifyMembers(userId, ids, 'availability_set', `${nick}님이 ${formatKo(v.from)} 일정(가능)을 등록했어요.`, true);
+      const label = v.status === 'available' ? '가능' : '불가';
+      await notifyMembers(userId, members.map((m) => m.id), 'availability_set', `${nick}님이 ${formatKo(v.from)} 일정(${label})을 등록했어요.`, true);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['availability-summary'] });
@@ -118,15 +104,17 @@ export default function CalendarScreen() {
   const resetMut = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error('로그인이 필요해요.');
-      return clearRange(userId, from, to);
+      await clearRange(userId, from, to);
     },
-    onSuccess: (removed) => {
-      qc.invalidateQueries({ queryKey: ['availability-summary'] });
-      qc.invalidateQueries({ queryKey: ['availability-rows'] });
-      if (removed === 0) Alert.alert('초기화', '이 달에 등록한 내 일정이 없어요.');
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['availability-summary'] });
+      await qc.invalidateQueries({ queryKey: ['availability-rows'] });
+      Alert.alert('초기화 완료', `${anchor.slice(0, 7)} 내 일정을 모두 지웠어요.`);
     },
     onError: (e) => Alert.alert('초기화 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
   });
+
+  const myNick = members.find((m) => m.id === userId)?.nickname ?? '나';
 
   const rowsByDate = useMemo(() => {
     const m: Record<string, AvailRow[]> = {};
@@ -135,58 +123,32 @@ export default function CalendarScreen() {
   }, [rows]);
 
   // 날짜별 "가능"한 멤버들의 프로필 색 — 게이지 칸을 각자 색으로 칠한다.
-  // 등록된 순서 그대로 append(정렬하지 않는다).
-  // 아직 고유색을 안 고른 멤버는 멤버 팔레트 순번으로 대신한다(전부 같은 파란색이 되지 않게).
+  // 등록된 순서 그대로 append(정렬하지 않는다). 색이 없는 멤버는 GaugeCell이 기본색으로 채운다.
   const availColorsByDate = useMemo(() => {
-    const fallback = new Map(members.map((mem, i) => [mem.id, memberColors[i % memberColors.length] as string]));
     const m: Record<string, string[]> = {};
     for (const r of rows) {
       if (r.status !== 'available') continue;
-      (m[r.date] ??= []).push(r.color ?? fallback.get(r.member_id) ?? colors.light.available);
+      (m[r.date] ??= []).push(r.color ?? colors.light.available);
     }
     return m;
-  }, [rows, members]);
+  }, [rows]);
 
-  // "홍길동님 2026-07 초기화" — 지워지는 게 내 일정이라는 걸 버튼에서 바로 알 수 있게.
-  const myNickname = members.find((m) => m.id === userId)?.nickname ?? '나';
-  const resetLabel = `${myNickname}님 ${anchor.slice(0, 7)} 초기화`;
-
+  // 실제 '가능'으로 등록된 인원만 센다(미입력은 가능으로 치지 않음) — 그래야 초기화가 눈에 보인다.
   function countsFor(date: string): DayCounts {
-    if (summary && summary[date]) return asRegistered(summary[date]);
+    if (summary && summary[date]) return summary[date];
     if (preview) return placeholderCounts(date);
     return EMPTY;
   }
 
-  /**
-   * 연두 배경 — 가능한 날(1명 이상)은 전부 연두로 칠하고, 가능 인원이 많을수록 진하게.
-   * 그 달 안에서 가능 인원 내림차순 순위로 단계를 매기고(같은 인원수는 같은 단계),
-   * 단계가 색 수보다 많으면 가장 옅은 연두로 몰아준다. 가능 0명인 날은 색 없음.
-   */
-  const tierByDate = useMemo(() => {
-    const m: Record<string, number> = {};
-    if (!summary) return m;
-    const counts = new Map<string, number>();
-    for (const c of cells) {
-      if (!c.inMonth) continue;
-      const n = asRegistered(summary[c.date] ?? EMPTY).available;
-      if (n > 0) counts.set(c.date, n);
-    }
-    const ranks = [...new Set(counts.values())].sort((a, b) => b - a);
-    for (const [date, n] of counts) {
-      m[date] = Math.min(ranks.indexOf(n), TIER_COLORS.length - 1);
-    }
-    return m;
-  }, [summary, cells]);
-
-  // 하단 후보: 이번 달 & 가능 1명 이상. 가능 많은 순(내림차순) → 같으면 빠른 날짜 순.
+  // 하단 후보: 이번 달 & 불가 0명 & 가능 1명 이상. 가능 많은 순 → 빠른 날짜 순.
   const candidates = useMemo(() => {
     if (!summary) return [];
     return cells
       .filter((c) => c.inMonth)
-      .map((c) => ({ date: c.date, counts: asRegistered(summary[c.date] ?? EMPTY) }))
-      .filter((c) => c.counts.available > 0)
+      .map((c) => ({ date: c.date, counts: summary[c.date] ?? EMPTY }))
+      .filter((c) => c.counts.unavailable === 0 && c.counts.available > 0)
       .sort((a, b) => b.counts.available - a.counts.available || (a.date < b.date ? -1 : 1))
-      .slice(0, CANDIDATE_LIMIT);
+      .slice(0, 6);
   }, [summary, cells]);
 
   function onPickDate(date: string) {
@@ -242,21 +204,13 @@ export default function CalendarScreen() {
             inMonth={c.inMonth}
             counts={countsFor(c.date)}
             availColors={availColorsByDate[c.date]}
-            tier={tierByDate[c.date]}
             marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
           />
         ))}
       </View>
 
-      {/* 내 일정 초기화 (해당 월) */}
-      {userId ? (
-        <Pressable style={styles.resetBtn} onPress={() => setResetOpen(true)}>
-          <Text variant="bodySm" color={colors.light.textSecondary}>{resetLabel}</Text>
-        </Pressable>
-      ) : null}
-
-      {/* 하단: 가능한 날 후보 (날짜 · 멤버 · 시간) */}
+      {/* 가능한 날 후보 (날짜 · 멤버 · 시간) */}
       <View style={styles.candidates}>
         <Text variant="kicker" color={colors.light.textSecondary}>가능한 날</Text>
         {candidates.length === 0 ? (
@@ -287,6 +241,13 @@ export default function CalendarScreen() {
         )}
       </View>
 
+      {/* 내 일정 초기화 (해당 월) */}
+      {userId ? (
+        <Pressable style={styles.resetBtn} onPress={() => setResetOpen(true)}>
+          <Text variant="bodySm" color={colors.light.textSecondary}>{myNick}님 {anchor.slice(0, 7)} 초기화</Text>
+        </Pressable>
+      ) : null}
+
       <DayDetailModal
         visible={detailDate != null}
         date={detailDate}
@@ -308,7 +269,7 @@ export default function CalendarScreen() {
       />
       <ActionModal
         visible={resetOpen}
-        title={resetLabel}
+        title={`${myNick}님 ${anchor.slice(0, 7)} 초기화`}
         message="이 달에 입력한 내 일정을 모두 지울까요?"
         actions={[
           { label: '초기화', destructive: true, onPress: () => resetMut.mutate() },
@@ -336,7 +297,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.light.hairlineStrong,
   },
-  candidates: { marginTop: space.xl, paddingTop: space.lg },
+  candidates: { marginTop: space.xl, paddingTop: space.lg, borderTopWidth: 1, borderTopColor: colors.light.hairline },
   candRow: {
     flexDirection: 'row',
     gap: space.md,

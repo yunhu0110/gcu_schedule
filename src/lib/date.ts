@@ -116,7 +116,7 @@ export function formatDateTime(iso: string): string {
 }
 
 /**
- * 배포일 "YYYY.MM.DD" — 현재 실행 중인 OTA 업데이트 생성일(없으면 오늘, 개발 환경).
+ * 배포 시각 "YYYY.MM.DD HH:mm:ss" — 현재 실행 중인 OTA 업데이트 생성 시각(KST, 없으면 지금·개발 환경).
  * 웹(PWA)에는 OTA 개념이 없으므로 빌드 시 주입한 EXPO_PUBLIC_BUILD_DATE를 쓴다.
  */
 export function deployDateLabel(): string {
@@ -134,5 +134,5 @@ export function deployDateLabel(): string {
     }
   }
   const base = created ? dayjs.utc(created) : dayjs.utc();
-  return base.utcOffset(KST_OFFSET).format('YYYY.MM.DD');
+  return base.utcOffset(KST_OFFSET).format('YYYY.MM.DD HH:mm:ss');
 }

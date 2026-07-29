@@ -12,7 +12,6 @@
   - `src/api/auth.ts` `joinWithCode`→`signUpMember`, `(auth)/join.tsx` 초대코드 필드 제거→닉네임/이메일/비번, `sign-in.tsx` 링크 라벨 "가입하기", `supabase/SETUP.md` 재작성(이메일 확인 OFF + 관리자 seed). tsc 통과.
 - **SDK 다운그레이드(ADR-013)**: 사용자 폰 Expo Go가 SDK 54 → 프로젝트를 **57→54로 다운그레이드**(expo 54.0.36 / react 19.1 / RN 0.81.5). 미사용 57-전용 라이브러리(@expo/ui, expo-glass-effect) 제거. tsc 통과. dev 서버 매니페스트 `sdkVersion 54.0.0` 확인 → Expo Go(54)로 접속 가능.
 - **로컬 실행 검증**: 호스티드 Supabase 연결 + 이메일 provider ON + Confirm email OFF + members self-insert 정책 적용 완료. 가입 전체 흐름을 REST로 검증(signup→세션→members insert 201). dev 서버는 `npx expo start --lan`(포트 8081)로 상시. 터널/iOS 시뮬레이터는 이 환경 제약(ngrok 차단, iOS 런타임 미설치)으로 불가 → 실기기 Expo Go 사용.
-- **⚠️ 정리 필요**: 검증용 테스트 계정 `delete-me-1785155062@example.com`(members 행 있음, 정원 1칸 점유) → 대시보드 Authentication에서 삭제.
 - **미구현(다음 순서)**: 프로필사진 업로드(Storage), 댓글+1단계 대댓글(ADR-010), 인앱 알림 우상단 배지(ADR-011).
 - **⛔ 사용자 액션 필요(로컬 실행 관문)**:
   1. `.env` 값 — 대시보드 Settings→API의 Project URL + anon(publishable) key (호스티드 프로젝트 `mbpvftoowisrpqgjkidw` 사용 결정).

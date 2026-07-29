@@ -62,8 +62,8 @@ const light = {
   unavailable: palette.ink,
   maybe: palette.amber,
   missing: palette.mist,
-  // 달력 셀 하이라이트 — 가능 인원이 많을수록 진한 연두. 전원 → 1명 빠짐 → 2명 빠짐 순으로 채도를 뺀다.
-  // (3명 이하는 하이라이트 없음)
+  allAvailable: palette.neon,
+  // 달력 셀 하이라이트 — 가능 인원이 많을수록 진한 연두(6명→5명→4명 순으로 채도↓, 3명 이하는 없음).
   availAll: '#B6EA6A',
   availHigh: '#D6EFB2',
   availMid: '#EAF4DC',

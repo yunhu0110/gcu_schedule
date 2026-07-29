@@ -13,15 +13,19 @@ type Props = {
   onChangeText: (t: string) => void;
   members: MemberLite[];
   placeholder?: string;
-  style?: object;
+  style?: object; // 바깥 컨테이너
+  inputStyle?: object; // 안쪽 TextField
+  onFocus?: () => void;
+  onBlur?: () => void;
 };
 
-export function MentionInput({ value, onChangeText, members, placeholder, style }: Props) {
+export function MentionInput({ value, onChangeText, members, placeholder, style, inputStyle, onFocus, onBlur }: Props) {
   const match = value.match(/@([^\s@]{0,20})$/);
   const query = match?.[1] ?? null;
+  // 대소문자 무시하고 "같은 글자로 시작하면" 바로 뜨게(startsWith). @만 치면 전체가 뜬다.
   const suggestions =
     query != null
-      ? members.filter((m) => m.nickname.toLowerCase().includes(query.toLowerCase())).slice(0, 5)
+      ? members.filter((m) => m.nickname.toLowerCase().startsWith(query.toLowerCase())).slice(0, 5)
       : [];
 
   function pick(nickname: string) {
@@ -42,7 +46,7 @@ export function MentionInput({ value, onChangeText, members, placeholder, style 
           ))}
         </View>
       ) : null}
-      <TextField value={value} onChangeText={onChangeText} placeholder={placeholder} />
+      <TextField value={value} onChangeText={onChangeText} placeholder={placeholder} style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
     </View>
   );
 }
