@@ -4,7 +4,7 @@
  * 히어로는 좌우 스와이프(또는 ‹ › 탭)로 이전/다음 달 모임을 넘겨 볼 수 있다.
  */
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeInLeft, FadeInRight } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
@@ -21,7 +21,7 @@ import { addMonths, dday, formatKo, todayStr, volLabel } from '@/lib/date';
 import { useAuth } from '@/features/auth/AuthContext';
 import { getMyProfile, listMembers } from '@/api/members';
 import { getHost, setHost } from '@/api/hosts';
-import { getPoll, setConfirmedDate } from '@/api/polls';
+import { clearConfirmedDate, getPoll, setConfirmedDate } from '@/api/polls';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -67,6 +67,12 @@ export default function HomeScreen() {
   const confirmMut = useMutation({
     mutationFn: (date: string) => setConfirmedDate(userId as string, nYear, nMonth, date),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['next-meeting', nYear, nMonth] }); setConfirmOpen(false); },
+  });
+
+  const clearMut = useMutation({
+    mutationFn: () => clearConfirmedDate(nYear, nMonth),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['next-meeting', nYear, nMonth] }); setConfirmOpen(false); },
+    onError: (e) => Alert.alert('초기화 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
   });
 
   const isAdmin = !!me?.is_admin;
@@ -148,9 +154,12 @@ export default function HomeScreen() {
         visible={confirmOpen}
         year={nYear}
         month={nMonth}
+        confirmed={confirmed}
         saving={confirmMut.isPending}
+        clearing={clearMut.isPending}
         onClose={() => setConfirmOpen(false)}
         onSubmit={(date) => confirmMut.mutate(date)}
+        onClear={() => clearMut.mutate()}
       />
     </Screen>
   );
