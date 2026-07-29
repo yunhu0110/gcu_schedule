@@ -1,7 +1,6 @@
 /**
- * GaugeCell — 시그니처 요소 2. 달력 한 칸: 날짜 + 하단 6칸 미니 게이지.
- * 6명이라는 사실을 채도가 아니라 "칸 수"로 보여준다.
- * 가능한 사람은 1/6칸씩 각자의 프로필 색으로 칠한다(들어온 순서대로 append, 정렬하지 않는다).
+ * GaugeCell — 시그니처 요소 2. 달력 한 칸: 날짜 + 하단 두 줄 미니 게이지.
+ * 윗줄 = '가능' 인원(파란 칸), 아랫줄 = '불가' 인원(빨간 칸). 각 줄 6칸 고정(정원 6명).
  * 배경 하이라이트는 "가능 인원 수"로만 준다 — 6명=가장 진한 연두, 5명=덜, 4명=더 옅게, 3명 이하=없음.
  */
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -21,10 +20,9 @@ type Props = {
   day: number; // 표시 숫자 (1~31)
   inMonth: boolean;
   counts: DayCounts;
-  availColors?: string[]; // 가능한 멤버들의 프로필 색 (등록 순서 그대로)
   marked?: boolean; // 확정된 모임 날짜
   onPress?: () => void;
-  onLongPress?: () => void; // 꾹 누르기 — 그 날 내 일정 지우기
+  onLongPress?: () => void; // 꾹 누르기 — 일정 입력(가능/불가능/초기화) 메뉴
 };
 
 /**
@@ -41,21 +39,18 @@ function countTint(n: number): string | null {
   return null;
 }
 
-// 게이지에는 '가능(참가)'만 채운다. 불가·미정·미입력은 빈 칸(미등록 색).
-// 가능 칸은 그 멤버의 프로필 색을 쓰고, 색이 없는 멤버만 기본색으로 떨어진다.
-function gaugeColors(c: DayCounts, availColors: string[]): string[] {
-  const seq: string[] = [];
-  for (let i = 0; i < c.available; i++) seq.push(availColors[i] ?? colors.light.available);
-  while (seq.length < SLOTS) seq.push(colors.light.missing);
-  return seq.slice(0, SLOTS);
+/** n칸을 채운 6칸 boolean 배열. */
+function row(n: number): boolean[] {
+  return Array.from({ length: SLOTS }, (_, i) => i < n);
 }
 
-export function GaugeCell({ date, day, inMonth, counts, availColors = [], marked, onPress, onLongPress }: Props) {
+export function GaugeCell({ date, day, inMonth, counts, marked, onPress, onLongPress }: Props) {
   const allAvailable = counts.available >= SLOTS;
   const tint = inMonth ? countTint(counts.available) : null;
-  const segments = gaugeColors(counts, availColors);
+  const avail = row(counts.available);
+  const unavail = row(counts.unavailable);
 
-  const label = `${day}일, ${allAvailable ? `${SLOTS}명 모두 가능` : `가능 ${counts.available}명`}`;
+  const label = `${day}일, 가능 ${counts.available}명 · 불가 ${counts.unavailable}명`;
 
   return (
     <Pressable
@@ -79,10 +74,17 @@ export function GaugeCell({ date, day, inMonth, counts, availColors = [], marked
         {day}
       </Text>
       {inMonth && (
-        <View style={styles.gauge}>
-          {segments.map((c, i) => (
-            <View key={i} style={[styles.seg, { backgroundColor: c }]} />
-          ))}
+        <View style={styles.gauges}>
+          <View style={styles.gaugeRow}>
+            {avail.map((on, i) => (
+              <View key={i} style={[styles.seg, on ? styles.segAvail : styles.segEmpty]} />
+            ))}
+          </View>
+          <View style={styles.gaugeRow}>
+            {unavail.map((on, i) => (
+              <View key={i} style={[styles.seg, on ? styles.segUnavail : styles.segEmpty]} />
+            ))}
+          </View>
         </View>
       )}
     </Pressable>
@@ -92,7 +94,7 @@ export function GaugeCell({ date, day, inMonth, counts, availColors = [], marked
 const styles = StyleSheet.create({
   cell: {
     width: `${100 / 7}%`,
-    height: 52,
+    height: 60,
     paddingTop: 6,
     paddingHorizontal: 3,
     alignItems: 'center',
@@ -102,6 +104,10 @@ const styles = StyleSheet.create({
   markedCell: { borderWidth: 2, borderColor: colors.light.cobalt, borderRadius: 8 },
   tintCell: { borderRadius: 8 },
   num: { fontSize: 13, letterSpacing: 0 },
-  gauge: { flexDirection: 'row', gap: 1, marginTop: 8, width: '86%' },
-  seg: { flex: 1, height: 6, borderRadius: 2 },
+  gauges: { marginTop: 6, width: '86%', gap: 2 },
+  gaugeRow: { flexDirection: 'row', gap: 1 },
+  seg: { flex: 1, height: 5, borderRadius: 2 },
+  segAvail: { backgroundColor: colors.light.available },
+  segUnavail: { backgroundColor: colors.light.danger },
+  segEmpty: { backgroundColor: colors.light.missing },
 });
