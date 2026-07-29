@@ -40,13 +40,11 @@ function countTint(n: number): string | null {
   return null;
 }
 
-// 6칸을 상태 순서(가능→미정→불가→미입력)로 채운 색 배열. 모자라면 미등록 색으로 채운다.
+// 게이지에는 '가능(참가)'만 채운다. 불가·미정·미입력은 빈 칸(미등록 색).
 // 가능 칸은 그 멤버의 프로필 색을 쓰고, 색이 없는 멤버만 기본색으로 떨어진다.
 function gaugeColors(c: DayCounts, availColors: string[]): string[] {
   const seq: string[] = [];
   for (let i = 0; i < c.available; i++) seq.push(availColors[i] ?? colors.light.available);
-  for (let i = 0; i < c.maybe; i++) seq.push(colors.light.maybe);
-  for (let i = 0; i < c.unavailable; i++) seq.push(colors.light.unavailable);
   while (seq.length < SLOTS) seq.push(colors.light.missing);
   return seq.slice(0, SLOTS);
 }
