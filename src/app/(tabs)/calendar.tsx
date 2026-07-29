@@ -48,14 +48,14 @@ export default function CalendarScreen() {
   const preview = useDevStore((s) => s.previewMode);
   const qc = useQueryClient();
 
-  const [anchor, setAnchor] = useState(todayStr());
+  const [anchor, setAnchor] = useState(addMonths(todayStr(), 1));
   const [detailDate, setDetailDate] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
-  const [clearDate, setClearDate] = useState<string | null>(null); // 꾹 눌러 그 날만 지우기
+  const [menuDate, setMenuDate] = useState<string | null>(null); // 꾹 눌러 그 날 일정 입력 메뉴
 
-  // 달력 탭에 들어올 때마다 접속일 기준 이번 달로 맞춘다.
-  useFocusEffect(useCallback(() => { setAnchor(todayStr()); }, []));
+  // 달력 탭에 들어올 때마다 접속 시점 기준 '한 달 뒤' 달을 기본으로 보여준다.
+  useFocusEffect(useCallback(() => { setAnchor(addMonths(todayStr(), 1)); }, []));
 
   const from = startOfMonth(anchor);
   const to = endOfMonth(anchor);
@@ -115,35 +115,38 @@ export default function CalendarScreen() {
     onError: (e) => Alert.alert('초기화 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
   });
 
-  // 날짜를 꾹 누르면 그 날 내 일정만 지워 '작성 전'으로 되돌린다.
+  const myNick = members.find((m) => m.id === userId)?.nickname ?? '나';
+
+  const invalidateAvail = () => {
+    qc.invalidateQueries({ queryKey: ['availability-summary'] });
+    qc.invalidateQueries({ queryKey: ['availability-rows'] });
+  };
+
+  // 날짜를 꾹 눌러 그 날 하루만 가능/불가로 빠르게 등록(하루 종일, 사유 없이).
+  const quickMut = useMutation({
+    mutationFn: async (v: { date: string; status: 'available' | 'unavailable' }) => {
+      if (!userId) throw new Error('로그인이 필요해요.');
+      await setRange(userId, v.date, v.date, v.status, null, null, null);
+      const label = v.status === 'available' ? '가능' : '불가';
+      await notifyMembers(userId, members.map((m) => m.id), 'availability_set', `${myNick}님이 ${formatKo(v.date)} 일정(${label})을 등록했어요.`, true);
+    },
+    onSuccess: () => { invalidateAvail(); qc.invalidateQueries({ queryKey: ['unread'] }); },
+    onError: (e) => Alert.alert('저장 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
+  });
+
+  // 그 날 내 일정만 지워 '미입력(작성 전)'으로 되돌린다.
   const clearOneMut = useMutation({
     mutationFn: async (date: string) => {
       if (!userId) throw new Error('로그인이 필요해요.');
       await clearRange(userId, date, date);
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['availability-summary'] });
-      qc.invalidateQueries({ queryKey: ['availability-rows'] });
-    },
-    onError: (e) => Alert.alert('삭제 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
+    onSuccess: invalidateAvail,
+    onError: (e) => Alert.alert('초기화 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
   });
-
-  const myNick = members.find((m) => m.id === userId)?.nickname ?? '나';
 
   const rowsByDate = useMemo(() => {
     const m: Record<string, AvailRow[]> = {};
     for (const r of rows) (m[r.date] ??= []).push(r);
-    return m;
-  }, [rows]);
-
-  // 날짜별 "가능"한 멤버들의 프로필 색 — 게이지 칸을 각자 색으로 칠한다.
-  // 등록된 순서 그대로 append(정렬하지 않는다). 색이 없는 멤버는 GaugeCell이 기본색으로 채운다.
-  const availColorsByDate = useMemo(() => {
-    const m: Record<string, string[]> = {};
-    for (const r of rows) {
-      if (r.status !== 'available') continue;
-      (m[r.date] ??= []).push(r.color ?? colors.light.available);
-    }
     return m;
   }, [rows]);
 
@@ -173,11 +176,10 @@ export default function CalendarScreen() {
     setDetailDate(date);
   }
 
-  // 꾹 누르기 — 그 날 내가 입력한 게 있으면 지우기(작성 전) 확인창을 연다.
+  // 꾹 누르기 — 그 날 일정 입력 메뉴(가능/불가능/초기화)를 연다.
   function onLongPickDate(date: string) {
     if (!userId) return;
-    const hasMine = (rowsByDate[date] ?? []).some((r) => r.member_id === userId);
-    if (hasMine) setClearDate(date);
+    setMenuDate(date);
   }
 
   return (
@@ -224,7 +226,6 @@ export default function CalendarScreen() {
             day={Number(c.date.slice(8, 10))}
             inMonth={c.inMonth}
             counts={countsFor(c.date)}
-            availColors={availColorsByDate[c.date]}
             marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
             onLongPress={() => onLongPickDate(c.date)}
@@ -300,14 +301,16 @@ export default function CalendarScreen() {
         onClose={() => setResetOpen(false)}
       />
       <ActionModal
-        visible={clearDate != null}
-        title={clearDate ? formatKo(clearDate) : ''}
-        message="이 날 내 일정을 지우고 작성 전으로 되돌릴까요?"
+        visible={menuDate != null}
+        title={menuDate ? `${formatKo(menuDate)} 일정 입력` : ''}
+        message="이 날 내 일정을 설정하세요."
         actions={[
-          { label: '지우기', destructive: true, onPress: () => clearDate && clearOneMut.mutate(clearDate) },
+          { label: '가능', onPress: () => menuDate && quickMut.mutate({ date: menuDate, status: 'available' }) },
+          { label: '불가능', onPress: () => menuDate && quickMut.mutate({ date: menuDate, status: 'unavailable' }) },
+          { label: '초기화 (미입력으로)', destructive: true, onPress: () => menuDate && clearOneMut.mutate(menuDate) },
           { label: '취소', cancel: true },
         ]}
-        onClose={() => setClearDate(null)}
+        onClose={() => setMenuDate(null)}
       />
     </Screen>
   );
