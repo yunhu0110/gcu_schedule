@@ -307,7 +307,7 @@ export default function CalendarScreen() {
         actions={[
           { label: '가능', onPress: () => menuDate && quickMut.mutate({ date: menuDate, status: 'available' }) },
           { label: '불가능', onPress: () => menuDate && quickMut.mutate({ date: menuDate, status: 'unavailable' }) },
-          { label: '초기화 (미입력으로)', destructive: true, onPress: () => menuDate && clearOneMut.mutate(menuDate) },
+          { label: '초기화', destructive: true, onPress: () => menuDate && clearOneMut.mutate(menuDate) },
           { label: '취소', cancel: true },
         ]}
         onClose={() => setMenuDate(null)}
