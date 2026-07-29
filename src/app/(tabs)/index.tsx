@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { FadeInLeft, FadeInRight } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
@@ -30,13 +31,19 @@ export default function HomeScreen() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   // 히어로가 보고 있는 달. 0 = 이번 달, 1 = 다음 달(기본). 스와이프로 이동.
   const [offset, setOffset] = useState(1);
+  const [dir, setDir] = useState(1); // 넘김 방향(1=다음, -1=이전) — 슬라이드 애니메이션 방향
 
   const today = todayStr();
   const shownMonth = addMonths(today, offset);
   const nMonth = Number(shownMonth.slice(5, 7));
   const nYear = Number(shownMonth.slice(0, 4));
 
-  const step = (d: number) => setOffset((v) => Math.min(12, Math.max(-11, v + d)));
+  const step = (d: number) => setOffset((v) => {
+    const next = Math.min(12, Math.max(-11, v + d));
+    if (next !== v) setDir(d);
+    return next;
+  });
+  const heroAnim = (dir > 0 ? FadeInRight : FadeInLeft).duration(240);
   // 좌우로 충분히 끌었을 때만 발동 — 세로 스크롤과 충돌하지 않게 activeOffsetX로 축을 고정.
   const swipe = Gesture.Pan()
     .activeOffsetX([-16, 16])
@@ -71,7 +78,6 @@ export default function HomeScreen() {
   return (
     <Screen scroll>
       <BrandHeader />
-      <Text variant="kicker" color={colors.light.textSecondary}>{volLabel(today)}</Text>
 
       {/* 모임장 */}
       <View style={styles.hostCard}>
@@ -100,9 +106,9 @@ export default function HomeScreen() {
         <View style={styles.hero}>
           <View style={styles.heroDeco} />
           <View style={styles.heroTop}>
-            <View style={styles.chip}>
-              <Text variant="kicker" color={colors.light.paper}>◆ {offset === 1 ? '다음 모임' : `${nMonth}월 모임`}</Text>
-            </View>
+            <Animated.View key={offset} entering={heroAnim} style={styles.chip}>
+              <Text variant="kicker" color={colors.light.paper}>{offset === 1 ? '다음 모임' : `${nMonth}월 모임`}</Text>
+            </Animated.View>
             <View style={styles.heroNav}>
               <Pressable onPress={() => step(-1)} hitSlop={12}>
                 <Text variant="h2" color={colors.light.paper60}>‹</Text>
@@ -113,10 +119,12 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           </View>
-          <Text style={styles.heroBig}>{ddayLabel}</Text>
-          <Text variant="body" color={colors.light.paper} style={{ marginTop: space.xs }}>
-            {confirmed ? `${formatKo(confirmed)} 모임` : `${nMonth}월 모임 날짜 미정`}
-          </Text>
+          <Animated.View key={`body-${offset}`} entering={heroAnim}>
+            <Text style={styles.heroBig}>{ddayLabel}</Text>
+            <Text variant="body" color={colors.light.paper} style={{ marginTop: space.xs }}>
+              {confirmed ? `${formatKo(confirmed)} 모임` : `${nMonth}월 모임 날짜 미정`}
+            </Text>
+          </Animated.View>
           <Button label="달력에서 내 일정 입력" block onPress={() => router.push('/calendar')} style={{ marginTop: space.lg }} />
           {canFix ? (
             <Button label={confirmed ? '날짜 변경' : '날짜 확정하기'} variant="ghost" block onPress={() => setConfirmOpen(true)} />

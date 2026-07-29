@@ -2,8 +2,8 @@
  * MemoBoard — 홈 낙서장. 글 작성/수정/삭제 + 대댓글(1단계) + 작성 시간.
  * 위에서부터 제목 → 글(최신 10개, 더보기로 확장) → 입력칸+작성 버튼(한 줄).
  */
-import { useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Image, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
@@ -39,8 +39,17 @@ export function MemoBoard({ userId }: { userId: string }) {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['memos'] });
   const onErr = (e: unknown) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.');
 
-  // 입력칸이 키보드에 가리지 않게, 포커스되면 맨 아래로 스크롤(약간 지연 → 키보드 인셋 반영 후).
-  const scrollToComposer = () => setTimeout(() => scrollRef?.current?.scrollToEnd({ animated: true }), 100);
+  // 입력칸이 키보드에 가리지 않게: 포커스 중일 때 키보드가 완전히 뜬 시점(keyboardDidShow)에
+  // 맨 아래로 스크롤한다. onFocus 직후엔 아직 키보드 인셋이 반영 전이라 조금밖에 안 올라가서,
+  // 인셋이 적용되는 keyboardDidShow에서 다시 한 번 확실히 내려준다.
+  const composing = useRef(false);
+  useEffect(() => {
+    const show = () => { if (composing.current) requestAnimationFrame(() => scrollRef?.current?.scrollToEnd({ animated: true })); };
+    const sub = Keyboard.addListener('keyboardDidShow', show);
+    return () => sub.remove();
+  }, [scrollRef]);
+  const onComposeFocus = () => { composing.current = true; scrollRef?.current?.scrollToEnd({ animated: true }); };
+  const onComposeBlur = () => { composing.current = false; };
 
   const addMut = useMutation({
     mutationFn: async (v: { body: string; parentId: string | null }) => {
@@ -68,7 +77,7 @@ export function MemoBoard({ userId }: { userId: string }) {
 
       <View style={styles.composeRow}>
         <View style={styles.grow}>
-          <MentionInput value={draft} onChangeText={setDraft} members={members} placeholder="작성 (@로 멤버 언급)" inputStyle={styles.inputField} onFocus={scrollToComposer} />
+          <MentionInput value={draft} onChangeText={setDraft} members={members} placeholder="작성 (@로 멤버 언급)" inputStyle={styles.inputField} onFocus={onComposeFocus} onBlur={onComposeBlur} />
         </View>
         <Button label="작성" onPress={() => draft.trim() && addMut.mutate({ body: draft, parentId: null })} loading={addMut.isPending} style={styles.sendBtn} />
       </View>
@@ -159,7 +168,7 @@ function Bubble({ memo, userId, members, myNick, onChange, onError, isReply }: {
 }
 
 const styles = StyleSheet.create({
-  card: { marginTop: space.xl, paddingTop: space.lg, borderTopWidth: 1, borderTopColor: colors.light.hairline },
+  card: { marginTop: space.xl, paddingTop: space.lg },
   grow: { flex: 1 },
   // 글 목록 아래 한 줄 입력: 밑줄만 있는 모던 입력 + 작성 버튼
   composeRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, marginTop: space.lg },
@@ -184,8 +193,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.light.hairlineStrong,
   },
-  bubbleWrap: { marginTop: space.md, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.light.hairline },
-  replyIndent: { marginLeft: space.xl, borderTopWidth: 0, paddingTop: 0 },
+  bubbleWrap: { marginTop: space.md, paddingTop: space.md },
+  replyIndent: { marginLeft: space.xl, paddingTop: 0 },
   bubbleRow: { flexDirection: 'row', gap: space.sm },
   avatar: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   bubble: { flex: 1 },

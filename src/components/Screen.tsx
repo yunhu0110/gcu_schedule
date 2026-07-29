@@ -2,9 +2,10 @@
  * Screen — 모든 화면의 바깥 래퍼. 안전영역 + paper 배경 + 좌우 화면 여백.
  * iOS는 KeyboardAvoidingView(padding), Android는 기본 adjustResize로 키보드를 피한다.
  */
-import { createContext, useContext, useRef, type ReactNode, type RefObject } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 import { colors, space } from '@/theme/tokens';
 
 /**
@@ -24,6 +25,19 @@ type Props = {
 export function Screen({ children, scroll = false, padded = true, edges = ['top', 'bottom'] }: Props) {
   const ios = Platform.OS === 'ios';
   const scrollRef = useRef<ScrollView>(null);
+  const qc = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+
+  // 어느 페이지든 아래로 당기면 그 화면의 서버 데이터를 새로고침한다(활성 쿼리 refetch).
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await qc.refetchQueries({ type: 'active' });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [qc]);
+
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
       {/* 스크롤 화면은 ScrollView가 키보드 인셋을 직접 처리(automaticallyAdjustKeyboardInsets)하고,
@@ -38,6 +52,7 @@ export function Screen({ children, scroll = false, padded = true, edges = ['top'
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               automaticallyAdjustKeyboardInsets={ios}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.light.cobalt} colors={[colors.light.cobalt]} />}
             >
               {children}
             </ScrollView>

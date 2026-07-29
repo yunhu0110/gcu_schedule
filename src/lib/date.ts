@@ -114,7 +114,7 @@ export function formatDateTime(iso: string): string {
   return dayjs.utc(iso).utcOffset(KST_OFFSET).format('M.D HH:mm');
 }
 
-/** 배포일 "YYYY.MM.DD" — 현재 실행 중인 OTA 업데이트 생성일(없으면 오늘, 개발 환경). */
+/** 배포 시각 "YYYY.MM.DD HH:mm:ss" — 현재 실행 중인 OTA 업데이트 생성 시각(KST, 없으면 지금·개발 환경). */
 export function deployDateLabel(): string {
   let created: Date | null = null;
   try {
@@ -123,5 +123,5 @@ export function deployDateLabel(): string {
     created = null;
   }
   const base = created ? dayjs.utc(created) : dayjs.utc();
-  return base.utcOffset(KST_OFFSET).format('YYYY.MM.DD');
+  return base.utcOffset(KST_OFFSET).format('YYYY.MM.DD HH:mm:ss');
 }

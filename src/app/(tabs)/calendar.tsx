@@ -3,14 +3,15 @@
  * 날짜 탭 → 상세 팝업(가능/불가/미입력 · 시간), 거기서 내 일정 입력/수정.
  * 하단엔 이번 달 후보(불가 0명 & 가능 1명 이상)를 멤버·시간과 함께 보여준다.
  */
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { BrandHeader } from '@/components/BrandHeader';
 import { ActionModal } from '@/components/ActionModal';
-import { GaugeCell, TIER_COLORS, type DayCounts } from '@/components/GaugeCell';
+import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
 import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { DayDetailModal } from '@/features/availability/DayDetailModal';
 import { colors, radius, space } from '@/theme/tokens';
@@ -24,8 +25,6 @@ import { useDevStore } from '@/store/devStore';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const EMPTY: DayCounts = { available: 0, maybe: 0, unavailable: 0, missing: 0 };
-// default = 가능: 미입력(missing) 멤버는 가능으로 간주해 게이지·집계에 반영한다.
-const fold = (c: DayCounts): DayCounts => ({ available: c.available + c.missing, maybe: c.maybe, unavailable: c.unavailable, missing: 0 });
 const fmtTime = (s: string | null) => (s ? s.slice(0, 5) : null);
 const timeLabel = (r: AvailRow) => {
   const a = fmtTime(r.start_time);
@@ -53,6 +52,9 @@ export default function CalendarScreen() {
   const [detailDate, setDetailDate] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
+
+  // 달력 탭에 들어올 때마다 접속일 기준 이번 달로 맞춘다.
+  useFocusEffect(useCallback(() => { setAnchor(todayStr()); }, []));
 
   const from = startOfMonth(anchor);
   const to = endOfMonth(anchor);
@@ -131,39 +133,19 @@ export default function CalendarScreen() {
     return m;
   }, [rows]);
 
+  // 실제 '가능'으로 등록된 인원만 센다(미입력은 가능으로 치지 않음) — 그래야 초기화가 눈에 보인다.
   function countsFor(date: string): DayCounts {
-    if (summary && summary[date]) return fold(summary[date]);
+    if (summary && summary[date]) return summary[date];
     if (preview) return placeholderCounts(date);
     return EMPTY;
   }
-
-  /**
-   * 연두 그라데이션 순위 — 가능한 날(1명 이상)만 모아 가능 인원 내림차순으로 줄 세우고,
-   * 상위 세 단계(같은 인원수는 같은 단계)에만 색을 준다. 절대 인원수가 아니라 그 달 안에서의 순위다.
-   */
-  const tierByDate = useMemo(() => {
-    const m: Record<string, number> = {};
-    if (!summary) return m;
-    const counts = new Map<string, number>();
-    for (const c of cells) {
-      if (!c.inMonth) continue;
-      const n = fold(summary[c.date] ?? EMPTY).available;
-      if (n > 0) counts.set(c.date, n);
-    }
-    const ranks = [...new Set(counts.values())].sort((a, b) => b - a).slice(0, TIER_COLORS.length);
-    for (const [date, n] of counts) {
-      const i = ranks.indexOf(n);
-      if (i >= 0) m[date] = i;
-    }
-    return m;
-  }, [summary, cells]);
 
   // 하단 후보: 이번 달 & 불가 0명 & 가능 1명 이상. 가능 많은 순 → 빠른 날짜 순.
   const candidates = useMemo(() => {
     if (!summary) return [];
     return cells
       .filter((c) => c.inMonth)
-      .map((c) => ({ date: c.date, counts: fold(summary[c.date] ?? EMPTY) }))
+      .map((c) => ({ date: c.date, counts: summary[c.date] ?? EMPTY }))
       .filter((c) => c.counts.unavailable === 0 && c.counts.available > 0)
       .sort((a, b) => b.counts.available - a.counts.available || (a.date < b.date ? -1 : 1))
       .slice(0, 6);
@@ -222,20 +204,9 @@ export default function CalendarScreen() {
             inMonth={c.inMonth}
             counts={countsFor(c.date)}
             availColors={availColorsByDate[c.date]}
-            tier={tierByDate[c.date]}
             marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
           />
-        ))}
-      </View>
-
-      {/* 범례 — 가능 인원 많은 순 1·2·3위 */}
-      <View style={styles.legend}>
-        {TIER_COLORS.map((c, i) => (
-          <View key={i} style={styles.legendItem}>
-            <View style={[styles.legendChip, { backgroundColor: c }]} />
-            <Text variant="caption" color={colors.light.textSecondary}>{i + 1}순위</Text>
-          </View>
         ))}
       </View>
 
@@ -316,9 +287,6 @@ const styles = StyleSheet.create({
   weekRow: { flexDirection: 'row', marginBottom: space.xs },
   weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  legend: { flexDirection: 'row', justifyContent: 'center', gap: space.lg, marginTop: space.md },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendChip: { width: 14, height: 10, borderRadius: 3 },
 
   resetBtn: {
     alignSelf: 'center',
@@ -334,8 +302,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: space.md,
     paddingVertical: space.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.light.hairline,
   },
   candDateCol: { width: 118, gap: 2 },
   candMembers: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, alignItems: 'flex-start' },
