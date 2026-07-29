@@ -39,16 +39,15 @@ export function MemoBoard({ userId }: { userId: string }) {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['memos'] });
   const onErr = (e: unknown) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.');
 
-  // 입력칸이 키보드에 가리지 않게: 포커스 중일 때 키보드가 완전히 뜬 시점(keyboardDidShow)에
-  // 맨 아래로 스크롤한다. onFocus 직후엔 아직 키보드 인셋이 반영 전이라 조금밖에 안 올라가서,
-  // 인셋이 적용되는 keyboardDidShow에서 다시 한 번 확실히 내려준다.
+  // 키보드가 입력칸을 가리지 않게: Screen이 키보드 높이만큼 하단 여유를 만들어 두므로(스크롤 여유),
+  // 여기선 포커스/키보드 표시 시점에 맨 아래로 스크롤해 입력칸을 키보드 위로 올린다.
   const composing = useRef(false);
   useEffect(() => {
-    const show = () => { if (composing.current) requestAnimationFrame(() => scrollRef?.current?.scrollToEnd({ animated: true })); };
+    const show = () => { if (composing.current) setTimeout(() => scrollRef?.current?.scrollToEnd({ animated: true }), 80); };
     const sub = Keyboard.addListener('keyboardDidShow', show);
     return () => sub.remove();
   }, [scrollRef]);
-  const onComposeFocus = () => { composing.current = true; scrollRef?.current?.scrollToEnd({ animated: true }); };
+  const onComposeFocus = () => { composing.current = true; setTimeout(() => scrollRef?.current?.scrollToEnd({ animated: true }), 80); };
   const onComposeBlur = () => { composing.current = false; };
 
   const addMut = useMutation({

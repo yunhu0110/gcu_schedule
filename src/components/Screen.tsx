@@ -2,8 +2,8 @@
  * Screen — 모든 화면의 바깥 래퍼. 안전영역 + paper 배경 + 좌우 화면 여백.
  * iOS는 KeyboardAvoidingView(padding), Android는 기본 adjustResize로 키보드를 피한다.
  */
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { Keyboard, KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { colors, space } from '@/theme/tokens';
@@ -28,6 +28,18 @@ export function Screen({ children, scroll = false, padded = true, edges = ['top'
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
 
+  // 키보드 높이만큼 스크롤 하단에 여유를 준다 → 하위 입력칸(예: 낙서장)이 키보드 위로 스크롤될 수 있다.
+  // 네이티브 keyboard 모드(pan/resize)에 의존하지 않아 OTA만으로 iOS/Android 모두 동작.
+  const [kbHeight, setKbHeight] = useState(0);
+  useEffect(() => {
+    if (!scroll) return;
+    const show = (e: { endCoordinates?: { height?: number } }) => setKbHeight(e?.endCoordinates?.height ?? 0);
+    const hide = () => setKbHeight(0);
+    const s = Keyboard.addListener('keyboardDidShow', show);
+    const h = Keyboard.addListener('keyboardDidHide', hide);
+    return () => { s.remove(); h.remove(); };
+  }, [scroll]);
+
   // 어느 페이지든 아래로 당기면 그 화면의 서버 데이터를 새로고침한다(활성 쿼리 refetch).
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -40,18 +52,16 @@ export function Screen({ children, scroll = false, padded = true, edges = ['top'
 
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
-      {/* 스크롤 화면은 ScrollView가 키보드 인셋을 직접 처리(automaticallyAdjustKeyboardInsets)하고,
-          입력칸은 포커스 시 useScreenScroll()로 자기를 위로 스크롤한다.
-          비스크롤 화면만 KeyboardAvoidingView(padding)로 피한다 — 둘이 겹치면 이중으로 밀린다. */}
+      {/* 스크롤 화면: 키보드 높이만큼 하단 여유(kbHeight) + 입력칸이 useScreenScroll()로 자기를 위로 스크롤.
+          비스크롤 화면만 KeyboardAvoidingView(padding)로 피한다. */}
       <ScreenScrollContext.Provider value={scrollRef}>
         <KeyboardAvoidingView style={styles.flex} behavior={!scroll && ios ? 'padding' : undefined}>
           {scroll ? (
             <ScrollView
               ref={scrollRef}
-              contentContainerStyle={[styles.scrollContent, padded && styles.padded]}
+              contentContainerStyle={[styles.scrollContent, padded && styles.padded, kbHeight > 0 && { paddingBottom: kbHeight }]}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
-              automaticallyAdjustKeyboardInsets={ios}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.light.cobalt} colors={[colors.light.cobalt]} />}
             >
               {children}
