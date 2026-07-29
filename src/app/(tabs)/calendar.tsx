@@ -10,7 +10,7 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { BrandHeader } from '@/components/BrandHeader';
 import { ActionModal } from '@/components/ActionModal';
-import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
+import { GaugeCell, TIER_COLORS, type DayCounts } from '@/components/GaugeCell';
 import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { DayDetailModal } from '@/features/availability/DayDetailModal';
 import { colors, radius, space } from '@/theme/tokens';
@@ -117,11 +117,43 @@ export default function CalendarScreen() {
     return m;
   }, [rows]);
 
+  // 날짜별 "가능"한 멤버들의 프로필 색 — 게이지 칸을 각자 색으로 칠한다.
+  // 등록된 순서 그대로 append(정렬하지 않는다). 색이 없는 멤버는 GaugeCell이 기본색으로 채운다.
+  const availColorsByDate = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const r of rows) {
+      if (r.status !== 'available') continue;
+      (m[r.date] ??= []).push(r.color ?? colors.light.available);
+    }
+    return m;
+  }, [rows]);
+
   function countsFor(date: string): DayCounts {
     if (summary && summary[date]) return fold(summary[date]);
     if (preview) return placeholderCounts(date);
     return EMPTY;
   }
+
+  /**
+   * 연두 그라데이션 순위 — 가능한 날(1명 이상)만 모아 가능 인원 내림차순으로 줄 세우고,
+   * 상위 세 단계(같은 인원수는 같은 단계)에만 색을 준다. 절대 인원수가 아니라 그 달 안에서의 순위다.
+   */
+  const tierByDate = useMemo(() => {
+    const m: Record<string, number> = {};
+    if (!summary) return m;
+    const counts = new Map<string, number>();
+    for (const c of cells) {
+      if (!c.inMonth) continue;
+      const n = fold(summary[c.date] ?? EMPTY).available;
+      if (n > 0) counts.set(c.date, n);
+    }
+    const ranks = [...new Set(counts.values())].sort((a, b) => b - a).slice(0, TIER_COLORS.length);
+    for (const [date, n] of counts) {
+      const i = ranks.indexOf(n);
+      if (i >= 0) m[date] = i;
+    }
+    return m;
+  }, [summary, cells]);
 
   // 하단 후보: 이번 달 & 불가 0명 & 가능 1명 이상. 가능 많은 순 → 빠른 날짜 순.
   const candidates = useMemo(() => {
@@ -186,9 +218,21 @@ export default function CalendarScreen() {
             day={Number(c.date.slice(8, 10))}
             inMonth={c.inMonth}
             counts={countsFor(c.date)}
+            availColors={availColorsByDate[c.date]}
+            tier={tierByDate[c.date]}
             marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
           />
+        ))}
+      </View>
+
+      {/* 범례 — 가능 인원 많은 순 1·2·3위 */}
+      <View style={styles.legend}>
+        {TIER_COLORS.map((c, i) => (
+          <View key={i} style={styles.legendItem}>
+            <View style={[styles.legendChip, { backgroundColor: c }]} />
+            <Text variant="caption" color={colors.light.textSecondary}>{i + 1}순위</Text>
+          </View>
         ))}
       </View>
 
@@ -269,6 +313,9 @@ const styles = StyleSheet.create({
   weekRow: { flexDirection: 'row', marginBottom: space.xs },
   weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  legend: { flexDirection: 'row', justifyContent: 'center', gap: space.lg, marginTop: space.md },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendChip: { width: 14, height: 10, borderRadius: 3 },
 
   resetBtn: {
     alignSelf: 'center',

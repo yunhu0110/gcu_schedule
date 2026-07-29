@@ -63,6 +63,10 @@ const light = {
   maybe: palette.amber,
   missing: palette.mist,
   allAvailable: palette.neon,
+  // 달력 배경 하이라이트 — 가능 인원 순위별 연두(1순위=진함 → 채도 down)
+  availAll: '#B6EA6A',
+  availHigh: '#D6EFB2',
+  availMid: '#EAF4DC',
 } as const;
 
 export const colors = { light, dark: light } as const; // dark는 P3
