@@ -40,9 +40,12 @@ export default function MeScreen() {
   const vMonth = Number(nextMonth.slice(5, 7));
   const { data: nextHost } = useQuery({ queryKey: ['host', vYear, vMonth], queryFn: () => getHost(vYear, vMonth), enabled: !!userId });
 
-  // 프사·닉네임은 홈 담당자, 달력, 댓글, 기록 등 화면 곳곳에 박혀 있다.
-  // 6인 앱이라 쿼리 수가 적으니 키를 하나씩 세지 말고 전부(비활성 화면 포함) 다시 받아 즉시 동기화한다.
-  const invalidate = () => qc.invalidateQueries({ refetchType: 'all' });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['me'] });
+    qc.invalidateQueries({ queryKey: ['members'] });
+    qc.invalidateQueries({ queryKey: ['availability-rows'] });
+    qc.invalidateQueries({ queryKey: ['host'] });
+  };
   const onErr = (e: unknown) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.');
 
   const avatarMut = useMutation({ mutationFn: (v: { base64: string; ts: number }) => uploadAvatar(userId as string, v.base64, v.ts), onSuccess: invalidate, onError: onErr });

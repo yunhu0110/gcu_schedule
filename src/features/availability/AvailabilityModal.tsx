@@ -1,10 +1,7 @@
 /**
  * AvailabilityModal — 달력에서 날짜를 누르면 뜨는 일정 입력 팝업.
- * "언제부터 언제까지 · 가능/불가 · (선택)시간대"를 받아 상위(달력)로 넘긴다.
- *
- * 불가는 저장되는 상태가 아니라 "등록해둔 가능을 지운다"는 뜻이다.
- * 그래서 불가를 고르면 시간대·사유 입력이 필요 없다.
- * 실제 저장(upsert)/삭제·쿼리 무효화는 호출부(calendar)가 담당. 이 컴포넌트는 입력 UI만.
+ * "언제부터 언제까지 · 불가/가능 · (선택)시간대 · 사유"를 받아 상위(달력)로 넘긴다.
+ * 저장(upsert)·쿼리 무효화는 호출부(calendar)가 담당. 이 컴포넌트는 입력 UI만.
  */
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, Switch, View } from 'react-native';
@@ -16,7 +13,7 @@ import { addDays, diffDays, formatKo, type DateStr } from '@/lib/date';
 import type { AvailabilityStatus } from '@/api/availabilities';
 
 export type AvailabilitySubmit = {
-  status: AvailabilityStatus; // 'available' = 등록, 'unavailable' = 등록 취소(삭제)
+  status: AvailabilityStatus;
   from: DateStr;
   to: DateStr;
   note: string;
@@ -32,7 +29,7 @@ type Props = {
   onSubmit: (v: AvailabilitySubmit) => void;
 };
 
-// 가능(등록) / 불가(등록 취소) 2종. 가능 먼저, 불가 오른쪽.
+// 가능/불가 2종. (가능 먼저, 불가 오른쪽)
 const OPTIONS: { key: AvailabilityStatus; label: string; color: string }[] = [
   { key: 'available', label: '가능', color: colors.light.available },
   { key: 'unavailable', label: '불가', color: colors.light.unavailable },
@@ -88,8 +85,8 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
   }
 
   const days = Math.abs(diffDays(to, from)) + 1;
-  const isRemove = status === 'unavailable'; // 불가 = 등록해둔 가능 삭제
-  const daySuffix = days > 1 ? ` (${days}일)` : '';
+  const needReason = status === 'unavailable';
+  const canSave = !needReason || note.trim().length > 0;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -99,9 +96,7 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
         <View style={styles.handle} />
         <Text variant="h2">일정 입력</Text>
         <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.xs }}>
-          {isRemove
-            ? `이 기간에 등록해둔 '가능'을 지워요${daySuffix}.`
-            : `이 기간을 '가능'으로 등록해요${daySuffix}.`}
+          이 기간을 아래 상태로 표시해요{days > 1 ? ` (${days}일)` : ''}.
         </Text>
 
         {/* 상태: 불가 / 가능 */}
@@ -132,39 +127,34 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
           <Stepper label="종료일" value={formatKo(to)} onPrev={() => setToSafe(addDays(to, -1))} onNext={() => setToSafe(addDays(to, 1))} prevOff={diffDays(to, from) <= 0} />
         </View>
 
-        {/* 시간대 — 등록할 때만 (삭제엔 필요 없다) */}
-        {isRemove ? (
-          <View style={styles.removeNote}>
-            <Text variant="bodySm" color={colors.light.textSecondary}>
-              불가는 따로 저장되지 않아요. 이 기간에 내가 등록한 '가능'만 사라져요.
-            </Text>
+        {/* 시간대 */}
+        <View style={styles.allDayRow}>
+          <Text variant="bodyBold" style={{ fontSize: 15 }}>
+            하루 종일
+          </Text>
+          <Switch
+            value={allDay}
+            onValueChange={setAllDay}
+            trackColor={{ true: colors.light.cobalt, false: colors.light.hairlineStrong }}
+          />
+        </View>
+        {!allDay && (
+          <View style={styles.block}>
+            <Stepper label="시작 시간" value={start} onPrev={() => setStartSafe(toHHMM(toMin(start) - STEP))} onNext={() => setStartSafe(toHHMM(toMin(start) + STEP))} />
+            <Stepper label="종료 시간" value={end} onPrev={() => setEndSafe(toHHMM(toMin(end) - STEP))} onNext={() => setEndSafe(toHHMM(toMin(end) + STEP))} prevOff={toMin(end) - STEP <= toMin(start)} />
           </View>
-        ) : (
-          <>
-            <View style={styles.allDayRow}>
-              <Text variant="bodyBold" style={{ fontSize: 15 }}>
-                하루 종일
-              </Text>
-              <Switch
-                value={allDay}
-                onValueChange={setAllDay}
-                trackColor={{ true: colors.light.cobalt, false: colors.light.hairlineStrong }}
-              />
-            </View>
-            {!allDay && (
-              <View style={styles.block}>
-                <Stepper label="시작 시간" value={start} onPrev={() => setStartSafe(toHHMM(toMin(start) - STEP))} onNext={() => setStartSafe(toHHMM(toMin(start) + STEP))} />
-                <Stepper label="종료 시간" value={end} onPrev={() => setEndSafe(toHHMM(toMin(end) - STEP))} onNext={() => setEndSafe(toHHMM(toMin(end) + STEP))} prevOff={toMin(end) - STEP <= toMin(start)} />
-              </View>
-            )}
-            <TextField label="메모 (선택)" value={note} onChangeText={setNote} placeholder="예: 저녁부터 가능" style={{ marginTop: space.md }} />
-          </>
         )}
 
+        {/* 사유 — 불가일 때만, 필수 */}
+        {needReason ? (
+          <TextField label="불가 사유 (필수)" value={note} onChangeText={setNote} placeholder="불가한 이유를 적어주세요" style={{ marginTop: space.md }} />
+        ) : null}
+
         <Button
-          label={saving ? (isRemove ? '삭제 중…' : '저장 중…') : isRemove ? '등록한 날짜 삭제' : '저장'}
+          label={saving ? '저장 중…' : '저장'}
           block
           loading={saving}
+          disabled={!canSave}
           onPress={() =>
             onSubmit({
               status,
@@ -250,12 +240,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   block: { marginTop: space.lg, gap: space.md },
-  removeNote: {
-    marginTop: space.lg,
-    padding: space.md,
-    borderRadius: radius.button,
-    backgroundColor: colors.light.surfacePlate,
-  },
   allDayRow: {
     flexDirection: 'row',
     alignItems: 'center',

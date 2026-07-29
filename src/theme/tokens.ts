@@ -63,7 +63,7 @@ const light = {
   maybe: palette.amber,
   missing: palette.mist,
   allAvailable: palette.neon,
-  // 달력 셀 하이라이트 — 가능 인원이 많을수록 진한 연두(6명→5명→4명 순으로 채도↓, 3명 이하는 없음).
+  // 달력 배경 하이라이트 — 가능 인원 순위별 연두(1순위=진함 → 채도 down)
   availAll: '#B6EA6A',
   availHigh: '#D6EFB2',
   availMid: '#EAF4DC',

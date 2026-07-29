@@ -111,19 +111,14 @@ export async function setRange(
   if (error) throw error;
 }
 
-/**
- * 특정 날짜 범위의 본인 입력을 지운다(미등록으로 되돌림).
- * 실제로 지워진 행 수를 돌려준다 — 0이면 "지울 게 없었다"는 뜻이라 호출부가 알려줄 수 있다.
- */
-export async function clearRange(memberId: string, from: DateStr, to: DateStr): Promise<number> {
+/** 특정 날짜 범위의 본인 입력을 지운다(미입력으로 되돌림). */
+export async function clearRange(memberId: string, from: DateStr, to: DateStr): Promise<void> {
   const [lo, hi] = diffDays(to, from) < 0 ? [to, from] : [from, to];
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('availabilities')
     .delete()
     .eq('member_id', memberId)
     .gte('date', lo)
-    .lte('date', hi)
-    .select('date');
+    .lte('date', hi);
   if (error) throw error;
-  return data?.length ?? 0;
 }
