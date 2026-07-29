@@ -24,6 +24,7 @@ type Props = {
   availColors?: string[]; // 가능한 멤버들의 프로필 색 (등록 순서 그대로)
   marked?: boolean; // 확정된 모임 날짜
   onPress?: () => void;
+  onLongPress?: () => void; // 꾹 누르기 — 그 날 내 일정 지우기
 };
 
 /**
@@ -49,7 +50,7 @@ function gaugeColors(c: DayCounts, availColors: string[]): string[] {
   return seq.slice(0, SLOTS);
 }
 
-export function GaugeCell({ date, day, inMonth, counts, availColors = [], marked, onPress }: Props) {
+export function GaugeCell({ date, day, inMonth, counts, availColors = [], marked, onPress, onLongPress }: Props) {
   const allAvailable = counts.available >= SLOTS;
   const tint = inMonth ? countTint(counts.available) : null;
   const segments = gaugeColors(counts, availColors);
@@ -59,6 +60,8 @@ export function GaugeCell({ date, day, inMonth, counts, availColors = [], marked
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={350}
       accessibilityRole="button"
       accessibilityLabel={label}
       style={[

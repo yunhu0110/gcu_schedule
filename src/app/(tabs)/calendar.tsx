@@ -52,6 +52,7 @@ export default function CalendarScreen() {
   const [detailDate, setDetailDate] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
+  const [clearDate, setClearDate] = useState<string | null>(null); // 꾹 눌러 그 날만 지우기
 
   // 달력 탭에 들어올 때마다 접속일 기준 이번 달로 맞춘다.
   useFocusEffect(useCallback(() => { setAnchor(todayStr()); }, []));
@@ -114,6 +115,19 @@ export default function CalendarScreen() {
     onError: (e) => Alert.alert('초기화 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
   });
 
+  // 날짜를 꾹 누르면 그 날 내 일정만 지워 '작성 전'으로 되돌린다.
+  const clearOneMut = useMutation({
+    mutationFn: async (date: string) => {
+      if (!userId) throw new Error('로그인이 필요해요.');
+      await clearRange(userId, date, date);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['availability-summary'] });
+      qc.invalidateQueries({ queryKey: ['availability-rows'] });
+    },
+    onError: (e) => Alert.alert('삭제 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
+  });
+
   const myNick = members.find((m) => m.id === userId)?.nickname ?? '나';
 
   const rowsByDate = useMemo(() => {
@@ -157,6 +171,13 @@ export default function CalendarScreen() {
       return;
     }
     setDetailDate(date);
+  }
+
+  // 꾹 누르기 — 그 날 내가 입력한 게 있으면 지우기(작성 전) 확인창을 연다.
+  function onLongPickDate(date: string) {
+    if (!userId) return;
+    const hasMine = (rowsByDate[date] ?? []).some((r) => r.member_id === userId);
+    if (hasMine) setClearDate(date);
   }
 
   return (
@@ -206,6 +227,7 @@ export default function CalendarScreen() {
             availColors={availColorsByDate[c.date]}
             marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
+            onLongPress={() => onLongPickDate(c.date)}
           />
         ))}
       </View>
@@ -276,6 +298,16 @@ export default function CalendarScreen() {
           { label: '취소', cancel: true },
         ]}
         onClose={() => setResetOpen(false)}
+      />
+      <ActionModal
+        visible={clearDate != null}
+        title={clearDate ? formatKo(clearDate) : ''}
+        message="이 날 내 일정을 지우고 작성 전으로 되돌릴까요?"
+        actions={[
+          { label: '지우기', destructive: true, onPress: () => clearDate && clearOneMut.mutate(clearDate) },
+          { label: '취소', cancel: true },
+        ]}
+        onClose={() => setClearDate(null)}
       />
     </Screen>
   );

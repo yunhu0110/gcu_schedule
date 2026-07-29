@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   },
   bubbleWrap: { marginTop: space.md, paddingTop: space.md },
   replyIndent: { marginLeft: space.xl, paddingTop: 0 },
-  bubbleRow: { flexDirection: 'row', gap: space.sm },
+  bubbleRow: { flexDirection: 'row', gap: space.sm, userSelect: 'none' }, // 웹에서 텍스트 선택이 꾹 누르기를 먹지 않게
   avatar: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   bubble: { flex: 1 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
