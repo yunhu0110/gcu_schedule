@@ -15,14 +15,18 @@ type Props = {
 };
 
 export function Screen({ children, scroll = false, padded = true, edges = ['top', 'bottom'] }: Props) {
+  const ios = Platform.OS === 'ios';
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* 스크롤 화면은 ScrollView가 키보드 인셋을 직접 처리(포커스된 입력칸을 자동으로 위로).
+          비스크롤 화면만 KeyboardAvoidingView(padding)로 피한다 — 둘이 겹치면 이중으로 밀린다. */}
+      <KeyboardAvoidingView style={styles.flex} behavior={!scroll && ios ? 'padding' : undefined}>
         {scroll ? (
           <ScrollView
             contentContainerStyle={[styles.scrollContent, padded && styles.padded]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            automaticallyAdjustKeyboardInsets={ios}
           >
             {children}
           </ScrollView>
