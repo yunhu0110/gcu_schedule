@@ -25,8 +25,10 @@ type Props = {
   visible: boolean;
   date: DateStr | null; // 탭한 날짜(시작 기본값)
   saving?: boolean;
+  clearing?: boolean;
   onClose: () => void;
   onSubmit: (v: AvailabilitySubmit) => void;
+  onClear?: (from: DateStr, to: DateStr) => void; // 이 기간 내 일정 지우기(미입력으로)
 };
 
 // 가능/불가 2종. (가능 먼저, 불가 오른쪽)
@@ -42,7 +44,7 @@ const toHHMM = (m: number) => {
   return `${String(Math.floor(mm / 60)).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`;
 };
 
-export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: Props) {
+export function AvailabilityModal({ visible, date, saving, clearing, onClose, onSubmit, onClear }: Props) {
   const [status, setStatus] = useState<AvailabilityStatus>('available');
   const [from, setFrom] = useState<DateStr | null>(date);
   const [to, setTo] = useState<DateStr | null>(date);
@@ -167,6 +169,13 @@ export function AvailabilityModal({ visible, date, saving, onClose, onSubmit }: 
           }
           style={{ marginTop: space.lg }}
         />
+        {onClear ? (
+          <Pressable style={styles.clearBtn} onPress={() => onClear(from, to)} disabled={clearing}>
+            <Text variant="bodyBold" style={{ fontSize: 15 }} color={colors.light.danger}>
+              {clearing ? '초기화 중…' : '초기화'}
+            </Text>
+          </Pressable>
+        ) : null}
         <Button label="취소" variant="ghost" block onPress={onClose} />
       </View>
       </KeyboardAvoidingView>
@@ -259,5 +268,6 @@ const styles = StyleSheet.create({
   },
   stepBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   stepBtnOff: { opacity: 0.4 },
+  clearBtn: { height: 44, alignItems: 'center', justifyContent: 'center', marginTop: space.xs },
   stepVal: { fontSize: 15 },
 });

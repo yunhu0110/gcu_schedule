@@ -52,7 +52,6 @@ export default function CalendarScreen() {
   const [detailDate, setDetailDate] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
-  const [menuDate, setMenuDate] = useState<string | null>(null); // 꾹 눌러 그 날 일정 입력 메뉴
 
   // 달력 탭에 들어올 때마다 접속 시점 기준 '한 달 뒤' 달을 기본으로 보여준다.
   useFocusEffect(useCallback(() => { setAnchor(addMonths(todayStr(), 1)); }, []));
@@ -122,25 +121,13 @@ export default function CalendarScreen() {
     qc.invalidateQueries({ queryKey: ['availability-rows'] });
   };
 
-  // 날짜를 꾹 눌러 그 날 하루만 가능/불가로 빠르게 등록(하루 종일, 사유 없이).
-  const quickMut = useMutation({
-    mutationFn: async (v: { date: string; status: 'available' | 'unavailable' }) => {
+  // 일정 입력 팝업의 '초기화' — 그 기간 내 일정을 지워 '미입력'으로 되돌린다.
+  const clearMut = useMutation({
+    mutationFn: async (v: { from: string; to: string }) => {
       if (!userId) throw new Error('로그인이 필요해요.');
-      await setRange(userId, v.date, v.date, v.status, null, null, null);
-      const label = v.status === 'available' ? '가능' : '불가';
-      await notifyMembers(userId, members.map((m) => m.id), 'availability_set', `${myNick}님이 ${formatKo(v.date)} 일정(${label})을 등록했어요.`, true);
+      await clearRange(userId, v.from, v.to);
     },
-    onSuccess: () => { invalidateAvail(); qc.invalidateQueries({ queryKey: ['unread'] }); },
-    onError: (e) => Alert.alert('저장 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
-  });
-
-  // 그 날 내 일정만 지워 '미입력(작성 전)'으로 되돌린다.
-  const clearOneMut = useMutation({
-    mutationFn: async (date: string) => {
-      if (!userId) throw new Error('로그인이 필요해요.');
-      await clearRange(userId, date, date);
-    },
-    onSuccess: invalidateAvail,
+    onSuccess: () => { invalidateAvail(); setEditDate(null); },
     onError: (e) => Alert.alert('초기화 실패', e instanceof Error ? e.message : '잠시 후 다시 시도해주세요.'),
   });
 
@@ -174,12 +161,6 @@ export default function CalendarScreen() {
       return;
     }
     setDetailDate(date);
-  }
-
-  // 꾹 누르기 — 그 날 일정 입력 메뉴(가능/불가능/초기화)를 연다.
-  function onLongPickDate(date: string) {
-    if (!userId) return;
-    setMenuDate(date);
   }
 
   return (
@@ -228,9 +209,20 @@ export default function CalendarScreen() {
             counts={countsFor(c.date)}
             marked={c.date === confirmedDate}
             onPress={() => onPickDate(c.date)}
-            onLongPress={() => onLongPickDate(c.date)}
           />
         ))}
+      </View>
+
+      {/* 범례 — 게이지 색 뜻 */}
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendChip, { backgroundColor: colors.light.available }]} />
+          <Text variant="caption" color={colors.light.textSecondary}>참가</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendChip, { backgroundColor: colors.light.danger }]} />
+          <Text variant="caption" color={colors.light.textSecondary}>불가</Text>
+        </View>
       </View>
 
       {/* 가능한 날 후보 (날짜 · 멤버 · 시간) */}
@@ -287,8 +279,10 @@ export default function CalendarScreen() {
         visible={editDate != null}
         date={editDate}
         saving={mutation.isPending}
+        clearing={clearMut.isPending}
         onClose={() => setEditDate(null)}
         onSubmit={(v) => mutation.mutate(v)}
+        onClear={(from, to) => clearMut.mutate({ from, to })}
       />
       <ActionModal
         visible={resetOpen}
@@ -300,18 +294,6 @@ export default function CalendarScreen() {
         ]}
         onClose={() => setResetOpen(false)}
       />
-      <ActionModal
-        visible={menuDate != null}
-        title={menuDate ? `${formatKo(menuDate)} 일정 입력` : ''}
-        message="이 날 내 일정을 설정하세요."
-        actions={[
-          { label: '가능', onPress: () => menuDate && quickMut.mutate({ date: menuDate, status: 'available' }) },
-          { label: '불가능', onPress: () => menuDate && quickMut.mutate({ date: menuDate, status: 'unavailable' }) },
-          { label: '초기화', destructive: true, onPress: () => menuDate && clearOneMut.mutate(menuDate) },
-          { label: '취소', cancel: true },
-        ]}
-        onClose={() => setMenuDate(null)}
-      />
     </Screen>
   );
 }
@@ -322,6 +304,9 @@ const styles = StyleSheet.create({
   weekRow: { flexDirection: 'row', marginBottom: space.xs },
   weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  legend: { flexDirection: 'row', justifyContent: 'center', gap: space.lg, marginTop: space.md },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendChip: { width: 14, height: 10, borderRadius: 3 },
 
   resetBtn: {
     alignSelf: 'center',
