@@ -122,7 +122,7 @@ export default function MeScreen() {
               isAdmin={!!me?.is_admin}
               year={vYear}
               month={vMonth}
-              memberIds={members.map((m) => m.id)}
+              memberIds={members.filter((m) => !m.is_admin).map((m) => m.id)}
             />
           ) : (
             <Text variant="bodySm" color={colors.light.textSecondary}>로그인 후 이용할 수 있어요.</Text>

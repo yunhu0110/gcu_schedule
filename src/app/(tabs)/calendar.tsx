@@ -144,7 +144,7 @@ export default function CalendarScreen() {
     return EMPTY;
   }
 
-  // 하단 후보: 이번 달 & 불가 0명 & 가능 1명 이상. 가능 많은 순 → 빠른 날짜 순.
+  // 하단 후보: 이번 달 & 불가 0명 & 가능 1명 이상. 가능 많은 순 → 빠른 날짜 순. 상위 3개만.
   const candidates = useMemo(() => {
     if (!summary) return [];
     return cells
@@ -152,7 +152,7 @@ export default function CalendarScreen() {
       .map((c) => ({ date: c.date, counts: summary[c.date] ?? EMPTY }))
       .filter((c) => c.counts.unavailable === 0 && c.counts.available > 0)
       .sort((a, b) => b.counts.available - a.counts.available || (a.date < b.date ? -1 : 1))
-      .slice(0, 6);
+      .slice(0, 3);
   }, [summary, cells]);
 
   function onPickDate(date: string) {
