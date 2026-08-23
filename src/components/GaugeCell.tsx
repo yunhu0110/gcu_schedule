@@ -21,6 +21,7 @@ type Props = {
   inMonth: boolean;
   counts: DayCounts;
   marked?: boolean; // 확정된 모임 날짜
+  width: number; // 부모가 측정한 실제 폭을 7등분해 넘겨준 고정 px (요일 헤더와 정렬 일치)
   onPress?: () => void;
 };
 
@@ -43,7 +44,7 @@ function row(n: number): boolean[] {
   return Array.from({ length: SLOTS }, (_, i) => i < n);
 }
 
-export function GaugeCell({ date, day, inMonth, counts, marked, onPress }: Props) {
+export function GaugeCell({ date, day, inMonth, counts, marked, width, onPress }: Props) {
   const allAvailable = counts.available >= SLOTS;
   const tint = inMonth ? countTint(counts.available) : null;
   const avail = row(counts.available);
@@ -58,6 +59,7 @@ export function GaugeCell({ date, day, inMonth, counts, marked, onPress }: Props
       accessibilityLabel={label}
       style={[
         styles.cell,
+        { width },
         !inMonth && styles.outMonth,
         tint ? [styles.tintCell, { backgroundColor: tint }] : null,
         marked && styles.markedCell,
@@ -90,7 +92,6 @@ export function GaugeCell({ date, day, inMonth, counts, marked, onPress }: Props
 
 const styles = StyleSheet.create({
   cell: {
-    width: `${100 / 7}%`,
     height: 60,
     paddingTop: 6,
     paddingHorizontal: 3,
