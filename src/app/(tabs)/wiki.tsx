@@ -1,97 +1,168 @@
 /**
- * S4. 기록 — 누구나 표지(사진/동영상 + 글)를 올리고 월별로 정리해 보여준다.
- * "기록하기"로 이번 달 기록 작성. 표지를 누르면 상세 + 코멘트.
+ * S4. 게임(보드게임) — 운영자가 직접 만든 게임을 카드로 나열. 누르면 웹 링크로 외부 브라우저 이동.
+ * 운영자는 '등록', 일반 멤버는 '요청하기' 버튼. 운영자는 카드 롱프레스로 수정/삭제.
  */
-import { useMemo, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActionSheetIOS, Alert, Image, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { BrandHeader } from '@/components/BrandHeader';
-import { CoverEditModal, type CoverSubmit } from '@/features/host/CoverEditModal';
+import { GameEditModal, type GameSubmit } from '@/features/games/GameEditModal';
+import { GameRequestModal, type GameRequest } from '@/features/games/GameRequestModal';
 import { colors, radius, space } from '@/theme/tokens';
-import { formatKo } from '@/lib/date';
 import { useAuth } from '@/features/auth/AuthContext';
-import { createRecord, listRecords, uploadRecordImage, uploadRecordVideo, type Record } from '@/api/records';
+import { getMyProfile, listMembers } from '@/api/members';
+import { notifyMembers } from '@/api/notifications';
+import { createGame, deleteGame, listGames, normalizeUrl, updateGame, uploadGameThumbnail, type Game } from '@/api/games';
 
-export default function RecordScreen() {
-  const router = useRouter();
+export default function GameScreen() {
   const { userId } = useAuth();
   const qc = useQueryClient();
-  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Game | 'new' | null>(null);
+  const [requesting, setRequesting] = useState(false);
 
-  const { data: records = [] } = useQuery({ queryKey: ['records'], queryFn: listRecords, enabled: !!userId });
+  const { data: me } = useQuery({ queryKey: ['me', userId], queryFn: () => getMyProfile(userId as string), enabled: !!userId });
+  const { data: members = [] } = useQuery({ queryKey: ['members'], queryFn: listMembers, enabled: !!userId });
+  const { data: games = [] } = useQuery({ queryKey: ['games'], queryFn: listGames, enabled: !!userId });
 
-  // 월별 그룹핑 (records는 이미 최근 월 → 과거 순)
-  const groups = useMemo(() => {
-    const map: { key: string; year: number; month: number; items: Record[] }[] = [];
-    for (const r of records) {
-      const key = `${r.year}-${r.month}`;
-      let g = map.find((x) => x.key === key);
-      if (!g) { g = { key, year: r.year, month: r.month, items: [] }; map.push(g); }
-      g.items.push(r);
-    }
-    return map;
-  }, [records]);
+  const isAdmin = !!me?.is_admin;
 
-  const createMut = useMutation({
-    mutationFn: async (v: CoverSubmit) => {
+  const saveMut = useMutation({
+    mutationFn: async (v: GameSubmit) => {
       if (!userId) return;
-      let mediaUrl: string | null = null;
-      if (v.base64) mediaUrl = await uploadRecordImage(userId, v.base64, Date.now());
-      else if (v.videoUri) mediaUrl = await uploadRecordVideo(userId, v.videoUri, Date.now());
-      await createRecord(userId, v.date, mediaUrl, v.message);
+      let thumb: string | null = v.keepThumbnail;
+      if (v.base64) thumb = await uploadGameThumbnail(userId, v.base64, Date.now());
+      const input = { title: v.title, url: v.url, description: v.description, genre: v.genre, thumbnail_url: thumb };
+      if (editing && editing !== 'new') await updateGame(editing.id, input);
+      else await createGame(userId, input);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['records'] }); setCreating(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['games'] }); setEditing(null); },
     onError: (e) => Alert.alert('오류', e instanceof Error ? e.message : '다시 시도해주세요.'),
   });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteGame(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['games'] }),
+    onError: (e) => Alert.alert('삭제 실패', e instanceof Error ? e.message : '다시 시도해주세요.'),
+  });
+
+  const requestMut = useMutation({
+    mutationFn: async (v: GameRequest) => {
+      if (!userId) throw new Error('로그인이 필요해요.');
+      const admins = members.filter((m) => m.is_admin).map((m) => m.id);
+      if (admins.length === 0) throw new Error('운영자를 찾을 수 없어요.');
+      const nick = me?.nickname ?? '멤버';
+      const parts = [`[게임 요청] ${v.title.trim() || '(게임명 없음)'}`];
+      if (v.url.trim()) parts.push(`URL: ${normalizeUrl(v.url)}`);
+      if (v.note.trim()) parts.push(v.note.trim());
+      parts.push(`(from ${nick})`);
+      await notifyMembers(userId, admins, 'game_request', parts.join(' — '), true);
+    },
+    onSuccess: () => { Alert.alert('요청 완료', '운영자에게 요청이 전달됐어요.'); setRequesting(false); },
+    onError: (e) => Alert.alert('전송 실패', e instanceof Error ? e.message : '다시 시도해주세요.'),
+  });
+
+  async function openGame(g: Game) {
+    const url = normalizeUrl(g.url);
+    const ok = await Linking.canOpenURL(url).catch(() => false);
+    if (!ok) { Alert.alert('열 수 없는 링크예요', url); return; }
+    Linking.openURL(url).catch(() => Alert.alert('열 수 없는 링크예요', url));
+  }
+
+  function manageGame(g: Game) {
+    if (!isAdmin) return;
+    const doDelete = () =>
+      Alert.alert('게임 삭제', `'${g.title}'을(를) 삭제할까요?`, [
+        { text: '취소', style: 'cancel' },
+        { text: '삭제', style: 'destructive', onPress: () => deleteMut.mutate(g.id) },
+      ]);
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['취소', '수정', '삭제'], destructiveButtonIndex: 2, cancelButtonIndex: 0, title: g.title },
+        (i) => { if (i === 1) setEditing(g); else if (i === 2) doDelete(); },
+      );
+    } else {
+      Alert.alert(g.title, undefined, [
+        { text: '취소', style: 'cancel' },
+        { text: '수정', onPress: () => setEditing(g) },
+        { text: '삭제', style: 'destructive', onPress: doDelete },
+      ]);
+    }
+  }
 
   return (
     <Screen scroll>
       <BrandHeader />
       <View style={styles.headRow}>
-        <Text variant="h1">기록</Text>
-        <Button label="기록하기" onPress={() => (userId ? setCreating(true) : null)} style={styles.recordBtn} />
+        <Text variant="h1">보드게임</Text>
+        {isAdmin ? (
+          <Button label="+ 등록" onPress={() => setEditing('new')} style={styles.topBtn} />
+        ) : (
+          <Button label="요청하기" variant="secondary" onPress={() => setRequesting(true)} style={styles.topBtn} />
+        )}
       </View>
 
-      {groups.map((g) => (
-        <View key={g.key} style={styles.group}>
-          <Text variant="kicker" color={colors.light.textSecondary} style={styles.monthLabel}>{g.year}년 {g.month}월</Text>
-          {g.items.map((r) => <RecordCard key={r.id} rec={r} onPress={() => router.push({ pathname: '/record/[id]', params: { id: r.id } })} />)}
+      {games.length === 0 ? (
+        <Text variant="body" color={colors.light.textSecondary} style={{ marginTop: space.xl }}>
+          {isAdmin ? '아직 등록된 게임이 없어요. + 등록으로 첫 게임을 올려보세요.' : '아직 등록된 게임이 없어요.'}
+        </Text>
+      ) : (
+        <View style={styles.grid}>
+          {games.map((g) => (
+            <GameCard key={g.id} game={g} onPress={() => openGame(g)} onLongPress={() => manageGame(g)} />
+          ))}
         </View>
-      ))}
+      )}
 
-      <CoverEditModal
-        visible={creating}
-        initialMessage={null}
-        initialImage={null}
-        saving={createMut.isPending}
-        onClose={() => setCreating(false)}
-        onSubmit={(v) => createMut.mutate(v)}
-      />
+      {isAdmin ? (
+        <GameEditModal
+          visible={editing != null}
+          initial={editing && editing !== 'new' ? editing : null}
+          saving={saveMut.isPending}
+          onClose={() => setEditing(null)}
+          onSubmit={(v) => saveMut.mutate(v)}
+        />
+      ) : (
+        <GameRequestModal
+          visible={requesting}
+          saving={requestMut.isPending}
+          onClose={() => setRequesting(false)}
+          onSubmit={(v) => requestMut.mutate(v)}
+        />
+      )}
     </Screen>
   );
 }
 
-function RecordCard({ rec, onPress }: { rec: Record; onPress: () => void }) {
-  const isVideo = rec.media_url != null && /\.(mp4|mov|m4v)(\?|$)/i.test(rec.media_url);
+function GameCard({ game, onPress, onLongPress }: { game: Game; onPress: () => void; onLongPress: () => void }) {
+  const initial = game.title.trim().charAt(0) || '?';
   return (
-    <Pressable style={styles.card} onPress={onPress}>
-      {isVideo ? (
-        <View style={[styles.cover, styles.coverEmpty]}><Text variant="h2" color={colors.light.textSecondary}>🎬 동영상</Text></View>
-      ) : rec.media_url ? (
-        <Image source={{ uri: rec.media_url }} style={styles.cover} />
-      ) : null}
+    <Pressable style={styles.card} onPress={onPress} onLongPress={onLongPress} delayLongPress={350}>
+      <View style={styles.thumbWrap}>
+        {game.thumbnail_url ? (
+          <Image source={{ uri: game.thumbnail_url }} style={styles.thumb} />
+        ) : (
+          <View style={[styles.thumb, styles.thumbEmpty]}>
+            <Text variant="h1" color={colors.light.textSecondary}>{initial}</Text>
+          </View>
+        )}
+        <View style={styles.linkBadge}>
+          <Text variant="caption" color={colors.light.paper} style={styles.linkBadgeText}>↗</Text>
+        </View>
+      </View>
       <View style={styles.body}>
-        {rec.record_date ? (
-          <Text variant="caption" color={colors.light.textSecondary} style={{ marginBottom: 4 }}>{formatKo(rec.record_date)}</Text>
+        {game.genre ? (
+          <Text variant="kicker" color={colors.light.cobalt} numberOfLines={1}>{game.genre}</Text>
         ) : null}
-        <Text variant="bodyBold" style={{ fontSize: 16 }} numberOfLines={3}>{rec.body?.trim() || '(내용 없음)'}</Text>
+        <Text variant="bodyBold" style={{ fontSize: 15 }} numberOfLines={1}>{game.title}</Text>
+        {game.description ? (
+          <Text variant="caption" color={colors.light.textSecondary} numberOfLines={1}>{game.description}</Text>
+        ) : null}
         <View style={styles.who}>
-          <View style={[styles.dot, { backgroundColor: rec.color ?? colors.light.cobalt }]} />
-          <Text variant="caption" color={colors.light.textSecondary}>{rec.nickname}</Text>
+          <View style={[styles.dot, { backgroundColor: game.color ?? colors.light.cobalt }]} />
+          <Text variant="caption" color={colors.light.textSecondary} numberOfLines={1}>{game.nickname}</Text>
         </View>
       </View>
     </Pressable>
@@ -100,13 +171,15 @@ function RecordCard({ rec, onPress }: { rec: Record; onPress: () => void }) {
 
 const styles = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg },
-  recordBtn: { height: 40, paddingHorizontal: space.lg },
-  group: { marginBottom: space.lg },
-  monthLabel: { marginBottom: space.sm },
-  card: { borderRadius: radius.card, borderWidth: 1, borderColor: colors.light.hairline, overflow: 'hidden', marginBottom: space.md, backgroundColor: colors.light.paper },
-  cover: { width: '100%', height: 180, backgroundColor: colors.light.surfacePlate },
-  coverEmpty: { alignItems: 'center', justifyContent: 'center' },
-  body: { padding: space.lg },
-  who: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.sm },
+  topBtn: { height: 40, paddingHorizontal: space.lg },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.md },
+  card: { width: '48%', borderRadius: radius.card, borderWidth: 1, borderColor: colors.light.hairline, overflow: 'hidden', backgroundColor: colors.light.paper },
+  thumbWrap: { width: '100%', aspectRatio: 1 },
+  thumb: { width: '100%', height: '100%', backgroundColor: colors.light.surfacePlate },
+  thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
+  linkBadge: { position: 'absolute', top: space.sm, right: space.sm, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.light.ink60, alignItems: 'center', justifyContent: 'center' },
+  linkBadgeText: { fontSize: 14, lineHeight: 16 },
+  body: { padding: space.md, gap: 2 },
+  who: { flexDirection: 'row', alignItems: 'center', gap: space.xs, marginTop: space.xs },
   dot: { width: 8, height: 8, borderRadius: 4 },
 });

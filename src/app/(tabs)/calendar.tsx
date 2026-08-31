@@ -52,6 +52,10 @@ export default function CalendarScreen() {
   const [detailDate, setDetailDate] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
+  // 그리드 실제 폭을 측정해 7등분(정수 px)한다 — % 폭의 픽셀 반올림으로 좁은 안드로이드에서
+  // 날짜 칸이 다음 줄로 튕겨 요일과 어긋나던 문제 방지.
+  const [gridW, setGridW] = useState(0);
+  const cellW = gridW > 0 ? Math.floor(gridW / 7) : 0;
 
   // 달력 탭에 들어올 때마다 접속 시점 기준 '한 달 뒤' 달을 기본으로 보여준다.
   useFocusEffect(useCallback(() => { setAnchor(addMonths(todayStr(), 1)); }, []));
@@ -59,6 +63,12 @@ export default function CalendarScreen() {
   const from = startOfMonth(anchor);
   const to = endOfMonth(anchor);
   const cells = monthGrid(anchor);
+  // 7칸씩 끊어 주 단위 행으로 그린다(flexWrap 제거) — 넘칠 곳이 없어 밀림이 원천 차단된다.
+  const weeks = useMemo(() => {
+    const out: typeof cells[] = [];
+    for (let i = 0; i < cells.length; i += 7) out.push(cells.slice(i, i + 7));
+    return out;
+  }, [cells]);
 
   const { data: summary } = useQuery({
     queryKey: ['availability-summary', from, to],
@@ -189,28 +199,38 @@ export default function CalendarScreen() {
         </View>
       ) : null}
 
-      {/* 요일 헤더 */}
-      <View style={styles.weekRow}>
-        {WEEKDAYS.map((w, i) => (
-          <Text key={w} variant="mono" style={styles.weekCell} color={i === 0 ? colors.light.neon : colors.light.textSecondary}>
-            {w}
-          </Text>
-        ))}
-      </View>
+      {/* 요일 헤더 + 게이지 그리드 — 한 래퍼에서 폭을 측정해 헤더/날짜가 같은 셀 폭을 쓴다 */}
+      <View onLayout={(e) => setGridW(e.nativeEvent.layout.width)}>
+        {cellW > 0 && (
+          <>
+            {/* 요일 헤더 */}
+            <View style={styles.weekRow}>
+              {WEEKDAYS.map((w, i) => (
+                <Text key={w} variant="mono" style={[styles.weekCell, { width: cellW }]} color={i === 0 ? colors.light.neon : colors.light.textSecondary}>
+                  {w}
+                </Text>
+              ))}
+            </View>
 
-      {/* 6칸 게이지 그리드 */}
-      <View style={styles.grid}>
-        {cells.map((c) => (
-          <GaugeCell
-            key={c.date}
-            date={c.date}
-            day={Number(c.date.slice(8, 10))}
-            inMonth={c.inMonth}
-            counts={countsFor(c.date)}
-            marked={c.date === confirmedDate}
-            onPress={() => onPickDate(c.date)}
-          />
-        ))}
+            {/* 6칸 게이지 그리드 — 주 단위 행 */}
+            {weeks.map((week, wi) => (
+              <View key={wi} style={styles.weekLine}>
+                {week.map((c) => (
+                  <GaugeCell
+                    key={c.date}
+                    date={c.date}
+                    day={Number(c.date.slice(8, 10))}
+                    inMonth={c.inMonth}
+                    counts={countsFor(c.date)}
+                    marked={c.date === confirmedDate}
+                    width={cellW}
+                    onPress={() => onPickDate(c.date)}
+                  />
+                ))}
+              </View>
+            ))}
+          </>
+        )}
       </View>
 
       {/* 범례 — 게이지 색 뜻 */}
@@ -302,8 +322,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg },
   confirmBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.light.cobalt, borderRadius: radius.button, paddingHorizontal: space.md, paddingVertical: space.sm, marginBottom: space.md },
   weekRow: { flexDirection: 'row', marginBottom: space.xs },
-  weekCell: { width: `${100 / 7}%`, textAlign: 'center', fontSize: 10 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  weekCell: { textAlign: 'center', fontSize: 10 },
+  weekLine: { flexDirection: 'row' },
   legend: { flexDirection: 'row', justifyContent: 'center', gap: space.lg, marginTop: space.md },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendChip: { width: 14, height: 10, borderRadius: 3 },
