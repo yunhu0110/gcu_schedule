@@ -35,7 +35,6 @@ function RootNavigator() {
       <Stack.Screen name="feedback" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="account" />
-      <Stack.Screen name="record/[id]" />
     </Stack>
   );
 }
