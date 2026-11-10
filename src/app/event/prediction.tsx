@@ -40,7 +40,8 @@ export default function PredictionScreen() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['devil', 'myPicks'] });
       qc.invalidateQueries({ queryKey: ['devil', 'predictions'] });
-      router.push('/event/episodes');
+      Alert.alert('저장 완료', '예측이 저장되었어요.');
+      router.back(); // 완료 후 데블스 플랜 홈으로
     },
     onError: (e) => Alert.alert('저장 실패', e instanceof Error ? e.message : '다시 시도해주세요.'),
   });
