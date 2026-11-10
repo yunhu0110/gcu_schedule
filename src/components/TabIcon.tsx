@@ -4,7 +4,7 @@
  */
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-export type TabIconName = 'home' | 'calendar' | 'record' | 'game' | 'profile' | 'bell';
+export type TabIconName = 'home' | 'calendar' | 'event' | 'record' | 'game' | 'profile' | 'bell';
 
 type Props = { name: TabIconName; color: string; size?: number };
 
@@ -33,6 +33,12 @@ export function TabIcon({ name, color, size = 24 }: Props) {
           <Circle cx="12" cy="13.5" r="1" fill={color} />
           <Circle cx="15.5" cy="13.5" r="1" fill={color} />
         </>
+      )}
+      {name === 'event' && (
+        <Path
+          d="M12 3.2l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"
+          {...common}
+        />
       )}
       {name === 'record' && (
         <>

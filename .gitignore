@@ -52,3 +52,9 @@ yarn-error.*
 # === 디자인 번들: 25MB 에셋 인라인 HTML은 제외 (레퍼런스는 handoff/tokens/components로 충분) ===
 design/월간gcu 홈 (Wanted Sans).html
 design/.thumbnail
+
+# 디자인/참고 원본 (빌드에 불필요 — 앱이 쓰는 건 assets/devil/ 복사본)
+/devil/
+/stitch_devil/
+/stitch_redesign/
+/stitch_footsteps_others/

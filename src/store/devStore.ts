@@ -11,6 +11,6 @@ type DevState = {
 };
 
 export const useDevStore = create<DevState>((set) => ({
-  previewMode: false,
+  previewMode: false, // 실사용: 로그인 필요(데블스 플랜 등 서버 기능은 세션/RLS 기준으로 동작).
   setPreview: (v) => set({ previewMode: v }),
 }));

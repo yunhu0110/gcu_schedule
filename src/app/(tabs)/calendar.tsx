@@ -14,7 +14,7 @@ import { ActionModal } from '@/components/ActionModal';
 import { GaugeCell, type DayCounts } from '@/components/GaugeCell';
 import { AvailabilityModal, type AvailabilitySubmit } from '@/features/availability/AvailabilityModal';
 import { DayDetailModal } from '@/features/availability/DayDetailModal';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, shadow, space } from '@/theme/tokens';
 import { addMonths, dday, endOfMonth, formatKo, monthGrid, startOfMonth, todayStr, volLabel } from '@/lib/date';
 import { clearRange, getMonthRows, getSummary, setRange, type AvailRow } from '@/api/availabilities';
 import { listMembers } from '@/api/members';
@@ -174,7 +174,7 @@ export default function CalendarScreen() {
   }
 
   return (
-    <Screen scroll>
+    <Screen scroll backgroundColor={colors.light.renewBg}>
       <BrandHeader />
 
       {/* 월 이동 */}
@@ -190,12 +190,14 @@ export default function CalendarScreen() {
 
       {confirmedDate ? (
         <View style={styles.confirmBanner}>
-          <Text variant="bodyBold" color={colors.light.paper} style={{ fontSize: 14 }}>
-            📌 확정 모임 · {formatKo(confirmedDate)}
+          <Text variant="bodyBold" color={colors.light.paper} style={{ fontSize: 15, flex: 1 }}>
+            🚀 확정 모임 · {formatKo(confirmedDate)}
           </Text>
-          <Text variant="mono" color={colors.light.paper}>
-            {(() => { const n = dday(confirmedDate); return n > 0 ? `D-${n}` : n === 0 ? 'D-DAY' : `D+${-n}`; })()}
-          </Text>
+          <View style={styles.ddayPill}>
+            <Text variant="bodyBold" color={colors.light.renewPrimary} style={{ fontSize: 13 }}>
+              {(() => { const n = dday(confirmedDate); return n > 0 ? `D-${n}` : n === 0 ? 'D-DAY' : `D+${-n}`; })()}
+            </Text>
+          </View>
         </View>
       ) : null}
 
@@ -206,7 +208,7 @@ export default function CalendarScreen() {
             {/* 요일 헤더 */}
             <View style={styles.weekRow}>
               {WEEKDAYS.map((w, i) => (
-                <Text key={w} variant="mono" style={[styles.weekCell, { width: cellW }]} color={i === 0 ? colors.light.neon : colors.light.textSecondary}>
+                <Text key={w} variant="mono" style={[styles.weekCell, { width: cellW }]} color={i === 0 ? colors.light.danger : colors.light.textSecondary}>
                   {w}
                 </Text>
               ))}
@@ -320,7 +322,8 @@ export default function CalendarScreen() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg },
-  confirmBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.light.cobalt, borderRadius: radius.button, paddingHorizontal: space.md, paddingVertical: space.sm, marginBottom: space.md },
+  confirmBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm, backgroundColor: colors.light.renewPrimary, borderRadius: radius.soft, paddingHorizontal: space.lg, paddingVertical: space.md, marginBottom: space.md, ...shadow.soft },
+  ddayPill: { backgroundColor: colors.light.paper, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: 5 },
   weekRow: { flexDirection: 'row', marginBottom: space.xs },
   weekCell: { textAlign: 'center', fontSize: 10 },
   weekLine: { flexDirection: 'row' },
@@ -329,19 +332,23 @@ const styles = StyleSheet.create({
   legendChip: { width: 14, height: 10, borderRadius: 3 },
 
   resetBtn: {
-    alignSelf: 'center',
+    alignSelf: 'stretch',
+    alignItems: 'center',
     marginTop: space.lg,
     paddingHorizontal: space.lg,
-    paddingVertical: space.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.light.hairlineStrong,
+    paddingVertical: space.md,
+    borderRadius: radius.soft,
+    backgroundColor: colors.light.renewWash,
   },
-  candidates: { marginTop: space.xl, paddingTop: space.lg, borderTopWidth: 1, borderTopColor: colors.light.hairline },
+  candidates: { marginTop: space.xl },
   candRow: {
     flexDirection: 'row',
     gap: space.md,
-    paddingVertical: space.md,
+    padding: space.lg,
+    marginTop: space.md,
+    backgroundColor: colors.light.paper,
+    borderRadius: radius.soft,
+    ...shadow.soft,
   },
   candDateCol: { width: 118, gap: 2 },
   candMembers: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, alignItems: 'flex-start' },
@@ -349,7 +356,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: colors.light.surfacePlate,
+    backgroundColor: colors.light.renewWash,
     borderRadius: 999,
     paddingHorizontal: 9,
     paddingVertical: 5,

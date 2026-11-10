@@ -8,7 +8,7 @@ import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, Switch, View } from
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, shadow, space } from '@/theme/tokens';
 import { addDays, diffDays, formatKo, type DateStr } from '@/lib/date';
 import type { AvailabilityStatus } from '@/api/availabilities';
 
@@ -33,8 +33,8 @@ type Props = {
 
 // 가능/불가 2종. (가능 먼저, 불가 오른쪽)
 const OPTIONS: { key: AvailabilityStatus; label: string; color: string }[] = [
-  { key: 'available', label: '가능', color: colors.light.available },
-  { key: 'unavailable', label: '불가', color: colors.light.unavailable },
+  { key: 'available', label: '가능', color: colors.light.renewPrimary },
+  { key: 'unavailable', label: '불가', color: colors.light.danger },
 ];
 
 const STEP = 30; // 시간 스텝(분)
@@ -109,12 +109,12 @@ export function AvailabilityModal({ visible, date, saving, clearing, onClose, on
               <Pressable
                 key={o.key}
                 onPress={() => setStatus(o.key)}
-                style={[styles.chip, { borderColor: o.color }, on && { backgroundColor: o.color }]}
+                style={[styles.chip, on ? { backgroundColor: o.color } : styles.chipOff]}
               >
                 <Text
                   variant="bodyBold"
                   style={{ fontSize: 15 }}
-                  color={on ? colors.light.paper : o.color}
+                  color={on ? colors.light.paper : colors.light.textSecondary}
                 >
                   {o.label}
                 </Text>
@@ -137,7 +137,7 @@ export function AvailabilityModal({ visible, date, saving, clearing, onClose, on
           <Switch
             value={allDay}
             onValueChange={setAllDay}
-            trackColor={{ true: colors.light.cobalt, false: colors.light.hairlineStrong }}
+            trackColor={{ true: colors.light.renewPrimary, false: colors.light.hairlineStrong }}
           />
         </View>
         {!allDay && (
@@ -242,12 +242,12 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', gap: space.sm, marginTop: space.lg },
   chip: {
     flex: 1,
-    height: 44,
+    height: 48,
     borderRadius: radius.button,
-    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  chipOff: { backgroundColor: colors.light.renewCardSoft },
   block: { marginTop: space.lg, gap: space.md },
   allDayRow: {
     flexDirection: 'row',
@@ -260,11 +260,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.light.hairlineStrong,
+    backgroundColor: colors.light.paper,
     borderRadius: radius.button,
     paddingHorizontal: space.md,
-    height: 48,
+    height: 52,
+    ...shadow.soft,
   },
   stepBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   stepBtnOff: { opacity: 0.4 },

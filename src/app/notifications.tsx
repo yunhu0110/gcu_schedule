@@ -47,7 +47,7 @@ export default function NotificationsScreen() {
         ) : (
           items.map((n) => (
             <View key={n.id} style={[styles.row, !n.read_at && styles.unread]}>
-              <View style={[styles.dot, { backgroundColor: n.read_at ? colors.light.hairlineStrong : colors.light.neon }]} />
+              <View style={[styles.dot, { backgroundColor: n.read_at ? colors.light.hairlineStrong : colors.light.renewPrimary }]} />
               <View style={{ flex: 1 }}>
                 <Text variant="body">{n.body}</Text>
                 <Text variant="caption" color={colors.light.textSecondary}>{formatDateTime(n.created_at)}</Text>
@@ -61,7 +61,7 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.bg },
+  safe: { flex: 1, backgroundColor: colors.light.renewBg },
   topbar: { paddingHorizontal: space.screen, height: 48, justifyContent: 'center' },
   content: { paddingHorizontal: space.screen, paddingBottom: space.section },
   row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md, borderBottomWidth: 1, borderBottomColor: colors.light.hairline },

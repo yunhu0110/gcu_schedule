@@ -16,7 +16,7 @@ import { BrandHeader } from '@/components/BrandHeader';
 import { HostPickerModal } from '@/features/host/HostPickerModal';
 import { MemoBoard } from '@/features/memo/MemoBoard';
 import { ConfirmDateModal } from '@/features/vote/ConfirmDateModal';
-import { colors, fonts, radius, space } from '@/theme/tokens';
+import { colors, fonts, radius, shadow, space } from '@/theme/tokens';
 import { addMonths, dday, formatKo, todayStr, volLabel } from '@/lib/date';
 import { useAuth } from '@/features/auth/AuthContext';
 import { getMyProfile, listMembers } from '@/api/members';
@@ -82,13 +82,53 @@ export default function HomeScreen() {
   const ddayLabel = dleft == null ? '미정' : dleft > 0 ? `D-${dleft}` : dleft === 0 ? 'D-DAY' : `D+${-dleft}`;
 
   return (
-    <Screen scroll>
+    <Screen scroll backgroundColor={colors.light.renewBg}>
       <BrandHeader />
+
+      {/* 히어로 — 모임 날짜 (좌우 스와이프로 달 이동) */}
+      <GestureDetector gesture={swipe}>
+        <View style={styles.hero}>
+          <View style={styles.heroDeco} />
+          <View style={styles.heroTop}>
+            <Animated.View key={offset} entering={heroAnim} style={styles.chip}>
+              <Text variant="caption" color={colors.light.paper}>{offset === 1 ? '다음 모임' : `${nMonth}월 모임`}</Text>
+            </Animated.View>
+            <View style={styles.heroNav}>
+              <Pressable onPress={() => step(-1)} hitSlop={12}><Text variant="h2" color={colors.light.paper60}>‹</Text></Pressable>
+              <Text variant="mono" color={colors.light.paper60}>{volLabel(shownMonth)}</Text>
+              <Pressable onPress={() => step(1)} hitSlop={12}><Text variant="h2" color={colors.light.paper60}>›</Text></Pressable>
+            </View>
+          </View>
+
+          <Animated.View key={`body-${offset}`} entering={heroAnim} style={styles.heroBody}>
+            <View style={{ flex: 1 }}>
+              {confirmed ? (
+                <>
+                  <Text style={styles.heroBig}>{ddayLabel}</Text>
+                  <Text variant="bodyBold" color={colors.light.paper} style={{ marginTop: space.xs }}>{formatKo(confirmed)} 모임</Text>
+                </>
+              ) : (
+                <Text style={styles.heroTitle}>{nMonth}월 모임{'\n'}날짜 미정</Text>
+              )}
+              <Pressable onPress={() => router.push('/calendar')} hitSlop={8}>
+                <Text variant="bodyBold" color={colors.light.paper} style={styles.heroLink}>달력에서 내 일정 입력하기</Text>
+              </Pressable>
+            </View>
+            <Pressable onPress={() => router.push('/calendar')} style={styles.heroCircle} hitSlop={8}>
+              <Text style={styles.heroArrow}>→</Text>
+            </Pressable>
+          </Animated.View>
+
+          {canFix ? (
+            <Button label={confirmed ? '날짜 변경' : '날짜 확정하기'} variant="ghost" block color={colors.light.paper} onPress={() => setConfirmOpen(true)} style={styles.heroFix} />
+          ) : null}
+        </View>
+      </GestureDetector>
 
       {/* 모임장 */}
       <View style={styles.hostCard}>
         <View style={{ flex: 1 }}>
-          <Text variant="kicker" color={colors.light.textSecondary}>{nMonth}월 모임장</Text>
+          <Text variant="caption" color={colors.light.textSecondary}>{nMonth}월 모임장</Text>
           {host ? (
             <View style={styles.hostRow}>
               {host.avatar_url ? (
@@ -106,37 +146,6 @@ export default function HomeScreen() {
         </View>
         {isAdmin ? <Button label={host ? '변경' : '지정'} variant="secondary" onPress={() => setPickHost(true)} style={styles.hostBtn} /> : null}
       </View>
-
-      {/* 히어로 — 모임 날짜 (좌우 스와이프로 달 이동) */}
-      <GestureDetector gesture={swipe}>
-        <View style={styles.hero}>
-          <View style={styles.heroDeco} />
-          <View style={styles.heroTop}>
-            <Animated.View key={offset} entering={heroAnim} style={styles.chip}>
-              <Text variant="kicker" color={colors.light.paper}>{offset === 1 ? '다음 모임' : `${nMonth}월 모임`}</Text>
-            </Animated.View>
-            <View style={styles.heroNav}>
-              <Pressable onPress={() => step(-1)} hitSlop={12}>
-                <Text variant="h2" color={colors.light.paper60}>‹</Text>
-              </Pressable>
-              <Text variant="mono" color={colors.light.paper60}>{volLabel(shownMonth)}</Text>
-              <Pressable onPress={() => step(1)} hitSlop={12}>
-                <Text variant="h2" color={colors.light.paper60}>›</Text>
-              </Pressable>
-            </View>
-          </View>
-          <Animated.View key={`body-${offset}`} entering={heroAnim}>
-            <Text style={styles.heroBig}>{ddayLabel}</Text>
-            <Text variant="body" color={colors.light.paper} style={{ marginTop: space.xs }}>
-              {confirmed ? `${formatKo(confirmed)} 모임` : `${nMonth}월 모임 날짜 미정`}
-            </Text>
-          </Animated.View>
-          <Button label="달력에서 내 일정 입력" block onPress={() => router.push('/calendar')} style={{ marginTop: space.lg }} />
-          {canFix ? (
-            <Button label={confirmed ? '날짜 변경' : '날짜 확정하기'} variant="ghost" block onPress={() => setConfirmOpen(true)} />
-          ) : null}
-        </View>
-      </GestureDetector>
 
       {/* 메모장 */}
       {userId ? <MemoBoard userId={userId} /> : null}
@@ -166,15 +175,21 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  hostCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.light.surfacePlate, borderRadius: radius.soft, padding: 16, marginTop: space.md, marginBottom: space.lg },
+  hostCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.light.paper, borderRadius: radius.soft, padding: space.lg, marginTop: space.lg, ...shadow.soft },
   hostRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: 6 },
   hostAvatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   hostBtn: { height: 40, paddingHorizontal: space.lg },
 
-  hero: { backgroundColor: colors.light.heroBg, borderRadius: radius.hero, padding: 22, overflow: 'hidden' },
-  heroDeco: { position: 'absolute', right: -30, top: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: colors.light.cobalt22 },
+  hero: { backgroundColor: colors.light.renewPrimary, borderRadius: radius.hero, padding: 22, overflow: 'hidden', ...shadow.hero },
+  heroDeco: { position: 'absolute', right: -40, top: -20, width: 180, height: 180, borderRadius: 90, backgroundColor: colors.light.renewBright, opacity: 0.35 },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heroNav: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  chip: { backgroundColor: colors.light.cobalt, borderRadius: radius.pill, paddingVertical: 5, paddingHorizontal: 10 },
-  heroBig: { fontFamily: fonts.display, fontSize: 44, lineHeight: 54, letterSpacing: -1, color: colors.light.paper, marginTop: space.md },
+  chip: { backgroundColor: colors.light.paper16, borderRadius: radius.pill, paddingVertical: 5, paddingHorizontal: 12 },
+  heroBody: { flexDirection: 'row', alignItems: 'flex-end', marginTop: space.lg },
+  heroTitle: { fontFamily: fonts.brand, fontSize: 26, lineHeight: 34, letterSpacing: -0.5, color: colors.light.paper },
+  heroBig: { fontFamily: fonts.display, fontSize: 44, lineHeight: 54, letterSpacing: -1, color: colors.light.paper },
+  heroLink: { marginTop: space.md, textDecorationLine: 'underline' },
+  heroCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.light.paper, alignItems: 'center', justifyContent: 'center', marginLeft: space.md },
+  heroArrow: { fontFamily: fonts.bodyBold, fontSize: 22, lineHeight: 26, color: colors.light.renewPrimary },
+  heroFix: { marginTop: space.lg, borderWidth: 1, borderColor: colors.light.paper60 },
 });

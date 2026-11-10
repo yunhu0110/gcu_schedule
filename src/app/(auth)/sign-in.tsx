@@ -72,7 +72,7 @@ export default function SignInScreen() {
   }
 
   return (
-    <Screen scroll padded>
+    <Screen scroll padded backgroundColor={colors.light.renewBg}>
       <View style={styles.top}>
         <Text variant="kicker" color={colors.light.textSecondary}>
           배포일 {deployDateLabel()}
@@ -107,11 +107,11 @@ export default function SignInScreen() {
             <Text variant="bodySm" color={colors.light.textSecondary}>아이디·비밀번호 저장</Text>
           </Pressable>
           <Pressable onPress={onForgot} hitSlop={8}>
-            <Text variant="bodySm" color={colors.light.action}>비밀번호 찾기</Text>
+            <Text variant="bodySm" color={colors.light.renewPrimary}>비밀번호 찾기</Text>
           </Pressable>
         </View>
 
-        {error ? <Text variant="bodySm" color={colors.light.neon}>{error}</Text> : null}
+        {error ? <Text variant="bodySm" color={colors.light.danger}>{error}</Text> : null}
         <Button label="로그인" block loading={loading} onPress={onSubmit} style={{ marginTop: space.xs }} />
         <Button label="가입하기" variant="ghost" block onPress={() => router.push('/join')} />
       </View>
@@ -128,6 +128,6 @@ const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   check: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   box: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: colors.light.hairlineStrong, alignItems: 'center', justifyContent: 'center' },
-  boxOn: { backgroundColor: colors.light.cobalt, borderColor: colors.light.cobalt },
+  boxOn: { backgroundColor: colors.light.renewPrimary, borderColor: colors.light.renewPrimary },
   footer: { marginTop: space.section },
 });

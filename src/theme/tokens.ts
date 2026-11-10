@@ -20,6 +20,20 @@ const palette = {
   amber: '#FFC53D',
   slate: '#7A7F8C',
   red: '#FF3B30',
+  // 토스 톤(리뉴얼): 밝은 블루 베이스 + 라벤더 보조. 기존 cobalt/neon은 그대로 두고 추가만.
+  cobaltBright: '#3B5BFF', // 리뉴얼 메인 버튼/강조(살짝 밝은 코발트)
+  skyWash: '#EEF3FF', // 연블루 카드/칩 배경
+  lavender: '#ECECFB', // 라벤더 보조 배경
+  lavenderInk: '#6E6AE0', // 라벤더 위 텍스트/아이콘
+  navy: '#2A2E4A', // 통계/히어로 다크 카드(마이페이지 '내 일정 통계')
+  // 리디자인(stitch_redesign 정확값) — 토스풍 밝은 블루
+  renewPrimary: '#1D58D8', // 메인 블루(히어로/버튼/강조)
+  renewBright: '#3B82F6', // 밝은 블루(그라데이션/보조 강조)
+  renewWash: '#EFF6FF', // 아주 연한 블루 서피스(칩·링크 배경)
+  renewWashDeep: '#DBEAFE', // 연블루(선택/강조 배경)
+  renewStat: '#1C273C', // 마이페이지 다크 통계 카드
+  renewBg: '#F8F9FC', // 리디자인 화면 배경(살짝 블루 틴트)
+  renewCardSoft: '#EFF4FA', // 보조 카드(연블루 그레이)
 } as const;
 
 const alpha = {
@@ -67,6 +81,33 @@ const light = {
   availAll: '#B6EA6A',
   availHigh: '#D6EFB2',
   availMid: '#EAF4DC',
+  // 리뉴얼(토스 톤) 시맨틱 별칭 — 신규 화면/리디자인에서 사용
+  bgApp: '#F6F8FD', // 화면 바깥 배경(살짝 블루 틴트). 카드가 떠 보이게
+  surfaceSoft: palette.skyWash, // 연블루 서피스(칩·보조 카드)
+  surfaceLavender: palette.lavender,
+  statCardBg: palette.navy, // 다크 통계/히어로 카드
+  actionBright: palette.cobaltBright,
+  onSoft: palette.cobalt, // 연블루 서피스 위 텍스트
+  // 리디자인(stitch_redesign) 시맨틱 별칭
+  renewPrimary: palette.renewPrimary,
+  renewBright: palette.renewBright,
+  renewWash: palette.renewWash,
+  renewWashDeep: palette.renewWashDeep,
+  renewStat: palette.renewStat,
+  renewBg: palette.renewBg,
+  renewCardSoft: palette.renewCardSoft,
+  // 데블스 플랜 전용(stitch_devil 레퍼런스 정확값)
+  devilBg: '#12141F',
+  devilCard: '#1B1E2E',
+  devilBlue: '#2563EB', // 메인 블루(버튼/강조/선택)
+  devilBlueDeep: '#1D4ED8', // 버튼 눌림/강조
+  devilBlueWash: '#EEF4FF', // 선택 셀/칩 연블루 배경
+  devilAccent: '#2563EB',
+  devilInk: '#191F28', // 제목(토스 ink)
+  devilSub: '#8B95A1', // 보조 텍스트(토스)
+  devilCellBg: '#F3F4F8', // 미선택 회차 셀 회색 채움
+  devilAmber: '#F59E0B', // 우승 월계관
+  devilAmberLight: '#FBBF24', // 네임플레이트/트로피
 } as const;
 
 export const colors = { light, dark: light } as const; // dark는 P3
@@ -134,6 +175,32 @@ export const radius = {
 } as const;
 
 export const hairline = { width: 1, color: light.hairline } as const;
+
+// 그림자 — 토스 톤 카드의 "떠 있는" 느낌. iOS=shadow*, Android=elevation 동시 지정.
+// card: 기본 카드, soft: 은은한 칩/작은 요소, hero: 강조 히어로 카드.
+export const shadow = {
+  card: {
+    shadowColor: '#1B2559',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+  soft: {
+    shadowColor: '#1B2559',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  hero: {
+    shadowColor: '#1B2559',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 6,
+  },
+} as const;
 
 export const layout = {
   minTouch: 44,

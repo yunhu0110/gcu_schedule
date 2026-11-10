@@ -11,7 +11,7 @@ import { Button } from '@/components/Button';
 import { BrandHeader } from '@/components/BrandHeader';
 import { GameEditModal, type GameSubmit } from '@/features/games/GameEditModal';
 import { GameRequestModal, type GameRequest } from '@/features/games/GameRequestModal';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, shadow, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { getMyProfile, listMembers } from '@/api/members';
 import { notifyMembers } from '@/api/notifications';
@@ -93,7 +93,7 @@ export default function GameScreen() {
   }
 
   return (
-    <Screen scroll>
+    <Screen scroll backgroundColor={colors.light.renewBg}>
       <BrandHeader />
       <View style={styles.headRow}>
         <Text variant="h1">보드게임</Text>
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg },
   topBtn: { height: 40, paddingHorizontal: space.lg },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.md },
-  card: { width: '48%', borderRadius: radius.card, borderWidth: 1, borderColor: colors.light.hairline, overflow: 'hidden', backgroundColor: colors.light.paper },
+  card: { width: '48%', borderRadius: radius.soft, overflow: 'hidden', backgroundColor: colors.light.paper, ...shadow.soft },
   thumbWrap: { width: '100%', aspectRatio: 1 },
   thumb: { width: '100%', height: '100%', backgroundColor: colors.light.surfacePlate },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },

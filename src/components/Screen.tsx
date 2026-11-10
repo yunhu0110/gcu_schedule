@@ -20,9 +20,10 @@ type Props = {
   scroll?: boolean;
   padded?: boolean; // 좌우 화면 여백 적용 (기본 true)
   edges?: Edge[];
+  backgroundColor?: string; // 화면 바깥 배경(기본 paper). 리디자인 화면은 bgApp 틴트 사용.
 };
 
-export function Screen({ children, scroll = false, padded = true, edges = ['top', 'bottom'] }: Props) {
+export function Screen({ children, scroll = false, padded = true, edges = ['top', 'bottom'], backgroundColor }: Props) {
   const ios = Platform.OS === 'ios';
   const scrollRef = useRef<ScrollView>(null);
   const qc = useQueryClient();
@@ -51,7 +52,7 @@ export function Screen({ children, scroll = false, padded = true, edges = ['top'
   }, [qc]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={edges}>
+    <SafeAreaView style={[styles.safe, backgroundColor ? { backgroundColor } : null]} edges={edges}>
       {/* 스크롤 화면: 키보드 높이만큼 하단 여유(kbHeight) + 입력칸이 useScreenScroll()로 자기를 위로 스크롤.
           비스크롤 화면만 KeyboardAvoidingView(padding)로 피한다. */}
       <ScreenScrollContext.Provider value={scrollRef}>

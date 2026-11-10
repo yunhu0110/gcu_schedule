@@ -16,9 +16,10 @@ type Props = {
   loading?: boolean;
   block?: boolean;
   style?: ViewStyle;
+  color?: string; // 라벨 색 오버라이드(예: 연블루 배경 위 파란 글자)
 };
 
-export function Button({ label, onPress, variant = 'primary', disabled, loading, block, style }: Props) {
+export function Button({ label, onPress, variant = 'primary', disabled, loading, block, style, color }: Props) {
   const isDisabled = disabled || loading;
   return (
     <Pressable
@@ -38,7 +39,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? colors.light.paper : colors.light.cobalt} />
       ) : (
-        <Text color={labelColor[variant]} style={styles.label}>
+        <Text color={color ?? labelColor[variant]} style={styles.label}>
           {label}
         </Text>
       )}
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
 });
 
 const variantStyles: Record<Variant, ViewStyle> = {
-  primary: { backgroundColor: colors.light.cobalt },
+  primary: { backgroundColor: colors.light.renewPrimary },
   secondary: { backgroundColor: 'transparent', borderColor: colors.light.ink24 },
   ghost: { backgroundColor: 'transparent' },
 };

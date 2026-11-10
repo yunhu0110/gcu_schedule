@@ -57,7 +57,7 @@ export default function FeedbackScreen() {
       </View>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <Text variant="h1">문의</Text>
+          <Text variant="h1">티켓 문의</Text>
           <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.xs }}>
             버그·문의를 관리자에게 알림으로 전달해요.
           </Text>
@@ -74,7 +74,7 @@ export default function FeedbackScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.bg },
+  safe: { flex: 1, backgroundColor: colors.light.renewBg },
   flex: { flex: 1 },
   topbar: { paddingHorizontal: space.screen, height: 48, justifyContent: 'center' },
   content: { paddingHorizontal: space.screen },

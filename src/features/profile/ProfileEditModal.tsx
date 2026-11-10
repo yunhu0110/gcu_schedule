@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
-import { colors, memberColors, radius, space } from '@/theme/tokens';
+import { colors, memberColors, radius, shadow, space } from '@/theme/tokens';
 
 type Props = {
   visible: boolean;
@@ -41,9 +41,10 @@ export function ProfileEditModal({ visible, nickname, color, avatarUrl, busy, on
           <View style={styles.handle} />
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text variant="h2">프로필 편집</Text>
+            <Text variant="bodySm" color={colors.light.textSecondary} style={{ marginTop: space.xs }}>나만의 프로필을 설정해보세요!</Text>
 
             <View style={styles.photoRow}>
-              <Pressable onPress={onPickPhoto}>
+              <Pressable onPress={onPickPhoto} style={styles.avatarWrap}>
                 {avatarUrl ? (
                   <Image source={{ uri: avatarUrl }} style={styles.avatar} />
                 ) : (
@@ -51,14 +52,14 @@ export function ProfileEditModal({ visible, nickname, color, avatarUrl, busy, on
                     <Text variant="h2" color={colors.light.paper}>{(name || '?').slice(0, 1)}</Text>
                   </View>
                 )}
+                <View style={styles.cameraBadge}><Text style={styles.cameraIcon}>📷</Text></View>
               </Pressable>
-              <Button label="사진 변경 (갤러리)" variant="secondary" onPress={onPickPhoto} style={styles.photoBtn} />
             </View>
 
             <TextField label="닉네임" value={name} onChangeText={setName} style={{ marginTop: space.lg }} />
 
-            <Text variant="caption" color={colors.light.textSecondary} style={{ marginTop: space.lg, marginBottom: space.sm }}>
-              고유색 (달력에서 나를 표시하는 색)
+            <Text variant="bodyBold" style={{ marginTop: space.lg, marginBottom: space.sm, fontSize: 14 }}>
+              고유색 <Text variant="caption" color={colors.light.textSecondary}>(달력에서 나를 표시하는 색)</Text>
             </Text>
             <View style={styles.swatches}>
               {memberColors.map((c) => {
@@ -88,12 +89,14 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.light.ink60 },
   sheet: { backgroundColor: colors.light.paper, borderTopLeftRadius: radius.hero, borderTopRightRadius: radius.hero, padding: space.screen, paddingBottom: space.section, maxHeight: '88%' },
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.light.hairlineStrong, alignSelf: 'center', marginBottom: space.md },
-  photoRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.lg },
-  avatar: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  photoBtn: { height: 44, paddingHorizontal: space.lg },
+  photoRow: { alignItems: 'center', marginTop: space.lg },
+  avatarWrap: { width: 96, height: 96 },
+  avatar: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center' },
+  cameraBadge: { position: 'absolute', right: -2, bottom: -2, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.light.paper, alignItems: 'center', justifyContent: 'center', ...shadow.soft },
+  cameraIcon: { fontSize: 15, lineHeight: 20 },
   swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
-  swatch: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  swatchOn: { borderWidth: 3, borderColor: colors.light.ink },
+  swatch: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  swatchOn: { borderWidth: 3, borderColor: colors.light.renewPrimary },
   actions: { flexDirection: 'row', gap: space.sm, marginTop: space.lg },
   actBtn: { flex: 1, height: 48 },
 });

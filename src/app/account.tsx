@@ -65,7 +65,7 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light.bg },
+  safe: { flex: 1, backgroundColor: colors.light.renewBg },
   flex: { flex: 1 },
   topbar: { paddingHorizontal: space.screen, height: 48, justifyContent: 'center' },
   content: { paddingHorizontal: space.screen },

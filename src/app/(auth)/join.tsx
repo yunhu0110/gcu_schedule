@@ -43,7 +43,7 @@ export default function JoinScreen() {
   }
 
   return (
-    <Screen scroll padded>
+    <Screen scroll padded backgroundColor={colors.light.renewBg}>
       <View style={styles.head}>
         <Logo height={32} />
         <Text variant="h1" style={{ marginTop: space.md }}>
@@ -64,7 +64,7 @@ export default function JoinScreen() {
         />
         <TextField label="비밀번호" value={password} onChangeText={setPassword} secureTextEntry placeholder="6자 이상" />
         {error ? (
-          <Text variant="bodySm" color={colors.light.neon}>
+          <Text variant="bodySm" color={colors.light.danger}>
             {error}
           </Text>
         ) : null}

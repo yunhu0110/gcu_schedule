@@ -14,7 +14,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.light.ink,
+        tabBarActiveTintColor: colors.light.renewPrimary,
         tabBarInactiveTintColor: colors.light.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.light.paper,
@@ -29,6 +29,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: '홈', tabBarIcon: icon('home') }} />
       <Tabs.Screen name="calendar" options={{ title: '달력', tabBarIcon: icon('calendar') }} />
+      <Tabs.Screen name="events" options={{ title: '이벤트', tabBarIcon: icon('event') }} />
       <Tabs.Screen name="wiki" options={{ title: '게임', tabBarIcon: icon('game') }} />
       <Tabs.Screen name="me" options={{ title: '마이페이지', tabBarIcon: icon('profile') }} />
       {/* 정산: 이후 마일스톤 — 탭에서 숨김(라우트는 유지) */}
