@@ -48,11 +48,10 @@ export default function PenaltyScreen() {
           예측한 2명의 출연자가 모두{'\n'}조기 탈락할 경우,{'\n'}해당 참여자에게 벌칙이 적용됩니다.
         </Text>
 
-        <View style={styles.undecidedCard}>
-          <Text variant="caption" color={colors.light.devilSub} style={styles.undecidedTitle}>미확정 항목</Text>
-          <Text variant="bodySm" color={colors.light.devilSub} style={styles.undecidedItem}>· 벌칙 발동 기준 회차</Text>
-          <Text variant="bodySm" color={colors.light.devilSub} style={styles.undecidedItem}>· 벌칙 내용</Text>
-          <Text variant="bodySm" color={colors.light.devilSub} style={styles.undecidedItem}>· 벌칙 적용 시점</Text>
+        <View style={styles.penaltyCard}>
+          <Text variant="caption" color={colors.light.devilBlue} style={styles.penaltyKicker}>벌칙 내용</Text>
+          <Text style={styles.penaltyEmoji}>✉️</Text>
+          <Text variant="h2" color={colors.light.devilInk} style={styles.penaltyText}>각 멤버에게{'\n'}1장씩 편지 작성</Text>
         </View>
       </View>
 
@@ -65,11 +64,12 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', marginTop: space.section },
   heading: { textAlign: 'center', marginTop: space.xl, fontSize: 22, lineHeight: 32 },
   desc: { textAlign: 'center', marginTop: space.lg },
-  undecidedCard: {
-    marginTop: space.xl, backgroundColor: colors.light.devilCellBg,
-    borderRadius: radius.soft, padding: space.lg, alignSelf: 'stretch', gap: space.xs,
+  penaltyCard: {
+    marginTop: space.xl, backgroundColor: colors.light.devilBlueWash,
+    borderRadius: radius.soft, padding: space.xl, alignSelf: 'stretch', alignItems: 'center',
   },
-  undecidedTitle: { fontWeight: '700', marginBottom: space.xs },
-  undecidedItem: {},
+  penaltyKicker: { letterSpacing: 1, marginBottom: space.sm },
+  penaltyEmoji: { fontSize: 36, lineHeight: 44 },
+  penaltyText: { textAlign: 'center', marginTop: space.sm },
   cta: { marginTop: space.section, borderRadius: radius.pill, backgroundColor: colors.light.devilCellBg, borderColor: 'transparent' },
 });

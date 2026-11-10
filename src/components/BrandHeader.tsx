@@ -1,10 +1,9 @@
 /**
  * BrandHeader — 모든 페이지 상단 공통 헤더. 로고 + 월간GCU + 알림벨(미읽음 배지) → 알림 페이지.
  */
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Logo } from './Logo';
 import { Text } from './Text';
 import { TabIcon } from './TabIcon';
 import { colors, space } from '@/theme/tokens';
@@ -26,7 +25,7 @@ export function BrandHeader() {
   return (
     <View style={styles.row}>
       <View style={styles.left}>
-        <Logo height={22} />
+        <Image source={require('../../assets/gcu_icon.png')} style={styles.icon} resizeMode="contain" />
         <View>
           <Text variant="brand">월간GCU</Text>
           <Text variant="caption" color={colors.light.textSecondary} style={styles.deploy}>배포일 {deployDateLabel()}</Text>
@@ -43,6 +42,7 @@ export function BrandHeader() {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: space.lg },
   left: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  icon: { width: 26, height: 26 },
   deploy: { fontSize: 10, lineHeight: 13, marginTop: -1 },
   dot: {
     position: 'absolute',

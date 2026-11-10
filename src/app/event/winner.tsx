@@ -120,6 +120,16 @@ export default function WinnerScreen() {
             {success ? '🎉 예측 성공! 우승자를 맞혔어요' : '아쉽게도 예측에 없었어요'}
           </Text>
         </View>
+
+        {/* 보상 안내 */}
+        <View style={styles.rewardCard}>
+          <Text style={styles.rewardEmoji}>🎁</Text>
+          <Text variant="bodyBold" color={colors.light.devilInk} style={styles.rewardText}>
+            {success
+              ? '이벤트 우승! 나머지 멤버에게\n각자 1만원 상당 상품을 받아요'
+              : '이벤트 우승자는 나머지 멤버에게\n각자 1만원 상당 상품을 받아요'}
+          </Text>
+        </View>
       </View>
 
       <Button label="⤴  결과 공유하기" color={colors.light.devilBlue} onPress={() => Alert.alert('공유', '결과 공유 기능은 다음 단계에서 연결됩니다.')} block style={styles.shareBtn} />
@@ -145,6 +155,9 @@ const styles = StyleSheet.create({
   avatar: { width: '100%', height: '100%' },
   namePlate: { marginTop: -18, backgroundColor: colors.light.devilAmberLight, borderRadius: radius.pill, paddingHorizontal: space.xl, paddingVertical: 7 },
   nameText: { fontSize: 17 },
+  rewardCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, alignSelf: 'stretch', backgroundColor: colors.light.devilBlueWash, borderRadius: radius.soft, padding: space.lg, marginTop: space.lg },
+  rewardEmoji: { fontSize: 28, lineHeight: 34 },
+  rewardText: { flex: 1, lineHeight: 22 },
   resultChip: { marginTop: space.xl, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill },
   resultWin: { backgroundColor: '#DCFCE7' },
   resultLose: { backgroundColor: '#FEE2E2' },

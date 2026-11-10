@@ -46,6 +46,13 @@ export const CONTESTANT_IMAGE: Record<number, ImageSourcePropType> = Object.from
 export const EPISODE_COUNT = 14;
 export const EPISODES = Array.from({ length: EPISODE_COUNT }, (_, i) => i + 1);
 
+// 회차 개봉일('회차' 위에 표시). 1~5화 11/10, 6~10화 11/17, 11~14화 11/24.
+export const EPISODE_RELEASE: Record<number, string> = {
+  1: '11/10', 2: '11/10', 3: '11/10', 4: '11/10', 5: '11/10',
+  6: '11/17', 7: '11/17', 8: '11/17', 9: '11/17', 10: '11/17',
+  11: '11/24', 12: '11/24', 13: '11/24', 14: '11/24',
+};
+
 // 이벤트 메타(프론트 전용 상수 — 추후 events 테이블로 이동)
 export const DEVIL_META = {
   title: '데블스 플랜',

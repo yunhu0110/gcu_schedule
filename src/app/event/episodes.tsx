@@ -13,7 +13,7 @@ import { Button } from '@/components/Button';
 import { DetailHeader } from '@/components/DetailHeader';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
-import { EPISODES } from '@/features/event/devilAssets';
+import { EPISODES, EPISODE_RELEASE } from '@/features/event/devilAssets';
 import { getMyWatch, saveWatch } from '@/api/devil';
 
 export default function EpisodesScreen() {
@@ -84,6 +84,9 @@ export default function EpisodesScreen() {
               style={[styles.cell, isOn ? styles.cellOn : isRemoving ? styles.cellRemoving : styles.cellOff]}
               onPress={() => toggle(ep)}
             >
+              {EPISODE_RELEASE[ep] ? (
+                <Text variant="caption" color={isOn ? colors.light.devilBlue : colors.light.devilSub} style={styles.cellDate}>{EPISODE_RELEASE[ep]} 개봉</Text>
+              ) : null}
               <Text variant="bodyBold" color={isOn ? colors.light.devilBlue : isRemoving ? colors.light.devilAmber : colors.light.devilInk}>{ep}화</Text>
               <Text
                 variant="caption"
@@ -138,6 +141,7 @@ const styles = StyleSheet.create({
   cellOff: { backgroundColor: colors.light.devilCellBg, borderColor: 'transparent' },
   cellOn: { backgroundColor: colors.light.devilBlueWash, borderColor: colors.light.devilBlue },
   cellRemoving: { backgroundColor: '#FEF9C3', borderColor: colors.light.devilAmber },
+  cellDate: { fontSize: 10, lineHeight: 13, marginBottom: 2 },
   cellStatus: { marginTop: 2 },
   infoChip: { flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: colors.light.devilCellBg, borderRadius: radius.soft, padding: space.lg, marginTop: space.xl },
   infoDot: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },

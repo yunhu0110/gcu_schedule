@@ -36,6 +36,8 @@ const RULES: string[] = [
   '회차 결과는 본인의 연속 시청 완료 범위까지만 공개됩니다.',
   '최종 결과는 전체 시청 완료 또는 별도 스포일러 동의 후 공개됩니다.',
   '다른 참여자의 예측은 확인할 수 있지만, 결과는 본인의 시청 범위까지만 공개됩니다.',
+  '이벤트 우승자(최종 우승자 예측 성공자)는 본인을 제외한 나머지 멤버에게 각자 1만원 상당 상품을 받습니다.',
+  '예측에 실패하고 선택한 2명이 모두 조기 탈락하면 벌칙(각 멤버에게 1장씩 편지 작성)이 부여됩니다.',
 ];
 
 type MenuItem = {
@@ -65,19 +67,19 @@ export default function DevilsPlanMain() {
   }
 
   return (
-    <Screen scroll padded={false} edges={['bottom']}>
-      {/* 배너 — 제목 박힌 이미지. 배지/뒤로/공유만 얹는다. */}
-      <ImageBackground source={DEVIL_BANNER} style={styles.banner} imageStyle={styles.bannerImg}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={[styles.iconBtn, styles.back]}>
-          <Text variant="h2" color={colors.light.paper}>‹</Text>
+    <Screen scroll padded={false} edges={['top', 'bottom']}>
+      {/* 상단바 — 배너 위. 뒤로/공유가 배너와 겹치지 않게 분리. */}
+      <View style={styles.topBar}>
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.topBtn}>
+          <Text variant="h2" color={colors.light.devilInk}>‹</Text>
         </Pressable>
-        <Pressable hitSlop={12} style={[styles.iconBtn, styles.share]}>
-          <ShareIcon color={colors.light.paper} />
+        <Pressable hitSlop={12} style={styles.topBtn}>
+          <ShareIcon color={colors.light.devilInk} />
         </Pressable>
-        <View style={styles.badge}>
-          <Text variant="caption" color={colors.light.paper} style={styles.badgeText}>{DEVIL_META.status}</Text>
-        </View>
-      </ImageBackground>
+      </View>
+
+      {/* 배너 — 제목 박힌 이미지 */}
+      <ImageBackground source={DEVIL_BANNER} style={styles.banner} imageStyle={styles.bannerImg} />
 
       <View style={styles.pad}>
         <Text variant="h1" color={colors.light.devilInk}>{DEVIL_META.title}</Text>
@@ -150,13 +152,10 @@ export default function DevilsPlanMain() {
 }
 
 const styles = StyleSheet.create({
-  banner: { aspectRatio: 16 / 10, justifyContent: 'flex-end', borderBottomLeftRadius: radius.hero, borderBottomRightRadius: radius.hero, overflow: 'hidden' },
-  bannerImg: { borderBottomLeftRadius: radius.hero, borderBottomRightRadius: radius.hero },
-  iconBtn: { position: 'absolute', top: space.sm, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  back: { left: space.sm },
-  share: { right: space.sm },
-  badge: { position: 'absolute', top: space.xl + 8, left: space.lg, backgroundColor: colors.light.devilBlue, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: 4 },
-  badgeText: { fontSize: 11, lineHeight: 15 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.screen, height: 44 },
+  topBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  banner: { aspectRatio: 16 / 10, marginHorizontal: space.screen, borderRadius: radius.hero, overflow: 'hidden' },
+  bannerImg: { borderRadius: radius.hero },
   pad: { paddingHorizontal: space.screen, paddingTop: space.xl },
   tagline: { marginTop: space.sm },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.xl },
