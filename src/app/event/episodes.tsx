@@ -16,6 +16,9 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { EPISODES, EPISODE_RELEASE } from '@/features/event/devilAssets';
 import { getMyWatch, saveWatch } from '@/api/devil';
 
+// 탈락자 등록 진입 노출 여부. 당분간 숨김(결과 데이터가 쌓이지 않아 어디에도 탈락 내용이 공개되지 않음).
+const SHOW_REGISTER = false;
+
 export default function EpisodesScreen() {
   const router = useRouter();
   const { userId } = useAuth();
@@ -121,15 +124,17 @@ export default function EpisodesScreen() {
         style={styles.cta}
       />
 
-      {/* 탈락자 등록 — 먼저 본 사람 누구나 */}
-      <Pressable onPress={() => router.push('/event/register')} style={({ pressed }) => [styles.registerRow, pressed && styles.registerPressed]}>
-        <Text style={styles.registerEmoji}>✍️</Text>
-        <View style={{ flex: 1 }}>
-          <Text variant="bodyBold" color={colors.light.devilInk}>탈락자 등록</Text>
-          <Text variant="bodySm" color={colors.light.devilSub}>이번 회차 탈락자를 직접 등록해요 (먼저 본 사람 누구나)</Text>
-        </View>
-        <Text variant="body" color={colors.light.devilSub}>›</Text>
-      </Pressable>
+      {/* 탈락자 등록 — 일단 숨김(SHOW_REGISTER=false). 되살리려면 true로. */}
+      {SHOW_REGISTER ? (
+        <Pressable onPress={() => router.push('/event/register')} style={({ pressed }) => [styles.registerRow, pressed && styles.registerPressed]}>
+          <Text style={styles.registerEmoji}>✍️</Text>
+          <View style={{ flex: 1 }}>
+            <Text variant="bodyBold" color={colors.light.devilInk}>탈락자 등록</Text>
+            <Text variant="bodySm" color={colors.light.devilSub}>이번 회차 탈락자를 직접 등록해요 (먼저 본 사람 누구나)</Text>
+          </View>
+          <Text variant="body" color={colors.light.devilSub}>›</Text>
+        </Pressable>
+      ) : null}
     </Screen>
   );
 }
