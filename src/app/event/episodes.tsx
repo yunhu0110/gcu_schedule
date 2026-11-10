@@ -14,7 +14,7 @@ import { DetailHeader } from '@/components/DetailHeader';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { EPISODES, EPISODE_RELEASE } from '@/features/event/devilAssets';
-import { getMyWatch, saveWatch } from '@/api/devil';
+import { getMyWatch, listTradeOffers, saveWatch } from '@/api/devil';
 
 // 탈락자 등록 진입 노출 여부. 당분간 숨김(결과 데이터가 쌓이지 않아 어디에도 탈락 내용이 공개되지 않음).
 const SHOW_REGISTER = false;
@@ -24,6 +24,7 @@ export default function EpisodesScreen() {
   const { userId } = useAuth();
   const qc = useQueryClient();
   const { data: saved = [] } = useQuery({ queryKey: ['devil', 'watch', userId], queryFn: () => getMyWatch(userId as string), enabled: !!userId });
+  const { data: offers = [] } = useQuery({ queryKey: ['devil', 'offers'], queryFn: listTradeOffers, enabled: !!userId });
 
   const [confirmed, setConfirmed] = useState<Set<number>>(new Set());
   const [pending, setPending] = useState<Set<number>>(new Set());
@@ -43,6 +44,23 @@ export default function EpisodesScreen() {
     },
     onError: (e) => Alert.alert('저장 실패', e instanceof Error ? e.message : '다시 시도해주세요.'),
   });
+
+  // 진행 중 트레이드 신청이 있으면 시청기록 저장 차단(같은 진도끼리만 트레이드 가능하므로).
+  function handleSave() {
+    const incoming = offers.some((o) => o.status === 'pending' && o.target_id === userId);
+    const outgoing = offers.some((o) => o.status === 'pending' && o.proposer_id === userId);
+    if (incoming || outgoing) {
+      Alert.alert(
+        '트레이드 먼저 처리',
+        incoming
+          ? '받은 트레이드 신청에 먼저 응답해야 시청 기록을 저장할 수 있어요.'
+          : '보낸 트레이드 신청이 처리(수락/거절/취소)되어야 시청 기록을 저장할 수 있어요.',
+        [{ text: '닫기', style: 'cancel' }, { text: '신청함으로', onPress: () => router.push('/event/trade-offers') }],
+      );
+      return;
+    }
+    saveMut.mutate();
+  }
 
   function toggle(ep: number) {
     setPending((cur) => {
@@ -120,7 +138,7 @@ export default function EpisodesScreen() {
         block
         disabled={!hasChanges}
         loading={saveMut.isPending}
-        onPress={() => saveMut.mutate()}
+        onPress={handleSave}
         style={styles.cta}
       />
 

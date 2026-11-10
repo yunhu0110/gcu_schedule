@@ -160,23 +160,15 @@ export type TradeOffer = {
   target_nick: string;
 };
 
-type OfferRaw = Omit<TradeOffer, 'proposer_nick' | 'target_nick'> & {
-  proposer: { nickname: string } | null;
-  target: { nickname: string } | null;
-};
-
-/** 나와 관련된(보낸/받은) 트레이드 신청. RLS로 당사자만 조회된다. */
+/** 나와 관련된(보낸/받은) 트레이드 신청. 24h 무응답은 자동 거절 처리되어 반환된다. */
 export async function listTradeOffers(): Promise<TradeOffer[]> {
-  const { data, error } = await supabase
-    .from('devil_trade_offers')
-    .select('id, proposer_id, target_id, offer_contestant_id, request_contestant_id, cash, status, created_at, proposer:members!devil_trade_offers_proposer_id_fkey(nickname), target:members!devil_trade_offers_target_id_fkey(nickname)')
-    .order('created_at', { ascending: false });
+  const { data, error } = await supabase.rpc('devil_list_offers');
   if (error) throw error;
-  return ((data ?? []) as unknown as OfferRaw[]).map((r) => ({
+  return ((data ?? []) as Omit<TradeOffer, never>[]).map((r) => ({
     id: r.id, proposer_id: r.proposer_id, target_id: r.target_id,
     offer_contestant_id: r.offer_contestant_id, request_contestant_id: r.request_contestant_id,
     cash: r.cash ?? 0, status: r.status, created_at: r.created_at,
-    proposer_nick: r.proposer?.nickname ?? '?', target_nick: r.target?.nickname ?? '?',
+    proposer_nick: r.proposer_nick ?? '?', target_nick: r.target_nick ?? '?',
   }));
 }
 
