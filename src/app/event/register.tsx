@@ -91,8 +91,9 @@ export default function RegisterScreen() {
           const done = !isWinnerMode && alreadyElim.has(c.id);
           return (
             <Pressable key={c.id} style={styles.cell} onPress={() => toggle(c.id)} disabled={done}>
-              <View style={[styles.avatarWrap, on && (isWinnerMode ? styles.avatarWin : styles.avatarOn), done && styles.avatarDone]}>
+              <View style={[styles.avatarWrap, on && (isWinnerMode ? styles.avatarWin : styles.avatarOn)]}>
                 <Image source={CONTESTANT_IMAGE[c.id]} style={styles.avatar} />
+                {done && <View style={styles.doneOverlay} />}
               </View>
               {on ? <View style={[styles.check, isWinnerMode && styles.checkWin]}><Text color={colors.light.paper} style={styles.checkMark}>{isWinnerMode ? '♛' : '✓'}</Text></View> : null}
               <Text variant="caption" numberOfLines={1} style={styles.name} color={on ? colors.light.devilInk : colors.light.devilSub}>{c.name}</Text>
@@ -141,8 +142,8 @@ const styles = StyleSheet.create({
   avatarWrap: { width: '100%', aspectRatio: 1, borderRadius: 999, borderWidth: 3, borderColor: 'transparent', overflow: 'hidden', backgroundColor: colors.light.devilCellBg },
   avatarOn: { borderColor: colors.light.devilBlue },
   avatarWin: { borderColor: colors.light.devilAmber },
-  avatarDone: { opacity: 0.45 },
   avatar: { width: '100%', height: '100%' },
+  doneOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(18,20,31,0.48)' },
   check: { position: 'absolute', right: '12%', top: -2, width: 22, height: 22, borderRadius: 11, backgroundColor: colors.light.devilBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.light.paper },
   checkWin: { backgroundColor: colors.light.devilAmber },
   checkMark: { fontSize: 12, lineHeight: 15 },

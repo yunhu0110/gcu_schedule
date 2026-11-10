@@ -79,7 +79,7 @@ export default function PredictionScreen() {
           const disabled = !on && (takenByOther.has(c.id) || eliminated.has(c.id));
           return (
             <Pressable key={c.id} style={styles.cell} onPress={() => toggle(c.id)} disabled={disabled}>
-              <View style={[styles.avatarWrap, on && styles.avatarOn, disabled && styles.avatarDisabled]}>
+              <View style={[styles.avatarWrap, on && styles.avatarOn]}>
                 <Image source={CONTESTANT_IMAGE[c.id]} style={styles.avatar} />
                 {disabled && <View style={styles.disabledOverlay} />}
               </View>
@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
   cell: { width: '22%', alignItems: 'center' },
   avatarWrap: { width: '100%', aspectRatio: 1, borderRadius: 999, borderWidth: 3, borderColor: 'transparent', overflow: 'hidden', backgroundColor: colors.light.devilCellBg },
   avatarOn: { borderColor: colors.light.devilBlue },
-  avatarDisabled: { opacity: 0.55 },
-  disabledOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.35)' },
+  // 음영: 사진 배경 밝기와 무관하게 일관되게 어둡게(밝은 사진도 확실히 음영 적용).
+  disabledOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(18,20,31,0.48)' },
   avatar: { width: '100%', height: '100%' },
   check: { position: 'absolute', right: '12%', top: -2, width: 22, height: 22, borderRadius: 11, backgroundColor: colors.light.devilBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.light.paper },
   checkMark: { fontSize: 12, lineHeight: 15 },
