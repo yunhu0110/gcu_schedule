@@ -121,13 +121,13 @@ export default function WinnerScreen() {
           </Text>
         </View>
 
-        {/* 보상 안내 */}
+        {/* 1위 보상 안내 */}
         <View style={styles.rewardCard}>
           <Text style={styles.rewardEmoji}>🎁</Text>
           <Text variant="bodyBold" color={colors.light.devilInk} style={styles.rewardText}>
             {success
-              ? '이벤트 우승! 나머지 멤버에게\n각자 1만원 상당 상품을 받아요'
-              : '이벤트 우승자는 나머지 멤버에게\n각자 1만원 상당 상품을 받아요'}
+              ? '1위! 내 픽에 우승자가 있어요.\n나머지 5명에게 1만원 이상 상품을 받아요'
+              : '우승자를 맞힌 사람(1위)은\n나머지 5명에게 1만원 이상 상품을 받아요'}
           </Text>
         </View>
       </View>

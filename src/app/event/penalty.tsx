@@ -37,21 +37,27 @@ export default function PenaltyScreen() {
   return (
     <Screen scroll>
       <DetailHeader />
-      <Text variant="h1" color={colors.light.devilInk}>벌칙 안내</Text>
+      <Text variant="h1" color={colors.light.devilInk}>꼴찌 벌칙 안내</Text>
 
       <View style={styles.center}>
         <Siren />
         <Text variant="h1" color={colors.light.devilInk} style={styles.heading}>
-          내가 선택한 출연자 2명이{'\n'}모두 조기 탈락 시,{'\n'}벌칙이 부여됩니다!
+          본인의 픽 2명이{'\n'}가장 먼저 모두 탈락하면{'\n'}꼴찌 벌칙!
         </Text>
         <Text variant="body" color={colors.light.devilSub} style={styles.desc}>
-          예측한 2명의 출연자가 모두{'\n'}조기 탈락할 경우,{'\n'}해당 참여자에게 벌칙이 적용됩니다.
+          예측한 2명이 가장 먼저 모두 탈락한{'\n'}참여자가 꼴찌가 됩니다.
         </Text>
 
         <View style={styles.penaltyCard}>
           <Text variant="caption" color={colors.light.devilBlue} style={styles.penaltyKicker}>벌칙 내용</Text>
           <Text style={styles.penaltyEmoji}>✉️</Text>
-          <Text variant="h2" color={colors.light.devilInk} style={styles.penaltyText}>각 멤버에게{'\n'}1장씩 편지 작성</Text>
+          <Text variant="h2" color={colors.light.devilInk} style={styles.penaltyText}>본인을 제외한 5명에게{'\n'}편지 한 장씩 쓰기</Text>
+        </View>
+
+        <View style={styles.critRow}>
+          <Text variant="bodySm" color={colors.light.devilSub} style={styles.critText}>
+            탈락 기준: 탈락자 발표 시 성우의 호명 순서
+          </Text>
         </View>
       </View>
 
@@ -71,5 +77,7 @@ const styles = StyleSheet.create({
   penaltyKicker: { letterSpacing: 1, marginBottom: space.sm },
   penaltyEmoji: { fontSize: 36, lineHeight: 44 },
   penaltyText: { textAlign: 'center', marginTop: space.sm },
+  critRow: { marginTop: space.md, alignSelf: 'stretch', backgroundColor: colors.light.devilCellBg, borderRadius: radius.soft, paddingHorizontal: space.lg, paddingVertical: space.md },
+  critText: { textAlign: 'center' },
   cta: { marginTop: space.section, borderRadius: radius.pill, backgroundColor: colors.light.devilCellBg, borderColor: 'transparent' },
 });
