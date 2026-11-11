@@ -5,12 +5,14 @@
  */
 import { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { DetailHeader } from '@/components/DetailHeader';
+import { AnimatedHeading } from '@/components/AnimatedHeading';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { CONTESTANT_IMAGE } from '@/features/event/devilAssets';
@@ -66,8 +68,7 @@ export default function PredictionScreen() {
   return (
     <Screen scroll>
       <DetailHeader />
-      <Text variant="h1" color={colors.light.devilInk}>나의 예측</Text>
-      <Text variant="bodySm" color={colors.light.devilSub} style={styles.sub}>우승에 가까운 2명을 선택해주세요!</Text>
+      <AnimatedHeading title="나의 예측" subtitle="우승에 가까운 2명을 선택해주세요!" color={colors.light.devilInk} subColor={colors.light.devilSub} subStyle={styles.sub} />
 
       <View style={styles.countPill}>
         <Text variant="caption" color={colors.light.devilBlue} style={styles.countText}>선택 {picked.length} / {MAX}명</Text>
@@ -84,7 +85,9 @@ export default function PredictionScreen() {
                 {disabled && <View style={styles.disabledOverlay} />}
               </View>
               {on ? (
-                <View style={styles.check}><Text color={colors.light.paper} style={styles.checkMark}>✓</Text></View>
+                <Animated.View entering={ZoomIn.springify().damping(11).stiffness(220).mass(0.5)} style={styles.check}>
+                  <Text color={colors.light.paper} style={styles.checkMark}>✓</Text>
+                </Animated.View>
               ) : null}
               <Text variant="caption" numberOfLines={1} style={[styles.name, on && styles.nameOn]} color={on ? colors.light.devilInk : colors.light.devilSub}>{c.name}</Text>
               {disabled && <Text variant="caption" color={colors.light.hairlineStrong} style={styles.tag}>{eliminated.has(c.id) ? '탈락' : '선택됨'}</Text>}

@@ -11,6 +11,7 @@ import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { Logo } from '@/components/Logo';
+import { AnimatedCheck } from '@/components/AnimatedCheck';
 import { colors, space } from '@/theme/tokens';
 import { deployDateLabel } from '@/lib/date';
 import { signIn } from '@/api/auth';
@@ -103,7 +104,7 @@ export default function SignInScreen() {
 
         <View style={styles.rowBetween}>
           <Pressable style={styles.check} onPress={toggleRemember} hitSlop={8}>
-            <View style={[styles.box, remember && styles.boxOn]}>{remember ? <Text variant="caption" color={colors.light.paper}>✓</Text> : null}</View>
+            <View style={[styles.box, remember && styles.boxOn]}><AnimatedCheck checked={remember} size={14} color={colors.light.paper} /></View>
             <Text variant="bodySm" color={colors.light.textSecondary}>아이디·비밀번호 저장</Text>
           </Pressable>
           <Pressable onPress={onForgot} hitSlop={8}>

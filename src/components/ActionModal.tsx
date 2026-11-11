@@ -2,8 +2,9 @@
  * ActionModal — 앱 디자인(폰트/토큰)을 입힌 확인·액션 팝업. 네이티브 Alert 대체.
  * 가운데 카드 + 제목/설명 + 세로 액션 버튼(기본/삭제/취소).
  */
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './Text';
+import { Popup } from './Popup';
 import { colors, radius, space } from '@/theme/tokens';
 
 export type Action = { label: string; onPress?: () => void; destructive?: boolean; cancel?: boolean };
@@ -18,9 +19,8 @@ type Props = {
 
 export function ActionModal({ visible, title, message, actions, onClose }: Props) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.center}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+    <Popup visible={visible} onClose={onClose}>
+      <View style={styles.cardWrap}>
         <View style={styles.card}>
           {title ? <Text variant="h2" style={styles.title}>{title}</Text> : null}
           {message ? (
@@ -45,14 +45,14 @@ export function ActionModal({ visible, title, message, actions, onClose }: Props
           </View>
         </View>
       </View>
-    </Modal>
+    </Popup>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.light.ink60 },
+  cardWrap: { alignItems: 'center' },
   card: {
-    width: '78%',
+    width: '100%',
     maxWidth: 340,
     backgroundColor: colors.light.paper,
     borderRadius: radius.hero,

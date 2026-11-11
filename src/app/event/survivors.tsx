@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { DetailHeader } from '@/components/DetailHeader';
+import { AnimatedHeading } from '@/components/AnimatedHeading';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { CONTESTANT_IMAGE } from '@/features/event/devilAssets';
@@ -27,10 +28,11 @@ export default function SurvivorsScreen() {
   return (
     <Screen scroll>
       <DetailHeader />
-      <Text variant="h1" color={colors.light.devilInk}>전체 생존자 확인</Text>
-      <Text variant="bodySm" color={colors.light.devilSub} style={styles.sub}>
-        {through > 0 ? `${through}화까지 시청 완료 기준 · 생존 ${survivors.length}명` : '아직 시청 완료한 회차가 없어요.'}
-      </Text>
+      <AnimatedHeading
+        title="전체 생존자 확인"
+        subtitle={through > 0 ? `${through}화까지 시청 완료 기준 · 생존 ${survivors.length}명` : '아직 시청 완료한 회차가 없어요.'}
+        color={colors.light.devilInk} subColor={colors.light.devilSub} subStyle={styles.sub}
+      />
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>

@@ -4,7 +4,7 @@
  * 하단 '전체 생존자 확인' → 확인 팝업(예/아니오) → 생존자 화면. (09-DEVIL-RULES §6, §8)
  */
 import { useMemo, useState } from 'react';
-import { Alert, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -12,6 +12,7 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { DetailHeader } from '@/components/DetailHeader';
+import { Popup } from '@/components/Popup';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { CONTESTANT_IMAGE, EPISODES } from '@/features/event/devilAssets';
@@ -96,9 +97,8 @@ export default function SpoilerResultsScreen() {
       </Text>
 
       {/* 회차 탈락자 팝업 */}
-      <Modal visible={popupEp !== null} transparent animationType="fade" onRequestClose={() => setPopupEp(null)}>
-        <Pressable style={styles.backdrop} onPress={() => setPopupEp(null)}>
-          <Pressable style={styles.popup} onPress={() => {}}>
+      <Popup visible={popupEp !== null} onClose={() => setPopupEp(null)}>
+        <Pressable style={styles.popup} onPress={() => {}}>
             <Text variant="h2" color={colors.light.devilInk} style={styles.popupTitle}>{popupEp}화 탈락자</Text>
             {popupElims.length === 0 ? (
               <Text variant="body" color={colors.light.devilSub} style={styles.popupEmpty}>이 회차에 등록된 탈락자가 없어요.</Text>
@@ -113,9 +113,8 @@ export default function SpoilerResultsScreen() {
               </View>
             )}
             <Button label="확인" block onPress={() => setPopupEp(null)} style={styles.popupBtn} />
-          </Pressable>
         </Pressable>
-      </Modal>
+      </Popup>
     </Screen>
   );
 }

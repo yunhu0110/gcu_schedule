@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { DetailHeader } from '@/components/DetailHeader';
+import { AnimatedHeading } from '@/components/AnimatedHeading';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { CONTESTANT_IMAGE } from '@/features/event/devilAssets';
@@ -35,8 +36,7 @@ export default function AllPredictionsScreen() {
   return (
     <Screen scroll>
       <DetailHeader />
-      <Text variant="h1" color={colors.light.devilInk}>참여자 예측 현황</Text>
-      <Text variant="bodySm" color={colors.light.devilSub} style={styles.sub}>각 참여자가 선택한 출연자 2명이에요.</Text>
+      <AnimatedHeading title="참여자 예측 현황" subtitle="각 참여자가 선택한 출연자 2명이에요." color={colors.light.devilInk} subColor={colors.light.devilSub} subStyle={styles.sub} />
 
       {byMember.length === 0 ? (
         <View style={styles.emptyBox}>

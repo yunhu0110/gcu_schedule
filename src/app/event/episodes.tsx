@@ -11,6 +11,7 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { DetailHeader } from '@/components/DetailHeader';
+import { AnimatedHeading } from '@/components/AnimatedHeading';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { EPISODES, EPISODE_RELEASE } from '@/features/event/devilAssets';
@@ -89,10 +90,7 @@ export default function EpisodesScreen() {
   return (
     <Screen scroll>
       <DetailHeader right={statusLink} />
-      <Text variant="h1" color={colors.light.devilInk}>회차 시청 관리</Text>
-      <Text variant="bodySm" color={colors.light.devilSub} style={styles.sub}>
-        시청한 회차를 선택 후,{'\n'}아래 버튼을 눌러야 저장됩니다.
-      </Text>
+      <AnimatedHeading title="회차 시청 관리" subtitle={'시청한 회차를 선택 후,\n아래 버튼을 눌러야 저장됩니다.'} color={colors.light.devilInk} subColor={colors.light.devilSub} subStyle={styles.sub} />
 
       <View style={styles.grid}>
         {EPISODES.map((ep) => {

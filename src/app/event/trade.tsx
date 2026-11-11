@@ -10,6 +10,7 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { DetailHeader } from '@/components/DetailHeader';
+import { AnimatedHeading } from '@/components/AnimatedHeading';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { CONTESTANT_IMAGE } from '@/features/event/devilAssets';
@@ -59,8 +60,7 @@ export default function TradeScreen() {
   return (
     <Screen scroll>
       <DetailHeader />
-      <Text variant="h1" color={colors.light.devilInk}>트레이드</Text>
-      <Text variant="bodySm" color={colors.light.devilSub} style={styles.sub}>FA 영입, 또는 상대 선수와 교환 신청을 할 수 있어요.</Text>
+      <AnimatedHeading title="트레이드" subtitle="FA 영입, 또는 상대 선수와 교환 신청을 할 수 있어요." color={colors.light.devilInk} subColor={colors.light.devilSub} subStyle={styles.sub} />
 
       {/* 상대와의 트레이드 진입 */}
       <View style={styles.p2pRow}>

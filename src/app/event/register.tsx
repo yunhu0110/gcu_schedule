@@ -3,7 +3,7 @@
  * 이미 탈락 등록된 출연자는 비활성 표시. (09-DEVIL-RULES §6, 사용자 지시: 누구나 등록)
  */
 import { useMemo, useState } from 'react';
-import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Svg, { Path } from 'react-native-svg';
@@ -11,6 +11,7 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { DetailHeader } from '@/components/DetailHeader';
+import { Popup } from '@/components/Popup';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { CONTESTANT_IMAGE, EPISODES } from '@/features/event/devilAssets';
@@ -106,27 +107,25 @@ export default function RegisterScreen() {
       <Button label={isWinnerMode ? '우승자 등록하기' : '등록하기'} block loading={regMut.isPending} onPress={submit} style={StyleSheet.flatten([styles.cta, isWinnerMode && styles.ctaWin])} />
 
       {/* 회차 리스트박스 */}
-      <Modal visible={epPickerOpen} transparent animationType="fade" onRequestClose={() => setEpPickerOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setEpPickerOpen(false)}>
-          <Pressable style={styles.picker} onPress={() => {}}>
-            <Text variant="h2" color={colors.light.devilInk} style={styles.pickerTitle}>회차 선택</Text>
-            <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
-              {EPISODES.map((n) => {
-                const on = n === ep;
-                const last = n === LAST_EP;
-                return (
-                  <Pressable key={n} style={[styles.pickerItem, on && styles.pickerItemOn]} onPress={() => selectEp(n)}>
-                    <Text variant="bodyBold" color={on ? colors.light.devilBlue : colors.light.devilInk}>
-                      {n}화{last ? ' · 최종 우승자' : ''}
-                    </Text>
-                    {on ? <Text variant="bodyBold" color={colors.light.devilBlue}>✓</Text> : null}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </Pressable>
+      <Popup visible={epPickerOpen} onClose={() => setEpPickerOpen(false)}>
+        <Pressable style={styles.picker} onPress={() => {}}>
+          <Text variant="h2" color={colors.light.devilInk} style={styles.pickerTitle}>회차 선택</Text>
+          <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
+            {EPISODES.map((n) => {
+              const on = n === ep;
+              const last = n === LAST_EP;
+              return (
+                <Pressable key={n} style={[styles.pickerItem, on && styles.pickerItemOn]} onPress={() => selectEp(n)}>
+                  <Text variant="bodyBold" color={on ? colors.light.devilBlue : colors.light.devilInk}>
+                    {n}화{last ? ' · 최종 우승자' : ''}
+                  </Text>
+                  {on ? <Text variant="bodyBold" color={colors.light.devilBlue}>✓</Text> : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </Pressable>
-      </Modal>
+      </Popup>
     </Screen>
   );
 }

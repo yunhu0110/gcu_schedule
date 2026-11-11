@@ -3,13 +3,14 @@
  * 상대가 수락해야 성사된다. 탈락 선수/FA는 제외. (사용자 요청: 수락 기반 P2P 트레이드)
  */
 import { useMemo, useState } from 'react';
-import { Alert, Image, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
 import { DetailHeader } from '@/components/DetailHeader';
+import { Popup } from '@/components/Popup';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { CONTESTANT_IMAGE } from '@/features/event/devilAssets';
@@ -131,8 +132,7 @@ export default function TradeProposeScreen() {
       <Button label="트레이드 신청하기" block disabled={offer === null || request === null} loading={mut.isPending} onPress={submit} style={styles.cta} />
 
       {/* 현금 추가 모달 ('예' 선택 시) */}
-      <Modal visible={cashModal} transparent animationType="fade" onRequestClose={() => setCashModal(false)}>
-        <View style={styles.modalBackdrop}>
+      <Popup visible={cashModal} onClose={() => setCashModal(false)}>
           <View style={styles.modalCard}>
             <Text variant="h2" color={colors.light.devilInk}>현금 추가 제안</Text>
             <Text variant="bodySm" color={colors.light.devilSub} style={styles.modalSub}>
@@ -158,8 +158,7 @@ export default function TradeProposeScreen() {
               <Button label="제안하기" loading={mut.isPending} onPress={() => mut.mutate(cashNum)} style={styles.modalConfirm} />
             </View>
           </View>
-        </View>
-      </Modal>
+      </Popup>
     </Screen>
   );
 }
