@@ -17,8 +17,8 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { EPISODES, EPISODE_RELEASE } from '@/features/event/devilAssets';
 import { getMyWatch, listTradeOffers, saveWatch } from '@/api/devil';
 
-// 탈락자 등록 진입 노출 여부. 당분간 숨김(결과 데이터가 쌓이지 않아 어디에도 탈락 내용이 공개되지 않음).
-const SHOW_REGISTER = false;
+// 탈락자 등록 진입 노출 여부.
+const SHOW_REGISTER = true;
 
 export default function EpisodesScreen() {
   const router = useRouter();
