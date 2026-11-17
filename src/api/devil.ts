@@ -98,6 +98,15 @@ export async function registerElimination(episode: number, contestantId: number,
   if (error) throw error;
 }
 
+/** 탈락자 등록 취소(삭제). 활성 멤버·내 시청 범위 내에서만(서버 RLS로 강제). */
+export async function removeElimination(contestantId: number): Promise<void> {
+  const { error } = await supabase
+    .from('devil_eliminations')
+    .delete()
+    .eq('contestant_id', contestantId);
+  if (error) throw error;
+}
+
 /** 최종 우승자 — 공개 조건 미충족 시 null(RLS로 행 자체가 안 옴). */
 export async function getFinalWinner(): Promise<number | null> {
   const { data, error } = await supabase

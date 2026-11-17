@@ -15,7 +15,7 @@ import { Popup } from '@/components/Popup';
 import { colors, radius, space } from '@/theme/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { CONTESTANT_IMAGE, EPISODES } from '@/features/event/devilAssets';
-import { listContestants, listVisibleEliminations, registerElimination, setWinner } from '@/api/devil';
+import { listContestants, listVisibleEliminations, registerElimination, removeElimination, setWinner } from '@/api/devil';
 
 const LAST_EP = 14;
 
@@ -32,7 +32,25 @@ export default function RegisterScreen() {
   const { data: contestants = [] } = useQuery({ queryKey: ['devil', 'contestants'], queryFn: listContestants, enabled: !!userId });
   const { data: elims = [] } = useQuery({ queryKey: ['devil', 'elims'], queryFn: listVisibleEliminations, enabled: !!userId });
   const alreadyElim = useMemo(() => new Set(elims.map((e) => e.contestant_id)), [elims]);
+  const elimEp = useMemo(() => Object.fromEntries(elims.map((e) => [e.contestant_id, e.episode])), [elims]);
   const nameOf = useMemo(() => Object.fromEntries(contestants.map((c) => [c.id, c.name])), [contestants]);
+
+  const cancelMut = useMutation({
+    mutationFn: (id: number) => removeElimination(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['devil', 'elims'] });
+      Alert.alert('취소 완료', '탈락 등록이 취소되었습니다.');
+    },
+    onError: (e) => Alert.alert('취소 실패', e instanceof Error ? e.message : '다시 시도해주세요.'),
+  });
+
+  function cancelElim(id: number) {
+    const e = elimEp[id];
+    Alert.alert('탈락 등록 취소', `${e}화 ${nameOf[id]} 탈락 등록을 취소할까요?`, [
+      { text: '닫기', style: 'cancel' },
+      { text: '취소하기', style: 'destructive', onPress: () => cancelMut.mutate(id) },
+    ]);
+  }
 
   const regMut = useMutation({
     mutationFn: async () => {
@@ -91,14 +109,15 @@ export default function RegisterScreen() {
           const on = picked.includes(c.id);
           const done = !isWinnerMode && alreadyElim.has(c.id);
           return (
-            <Pressable key={c.id} style={styles.cell} onPress={() => toggle(c.id)} disabled={done}>
+            <Pressable key={c.id} style={styles.cell} onPress={() => (done ? cancelElim(c.id) : toggle(c.id))}>
               <View style={[styles.avatarWrap, on && (isWinnerMode ? styles.avatarWin : styles.avatarOn)]}>
                 <Image source={CONTESTANT_IMAGE[c.id]} style={styles.avatar} />
                 {done && <View style={styles.doneOverlay} />}
+                {done && <View style={styles.cancelBadge}><Text color={colors.light.paper} style={styles.cancelX}>✕</Text></View>}
               </View>
               {on ? <View style={[styles.check, isWinnerMode && styles.checkWin]}><Text color={colors.light.paper} style={styles.checkMark}>{isWinnerMode ? '♛' : '✓'}</Text></View> : null}
               <Text variant="caption" numberOfLines={1} style={styles.name} color={on ? colors.light.devilInk : colors.light.devilSub}>{c.name}</Text>
-              {done && <Text variant="caption" color={colors.light.hairlineStrong} style={styles.doneTag}>등록됨</Text>}
+              {done && <Text variant="caption" color={colors.light.devilBlue} numberOfLines={1} style={styles.doneTag}>탭하면 취소</Text>}
             </Pressable>
           );
         })}
@@ -143,6 +162,8 @@ const styles = StyleSheet.create({
   avatarWin: { borderColor: colors.light.devilAmber },
   avatar: { width: '100%', height: '100%' },
   doneOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(18,20,31,0.48)' },
+  cancelBadge: { position: 'absolute', top: '50%', left: '50%', width: 24, height: 24, marginLeft: -12, marginTop: -12, borderRadius: 12, backgroundColor: colors.light.danger, alignItems: 'center', justifyContent: 'center' },
+  cancelX: { fontSize: 13, lineHeight: 16 },
   check: { position: 'absolute', right: '12%', top: -2, width: 22, height: 22, borderRadius: 11, backgroundColor: colors.light.devilBlue, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.light.paper },
   checkWin: { backgroundColor: colors.light.devilAmber },
   checkMark: { fontSize: 12, lineHeight: 15 },
