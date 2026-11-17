@@ -1,6 +1,7 @@
 /**
  * 루트 레이아웃 — 폰트 프리로드(스플래시 게이팅) + 전역 프로바이더 + 세션 게이팅 + 최상위 Stack.
  */
+import '@/lib/alertShim'; // 웹에서 Alert.alert 동작시키기(최우선 side-effect)
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
