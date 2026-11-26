@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ScreenHeader } from '../components/ScreenHeader';
 import '../components/ScreenHeader.css';
 import {
@@ -149,24 +150,48 @@ export default function GameScreen() {
 
   // 게임 종료 화면
   if (isGameOver) {
+    const pieceOf = (id: string) => pieces.find((p) => p.player_id === id)?.pieces ?? 0;
+    const rankedPlayers = [...players].sort((a, b) => pieceOf(b.id) - pieceOf(a.id));
     return (
       <div className="screen game-screen">
         <ScreenHeader title="게임 종료" />
         <div className="game-screen__over">
-          <p className="kicker" style={{ textAlign: 'center', marginBottom: 12 }}>결과</p>
+          <motion.p
+            className="kicker"
+            style={{ textAlign: 'center', marginBottom: 12 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            결과
+          </motion.p>
           <div className="game-screen__scores">
-            {players.map((p) => (
-              <div key={p.id} className="game-screen__score-row panel">
+            {rankedPlayers.map((p, i) => (
+              <motion.div
+                key={p.id}
+                className={`game-screen__score-row panel${i === 0 ? ' is-winner' : ''}`}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 + i * 0.12, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {i === 0 && <span className="game-screen__crown">♛</span>}
                 <span className="game-screen__score-gem" style={{ ['--gem' as string]: p.color }} />
                 <span className="game-screen__score-name">{p.nickname}</span>
                 <span className="game-screen__score-pieces mono">{getPieces(p.id)}</span>
                 <span className="muted" style={{ fontSize: 12 }}>피스</span>
-              </div>
+              </motion.div>
             ))}
           </div>
-          <button className="btn" style={{ marginTop: 24 }} onClick={() => nav('/')}>
+          <motion.button
+            className="btn"
+            style={{ marginTop: 24 }}
+            onClick={() => nav('/')}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.15 + rankedPlayers.length * 0.12 + 0.2 }}
+          >
             처음으로
-          </button>
+          </motion.button>
         </div>
       </div>
     );
@@ -188,7 +213,12 @@ export default function GameScreen() {
         <span className="game-screen__round kicker">라운드 {curRoundIndex + 1}</span>
         {cluGiver && (
           <span className="game-screen__giver">
-            <span className="game-screen__giver-gem" style={{ ['--gem' as string]: cluGiver.color }} />
+            <motion.span
+              className="game-screen__giver-gem"
+              style={{ ['--gem' as string]: cluGiver.color }}
+              animate={{ opacity: [1, 0.4, 1], scale: [1, 1.25, 1] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+            />
             {isCluGiver ? '나' : cluGiver.nickname} 출제 중
           </span>
         )}
@@ -209,41 +239,71 @@ export default function GameScreen() {
             아직 힌트가 없어요
           </p>
         ) : (
-          Object.entries(cluesByRound).map(([ri, cs]) => {
-            const giver = getPlayer(cs[0].player_id);
-            return (
-              <div key={ri} className="game-screen__clue-row">
-                <span className="game-screen__clue-gem" style={{ ['--gem' as string]: giver?.color ?? '#888' }} />
-                <div className="game-screen__clue-body">
-                  <span className="game-screen__clue-who muted">{giver?.nickname ?? '?'} · R{Number(ri) + 1}</span>
-                  <span className="game-screen__clue-word">{cs[0].clue_word}</span>
-                </div>
-              </div>
-            );
-          })
+          <AnimatePresence initial={false}>
+            {Object.entries(cluesByRound).map(([ri, cs]) => {
+              const giver = getPlayer(cs[0].player_id);
+              return (
+                <motion.div
+                  key={ri}
+                  className="game-screen__clue-row"
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <span className="game-screen__clue-gem" style={{ ['--gem' as string]: giver?.color ?? '#888' }} />
+                  <div className="game-screen__clue-body">
+                    <span className="game-screen__clue-who muted">{giver?.nickname ?? '?'} · R{Number(ri) + 1}</span>
+                    <span className="game-screen__clue-word">{cs[0].clue_word}</span>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         )}
       </div>
 
       {/* 직전 라운드 추측 결과 (공개된 것) */}
-      {guesses.length > 0 && (
-        <div className="game-screen__guesses panel">
-          <p className="kicker" style={{ fontSize: 10, marginBottom: 8 }}>이전 라운드 추측 결과</p>
-          {guesses.map((g) => {
-            const gsr = getPlayer(g.guesser_id);
-            return (
-              <div key={g.id} className="game-screen__guess-row">
-                <span className="game-screen__clue-gem" style={{ ['--gem' as string]: gsr?.color ?? '#888' }} />
-                <span className="game-screen__guess-word">{g.guess_word}</span>
-                {g.similarity_score != null ? (
-                  <span className="mono glow-green" style={{ fontSize: 14 }}>{g.similarity_score.toFixed(0)}</span>
-                ) : (
-                  <span className="muted" style={{ fontSize: 12 }}>—</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <AnimatePresence>
+        {guesses.length > 0 && (
+          <motion.div
+            className="game-screen__guesses panel"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <p className="kicker" style={{ fontSize: 10, marginBottom: 8 }}>이전 라운드 추측 결과</p>
+            {guesses.map((g, i) => {
+              const gsr = getPlayer(g.guesser_id);
+              return (
+                <motion.div
+                  key={g.id}
+                  className="game-screen__guess-row"
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.08, duration: 0.3 }}
+                >
+                  <span className="game-screen__clue-gem" style={{ ['--gem' as string]: gsr?.color ?? '#888' }} />
+                  <span className="game-screen__guess-word">{g.guess_word}</span>
+                  {g.similarity_score != null ? (
+                    <motion.span
+                      className="mono glow-green"
+                      style={{ fontSize: 14 }}
+                      initial={{ scale: 0.6, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: i * 0.08 + 0.15, type: 'spring', stiffness: 400, damping: 15 }}
+                    >
+                      {g.similarity_score.toFixed(0)}
+                    </motion.span>
+                  ) : (
+                    <span className="muted" style={{ fontSize: 12 }}>—</span>
+                  )}
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 입력 영역 */}
       <div className="game-screen__input-area">

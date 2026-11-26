@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ScreenHeader } from '../components/ScreenHeader';
 import '../components/ScreenHeader.css';
 import { fetchPlayers, fetchRoom, setReady, subscribeRoom, type Player, type Room } from '../lib/rooms';
@@ -84,17 +85,27 @@ export default function LobbyScreen() {
       </div>
 
       <div className="lobby__list">
-        {players.map((p) => (
-          <div key={p.id} className={`lobby__row panel${p.id === session?.playerId ? ' is-me' : ''}`}>
-            <span className="lobby__gem" style={{ ['--gem' as string]: p.color }} />
-            <span className="lobby__name">
-              {p.nickname}{p.is_host && <span className="lobby__host"> ♛ 방장</span>}
-            </span>
-            <span className={`lobby__status${p.is_ready || p.is_host ? ' is-ready' : ''}`}>
-              {p.is_host ? '방장' : p.is_ready ? '● 준비완료' : '○ 대기중'}
-            </span>
-          </div>
-        ))}
+        <AnimatePresence initial={false}>
+          {players.map((p) => (
+            <motion.div
+              key={p.id}
+              layout
+              className={`lobby__row panel${p.id === session?.playerId ? ' is-me' : ''}`}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <span className="lobby__gem" style={{ ['--gem' as string]: p.color }} />
+              <span className="lobby__name">
+                {p.nickname}{p.is_host && <span className="lobby__host"> ♛ 방장</span>}
+              </span>
+              <span className={`lobby__status${p.is_ready || p.is_host ? ' is-ready' : ''}`}>
+                {p.is_host ? '방장' : p.is_ready ? '● 준비완료' : '○ 대기중'}
+              </span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
       <div className="lobby__footer">

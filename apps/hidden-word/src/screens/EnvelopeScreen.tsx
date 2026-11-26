@@ -4,6 +4,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ScreenHeader } from '../components/ScreenHeader';
 import '../components/ScreenHeader.css';
 import { fetchEnvelopes, selectEnvelope, subscribeGame, parseGameState, type Envelope } from '../lib/game';
@@ -77,18 +78,22 @@ export default function EnvelopeScreen() {
       </p>
 
       <div className="env-screen__grid">
-        {envelopes.map((env) => {
+        {envelopes.map((env, i) => {
           const owner = getPlayer(env.selected_by);
           const isMine = env.selected_by === session?.playerId;
           const isTaken = !!env.selected_by && !isMine;
           const isAvailable = !env.selected_by && !myEnvelope;
 
           return (
-            <button
+            <motion.button
               key={env.id}
               className={`env-card${isMine ? ' is-mine' : ''}${isTaken ? ' is-taken' : ''}${isAvailable ? ' is-available' : ''}`}
               disabled={isTaken || !!myEnvelope || busy}
               onClick={() => handleSelect(env.envelope_number)}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              whileTap={isAvailable ? { scale: 0.97 } : undefined}
             >
               <div className="env-card__num mono">#{env.envelope_number}</div>
               <div className="env-card__words">
@@ -97,12 +102,18 @@ export default function EnvelopeScreen() {
                 ))}
               </div>
               {owner && (
-                <div className="env-card__owner" style={{ ['--gem' as string]: owner.color }}>
+                <motion.div
+                  className="env-card__owner"
+                  style={{ ['--gem' as string]: owner.color }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+                >
                   <span className="env-card__gem" />
                   <span>{isMine ? '나' : owner.nickname}</span>
-                </div>
+                </motion.div>
               )}
-            </button>
+            </motion.button>
           );
         })}
       </div>

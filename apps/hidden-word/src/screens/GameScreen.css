@@ -134,6 +134,19 @@
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
+  position: relative;
+}
+.game-screen__score-row.is-winner {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(229, 193, 88, 0.3), var(--shadow-panel);
+  background: linear-gradient(180deg, rgba(229,193,88,0.12), var(--surface));
+}
+.game-screen__crown {
+  position: absolute;
+  top: -10px; left: 14px;
+  font-size: 15px;
+  color: var(--gold);
+  text-shadow: 0 0 10px rgba(229, 193, 88, 0.6);
 }
 .game-screen__score-gem {
   width: 16px;

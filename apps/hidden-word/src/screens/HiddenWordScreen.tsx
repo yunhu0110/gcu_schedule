@@ -4,6 +4,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ScreenHeader } from '../components/ScreenHeader';
 import '../components/ScreenHeader.css';
 import { fetchEnvelopes, selectHiddenWord, subscribeGame, parseGameState, type Envelope } from '../lib/game';
@@ -67,13 +68,31 @@ export default function HiddenWordScreen() {
 
       {confirmed ? (
         <div className="hw-screen__done">
-          <div className="hw-screen__done-badge">✓</div>
-          <p className="hw-screen__done-title" style={{ fontFamily: 'var(--font-serif)' }}>
+          <motion.div
+            className="hw-screen__done-badge"
+            initial={{ scale: 0, rotate: -45 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 16 }}
+          >
+            ✓
+          </motion.div>
+          <motion.p
+            className="hw-screen__done-title"
+            style={{ fontFamily: 'var(--font-serif)' }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
             선택 완료
-          </p>
-          <p className="muted hw-screen__done-word">
+          </motion.p>
+          <motion.p
+            className="muted hw-screen__done-word"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25 }}
+          >
             나의 히든워드: <strong style={{ color: 'var(--gold)' }}>{selected}</strong>
-          </p>
+          </motion.p>
           <p className="muted" style={{ fontSize: 13, marginTop: 24 }}>
             다른 플레이어들이 선택하는 중입니다…
           </p>
@@ -91,15 +110,19 @@ export default function HiddenWordScreen() {
             <p className="muted" style={{ textAlign: 'center', marginTop: 40 }}>봉투를 불러오는 중…</p>
           ) : (
             <div className="hw-screen__words">
-              {myEnvelope.words.map((w) => (
-                <button
+              {myEnvelope.words.map((w, i) => (
+                <motion.button
                   key={w}
                   className={`hw-word-btn${selected === w ? ' is-selected' : ''}`}
                   onClick={() => setSelected(w)}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.07, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <span className="hw-word-btn__text">{w}</span>
                   {selected === w && <span className="hw-word-btn__check">✓</span>}
-                </button>
+                </motion.button>
               ))}
             </div>
           )}
