@@ -1,0 +1,16 @@
+.venv/
+.env.local
+*.vec
+*.bin
+*.xml
+*.csv
+*.csv.gz
+*.json
+*.tsv
+extracted/
+data/
+__pycache__/
+# 대용량 생성물·로그(사전에서 재생성 가능) — 소스가 아님
+*.log
+vocab.txt
+priority_vocab.txt

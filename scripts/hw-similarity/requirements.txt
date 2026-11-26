@@ -1,0 +1,12 @@
+# 히든 워드 유사도 엔진 오프라인 적재 파이프라인 의존성
+# Python 3.10+ 권장. 로컬에서 한 번만 돌려 Supabase에 데이터를 밀어넣는 용도(앱 번들과 무관).
+psycopg[binary]>=3.1          # Supabase Postgres 직결(service 커넥션 스트링)
+kiwipiepy>=0.17               # 한국어 형태소/품사 → 명사 필터링, 코퍼스 토큰화
+sentence-transformers>=2.6    # KR-SBERT 임베딩(축1 의미) — torch 자동 설치
+numpy>=1.24
+tqdm>=4.66
+wn>=0.9                       # Open Multilingual Wordnet(한국어 KWN) — 관계 축 보조
+ijson>=3.2                    # 나무위키 대용량 JSON 스트리밍(축2, 선택)
+scipy>=1.10                   # KorSTS Spearman 검증(tune.py, 선택)
+# 축2 위키 전처리는 별도 설치:  pip install wikiextractor
+# (우리말샘/ConceptNet XML·CSV 파싱은 표준 라이브러리로 처리 — 추가 설치 불필요)
