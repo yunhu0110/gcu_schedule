@@ -1,0 +1,148 @@
+.game-screen__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.25);
+  border-radius: var(--r-md);
+  margin-bottom: 12px;
+}
+.game-screen__round {
+  letter-spacing: 0.25em;
+}
+.game-screen__giver {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.game-screen__giver-gem {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  transform: rotate(45deg);
+  background: var(--gem, var(--violet));
+  box-shadow: 0 0 6px var(--gem, var(--violet));
+  flex: 0 0 10px;
+}
+
+/* 내 히든워드 배지 */
+.game-screen__my-word {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+.game-screen__my-word-val {
+  font-size: 20px;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+}
+
+/* 힌트 이력 */
+.game-screen__clue-log {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 0 8px;
+  min-height: 60px;
+  max-height: 220px;
+}
+.game-screen__clue-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.2);
+  border-left: 2px solid var(--gem, var(--gold-2));
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+.game-screen__clue-gem {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  transform: rotate(45deg);
+  background: var(--gem, var(--violet));
+  box-shadow: 0 0 6px var(--gem, var(--violet));
+  flex: 0 0 10px;
+  margin-top: 4px;
+}
+.game-screen__clue-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.game-screen__clue-who {
+  font-size: 11px;
+}
+.game-screen__clue-word {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+/* 추측 결과 */
+.game-screen__guesses {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.game-screen__guess-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(168,139,92,0.1);
+}
+.game-screen__guess-row:last-child { border-bottom: none; }
+.game-screen__guess-word {
+  flex: 1;
+  font-family: var(--font-serif);
+  font-size: 15px;
+}
+
+/* 입력 */
+.game-screen__input-area {
+  padding-top: 12px;
+}
+.game-screen__input-row {
+  display: flex;
+  gap: 8px;
+}
+.game-screen__input-row .field { flex: 1; }
+.game-screen__input-row .btn { width: auto; padding: 0 20px; flex: 0 0 auto; }
+
+/* 게임 종료 */
+.game-screen__over {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.game-screen__scores {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.game-screen__score-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.game-screen__score-gem {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  transform: rotate(45deg);
+  background: var(--gem, var(--violet));
+  box-shadow: 0 0 8px var(--gem, var(--violet));
+  flex: 0 0 16px;
+}
+.game-screen__score-name { flex: 1; font-size: 16px; }
+.game-screen__score-pieces { font-size: 22px; color: var(--gold); }

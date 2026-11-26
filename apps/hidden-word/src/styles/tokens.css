@@ -1,0 +1,67 @@
+/*
+ * 히든 워드 디자인 토큰 — design/stitch_word_design 시안에서 추출.
+ * 다크 퍼플/네이비 배경 + 양피지 크림 텍스트 + 골드 장식 + 바이올렛 보석 + 그린 글로우(유사도/타이머).
+ * 폰트: Cinzel(로고/영문 디스플레이), Noto Serif KR(한글 제목), Noto Sans KR(본문), Orbitron(숫자/타이머).
+ */
+:root {
+  /* 배경/표면 */
+  --bg: #16141c;            /* 가장 어두운 보라빛 블랙 */
+  --bg-deep: #0f0d14;
+  --surface: #1e1a26;       /* 패널 */
+  --surface-2: #241f2e;     /* 패널 강조 */
+  --surface-3: #2a2436;
+  --panel-border: rgba(168, 139, 92, 0.35); /* 골드 헤어라인 */
+
+  /* 양피지 텍스트 */
+  --text: #f3efe6;          /* 기본 밝은 크림 */
+  --text-2: #e6dfd3;
+  --text-3: #d4cbbd;
+  --text-muted: #8c8275;    /* 보조 taupe */
+  --text-faint: #a89f91;
+
+  /* 골드/브론즈 */
+  --gold: #e5c158;          /* 밝은 금 */
+  --gold-2: #a88b5c;        /* 금속 테두리 */
+  --gold-3: #8c734b;
+  --amber: #f59e0b;
+  --amber-light: #fbbf24;
+
+  /* 바이올렛(보석/강조) */
+  --violet: #a855f7;
+  --violet-light: #c084fc;
+  --violet-soft: #d8b4fe;
+  --violet-wash: #e9d5ff;
+  --violet-deep: #9333ea;
+
+  /* 상태 */
+  --glow-green: #4ade80;    /* 유사도/타이머 글로우(시안 최다 사용색) */
+  --danger: #ef4444;
+  --danger-light: #f87171;
+
+  /* 플레이어 고유색(보석) — P1..P6 기본 팔레트 */
+  --p1: #ef4444; /* 레드 */
+  --p2: #a855f7; /* 퍼플 */
+  --p3: #3b82f6; /* 블루 */
+  --p4: #22c55e; /* 그린 */
+  --p5: #f59e0b; /* 앰버 */
+  --p6: #94a3b8; /* 실버 */
+
+  /* 폰트 */
+  --font-display: 'Cinzel', 'Noto Serif KR', serif;
+  --font-serif: 'Noto Serif KR', serif;
+  --font-body: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Orbitron', monospace;
+
+  /* 반경/간격 */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  /* 섀도/글로우 */
+  --shadow-panel: 0 10px 40px rgba(0, 0, 0, 0.5);
+  --glow-violet: 0 0 24px rgba(168, 85, 247, 0.45);
+  --glow-green-soft: 0 0 20px rgba(74, 222, 128, 0.5);
+  --glow-gold: 0 0 16px rgba(229, 193, 88, 0.4);
+}

@@ -1,0 +1,113 @@
+@import './tokens.css';
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(88, 54, 140, 0.28), transparent 60%),
+    radial-gradient(900px 500px at 50% 120%, rgba(60, 40, 110, 0.22), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+input, button { font-family: inherit; }
+
+/* 앱 셸 — 모바일 우선. 가운데 최대폭 컬럼. */
+.app-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.screen {
+  width: 100%;
+  max-width: 440px;
+  min-height: 100dvh;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+}
+
+/* 골드 코너 브래킷 프레임(시안 공통 장식) */
+.framed { position: relative; }
+.framed::before, .framed::after,
+.framed > .corner-tl, .framed > .corner-br { pointer-events: none; }
+
+.corner-frame {
+  position: absolute; inset: 10px;
+  pointer-events: none;
+  border: 1px solid transparent;
+}
+.corner-frame::before, .corner-frame::after {
+  content: ''; position: absolute; width: 22px; height: 22px;
+  border: 2px solid var(--gold-2);
+}
+.corner-frame::before { top: 0; left: 0; border-right: none; border-bottom: none; }
+.corner-frame::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+/* 패널 */
+.panel {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-panel);
+}
+
+/* 버튼 */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; width: 100%;
+  height: 54px; padding: 0 20px;
+  border: 1px solid var(--gold-2);
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, rgba(168,139,92,0.22), rgba(140,115,75,0.10));
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-weight: 700; font-size: 16px; letter-spacing: 0.02em;
+  transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.btn:hover { box-shadow: var(--glow-gold); }
+.btn:active { transform: scale(0.98); }
+.btn--primary {
+  background: linear-gradient(180deg, rgba(168,85,247,0.30), rgba(109,40,180,0.18));
+  border-color: var(--violet);
+  box-shadow: var(--glow-violet);
+}
+.btn--ghost {
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(168,139,92,0.4);
+  height: 48px; font-size: 15px;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+/* 입력 */
+.field {
+  width: 100%; height: 52px;
+  padding: 0 16px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(168,139,92,0.35);
+  border-radius: var(--r-md);
+  color: var(--text); font-size: 16px;
+}
+.field::placeholder { color: var(--text-muted); }
+.field:focus { outline: none; border-color: var(--violet-light); box-shadow: var(--glow-violet); }
+
+/* 라벨/캡션 */
+.kicker {
+  font-family: var(--font-serif);
+  color: var(--gold); letter-spacing: 0.3em; text-transform: uppercase;
+  font-size: 11px; font-weight: 600;
+}
+.muted { color: var(--text-muted); }
+
+/* Orbitron 숫자(타이머/유사도) */
+.mono { font-family: var(--font-mono); font-weight: 700; }
+.glow-green { color: var(--glow-green); text-shadow: var(--glow-green-soft); }

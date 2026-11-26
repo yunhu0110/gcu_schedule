@@ -1,0 +1,38 @@
+.lobby__sub { text-align: center; margin-bottom: 16px; font-size: 13px; }
+
+.lobby__invite {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px; margin-bottom: 16px;
+}
+.lobby__qr {
+  width: 100px; height: 100px; flex: 0 0 100px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.3); border-radius: 10px;
+}
+.lobby__code { display: flex; flex-direction: column; gap: 4px; }
+.lobby__code-val {
+  font-size: 30px; letter-spacing: 0.22em; color: var(--text);
+  text-shadow: var(--glow-gold);
+}
+.lobby__count { font-size: 13px; }
+
+.lobby__list { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.lobby__row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+}
+.lobby__row.is-me { border-color: var(--violet); }
+.lobby__gem {
+  width: 22px; height: 22px; border-radius: 6px; transform: rotate(45deg);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--gem) 70%, white 30%), var(--gem));
+  box-shadow: 0 0 10px var(--gem);
+  flex: 0 0 22px;
+}
+.lobby__name { flex: 1; font-size: 16px; color: var(--text); font-weight: 500; }
+.lobby__host { color: var(--gold); font-size: 13px; }
+.lobby__status { font-size: 13px; color: var(--text-muted); }
+.lobby__status.is-ready { color: var(--glow-green); }
+
+.lobby__footer { padding-top: 16px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.lobby__ready-count { font-size: 13px; }
+.lobby__footer .btn { width: 100%; }

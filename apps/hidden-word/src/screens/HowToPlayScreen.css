@@ -1,0 +1,11 @@
+.htp-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.htp-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 16px;
+}
+.htp-num {
+  font-family: var(--font-mono); font-weight: 700; font-size: 15px;
+  color: var(--gold);
+  min-width: 28px;
+}
+.htp-text { color: var(--text-2); font-size: 15px; line-height: 1.55; }

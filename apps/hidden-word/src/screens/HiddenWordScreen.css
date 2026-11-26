@@ -1,0 +1,80 @@
+.hw-screen__sub {
+  text-align: center;
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+.hw-screen__words {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.hw-word-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-lg);
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+.hw-word-btn:hover {
+  border-color: var(--gold-2);
+  transform: translateX(4px);
+}
+.hw-word-btn.is-selected {
+  border-color: var(--violet);
+  background: linear-gradient(180deg, rgba(168,85,247,0.18), rgba(109,40,180,0.10));
+  box-shadow: var(--glow-violet);
+}
+.hw-word-btn__text {}
+.hw-word-btn__check {
+  color: var(--violet-light);
+  font-size: 20px;
+}
+
+.hw-screen__footer {
+  padding-top: 20px;
+}
+
+/* 완료 상태 */
+.hw-screen__done {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.hw-screen__done-badge {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(168,85,247,0.15);
+  border: 2px solid var(--violet);
+  box-shadow: var(--glow-violet);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: var(--violet-light);
+  margin-bottom: 8px;
+}
+.hw-screen__done-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+.hw-screen__done-word {
+  font-size: 15px;
+}
