@@ -60,6 +60,9 @@ def main():
     ap.add_argument("--window", type=int, default=5)
     ap.add_argument("--topk", type=int, default=200)
     ap.add_argument("--min-count", type=int, default=5)
+    ap.add_argument("--min-partner-count", type=int, default=30,
+                    help="상대어(비풀) 코퍼스 등장 횟수 하한. PPMI 희귀어 편향 제거 "
+                         "(이보다 드문 단어는 공기쌍에서 제외 → 불사약/후타바군류 노이즈 차단)")
     args = ap.parse_args()
 
     if not args.corpus and not args.namu:
@@ -100,6 +103,8 @@ def main():
     per_pool: dict[str, list[tuple[str, float]]] = defaultdict(list)
     for (a, b), c in cooc.items():
         if c < args.min_count:
+            continue
+        if cnt[b] < args.min_partner_count:   # 상대어가 코퍼스에서 너무 드물면 제외(희귀어 PPMI 폭등 차단)
             continue
         p_ab = c / total_pairs
         p_a = cnt[a] / total_tok
