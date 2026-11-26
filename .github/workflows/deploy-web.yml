@@ -22,6 +22,7 @@ on:
       - 'package-lock.json'
       - 'app.json'
       - 'scripts/finalize-web-build.mjs'
+      - 'apps/hidden-word/**'
       - '.github/workflows/deploy-web.yml'
   workflow_dispatch:
 
@@ -64,6 +65,29 @@ jobs:
           # 로그인 화면 하단에 표시할 배포일 (네이티브의 Updates.createdAt 대응)
           export EXPO_PUBLIC_BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           npm run build:web
+
+      # 히든 워드 미니게임 — 같은 Pages 사이트의 하위 경로(/hidden-word/)로 함께 배포.
+      # HashRouter + VITE_BASE 로 서브경로 딥링크를 커버한다. 같은 Supabase 프로젝트 재사용.
+      - name: Build hidden-word sub-app
+        working-directory: apps/hidden-word
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_BASE: /gcu_schedule/hidden-word/
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::error::VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 시크릿이 없습니다."
+            exit 1
+          fi
+          npm ci
+          npm run build
+
+      - name: Place hidden-word under dist/hidden-word
+        run: |
+          rm -rf dist/hidden-word
+          mkdir -p dist/hidden-word
+          cp -r apps/hidden-word/dist/. dist/hidden-word/
+          touch dist/.nojekyll
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

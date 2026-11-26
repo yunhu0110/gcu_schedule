@@ -47,7 +47,8 @@ export default function LobbyScreen() {
 
   const me = players.find((p) => p.id === session?.playerId);
   const allReady = players.length >= 2 && players.every((p) => p.is_ready || p.is_host);
-  const joinUrl = `${window.location.origin}${import.meta.env.BASE_URL}join/${code}`.replace(/\/\/join/, '/join');
+  // HashRouter 사용 — 입장 경로는 해시(#) 뒤에 둔다. BASE_URL은 배포 서브경로(/.../hidden-word/).
+  const joinUrl = `${window.location.origin}${import.meta.env.BASE_URL}#/join/${code}`;
   const [starting, setStarting] = useState(false);
 
   async function toggleReady() {

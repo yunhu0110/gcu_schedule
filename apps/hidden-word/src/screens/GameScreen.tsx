@@ -33,6 +33,7 @@ export default function GameScreen() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const cluesRef = useRef<HTMLDivElement>(null);
 
   const reload = useCallback(async () => {
@@ -132,10 +133,9 @@ export default function GameScreen() {
 
   async function handleEndGame() {
     if (!session || !me?.is_host) return;
-    if (!window.confirm('게임을 종료하고 결과를 확인할까요?')) return;
     setBusy(true);
     try { await endGame(session.token); } catch (e) { alert(e instanceof Error ? e.message : '오류'); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setConfirmEnd(false); }
   }
 
   // 라운드 변경 시 submitted 초기화
@@ -362,11 +362,44 @@ export default function GameScreen() {
         ) : null}
       </div>
 
-      {/* 방장: 게임 종료 버튼 */}
+      {/* 방장: 게임 종료 버튼 + 인라인 확인 */}
       {me?.is_host && (
-        <button className="btn btn--ghost" style={{ marginTop: 10 }} onClick={handleEndGame} disabled={busy}>
-          게임 종료
-        </button>
+        <AnimatePresence mode="wait" initial={false}>
+          {confirmEnd ? (
+            <motion.div
+              key="confirm"
+              className="game-screen__end-confirm"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <span className="muted game-screen__end-ask">게임을 종료하고 결과를 확인할까요?</span>
+              <div className="game-screen__end-actions">
+                <button className="btn btn--ghost" onClick={() => setConfirmEnd(false)} disabled={busy}>
+                  취소
+                </button>
+                <button className="btn btn--primary" onClick={handleEndGame} disabled={busy}>
+                  {busy ? '종료 중…' : '종료'}
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.button
+              key="end"
+              className="btn btn--ghost"
+              style={{ marginTop: 10 }}
+              onClick={() => setConfirmEnd(true)}
+              disabled={busy}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              게임 종료
+            </motion.button>
+          )}
+        </AnimatePresence>
       )}
     </div>
   );
