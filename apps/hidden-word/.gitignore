@@ -1,7 +1,10 @@
-node_modules
-dist
-dist-ssr
-*.local
-.env
-.env.local
-.DS_Store
+# 원본 한국어 말뭉치/사전(5.8GB, 라이선스 자료) — 절대 커밋 금지, 읽기전용 보관소
+korean/
+# 가공/백업 산출물(재생성 가능)
+data/backups/
+data/processed/
+data/embeddings/
+data/manifests/
+pipeline/__pycache__/
+pipeline/.venv/
+*.log
