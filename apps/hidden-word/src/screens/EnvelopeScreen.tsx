@@ -1,5 +1,6 @@
 /**
- * 봉투 선택 — 각 플레이어가 봉투 하나를 선택. 봉투 안 단어 목록은 선택 전에도 공개(전략 요소).
+ * 봉투 선택 — 각 플레이어가 봉투 하나를 선택. 봉투 안 단어는 선택 전까지 절대 비공개(#3).
+ * 번호만 보고 고르고, 선택한 봉투의 단어는 다음(히든워드 선택) 화면에서 본인에게만 공개된다.
  * 취한 봉투는 선택자 닉네임 표시 + 비활성. 선택 완료 후 대기 화면.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -74,7 +75,7 @@ export default function EnvelopeScreen() {
       <p className="muted env-screen__sub">
         {myEnvelope
           ? '다른 플레이어가 선택하는 중입니다…'
-          : '단어 목록을 보고 마음에 드는 봉투를 고르세요.'}
+          : '안의 단어는 선택 후에만 당신에게 공개됩니다. 번호로 봉투를 고르세요.'}
       </p>
 
       <div className="env-screen__grid">
@@ -95,12 +96,8 @@ export default function EnvelopeScreen() {
               transition={{ delay: i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               whileTap={isAvailable ? { scale: 0.97 } : undefined}
             >
+              <div className="env-card__seal" aria-hidden>✉</div>
               <div className="env-card__num mono">#{env.envelope_number}</div>
-              <div className="env-card__words">
-                {env.words.map((w) => (
-                  <span key={w} className="env-card__word">{w}</span>
-                ))}
-              </div>
               {owner && (
                 <motion.div
                   className="env-card__owner"

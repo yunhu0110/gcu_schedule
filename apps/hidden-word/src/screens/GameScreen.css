@@ -42,6 +42,86 @@
   letter-spacing: 0.08em;
 }
 
+/* 현재 힌트 스포트라이트 + 유사도 게이지 */
+.game-screen__spotlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 14px;
+  margin-bottom: 12px;
+  transition: box-shadow 0.4s ease, border-color 0.4s ease;
+}
+.game-screen__spotlight.is-unlocked {
+  border-color: var(--green, #5fd38a);
+  box-shadow: 0 0 22px rgba(95, 211, 138, 0.28), var(--shadow-panel);
+}
+.game-screen__spotlight-word {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+.game-screen__gauge {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+.game-screen__gauge-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold-2), var(--gold));
+}
+.game-screen__gauge-fill.is-hit {
+  background: linear-gradient(90deg, var(--green, #5fd38a), #9bf0bd);
+  box-shadow: 0 0 12px rgba(95, 211, 138, 0.6);
+}
+.game-screen__gauge-mark {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.55);
+  transform: translateX(-50%);
+}
+.game-screen__gauge-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+}
+.game-screen__sim {
+  font-size: 22px;
+  color: var(--gold);
+}
+
+/* 점수판 */
+.game-screen__board {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--r-md);
+}
+.game-screen__board-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+.game-screen__board-name { flex: 1; font-size: 14px; }
+.game-screen__board-pts { font-size: 16px; color: var(--gold); }
+
 /* 힌트 이력 */
 .game-screen__clue-log {
   flex: 1;

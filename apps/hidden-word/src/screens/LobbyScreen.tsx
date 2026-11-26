@@ -50,6 +50,9 @@ export default function LobbyScreen() {
   // HashRouter 사용 — 입장 경로는 해시(#) 뒤에 둔다. BASE_URL은 배포 서브경로(/.../hidden-word/).
   const joinUrl = `${window.location.origin}${import.meta.env.BASE_URL}#/join/${code}`;
   const [starting, setStarting] = useState(false);
+  const [rounds, setRounds] = useState(6); // #6 방장이 라운드 수 설정(3~30, 기본 6)
+
+  const clampRounds = (n: number) => Math.max(3, Math.min(30, n));
 
   async function toggleReady() {
     if (!session || !me) return;
@@ -59,7 +62,7 @@ export default function LobbyScreen() {
   async function handleStartGame() {
     if (!session || !allReady || starting) return;
     setStarting(true);
-    try { await startGame(session.token); }
+    try { await startGame(session.token, clampRounds(rounds)); }
     catch (e) { alert(e instanceof Error ? e.message : '게임 시작 실패'); }
     finally { setStarting(false); }
   }
@@ -108,6 +111,27 @@ export default function LobbyScreen() {
           ))}
         </AnimatePresence>
       </div>
+
+      {me?.is_host && (
+        <div className="lobby__rounds panel">
+          <span className="kicker">라운드 수</span>
+          <div className="lobby__rounds-ctrl">
+            <button
+              className="lobby__rounds-btn"
+              onClick={() => setRounds((n) => clampRounds(n - 1))}
+              disabled={rounds <= 3}
+              aria-label="라운드 줄이기"
+            >−</button>
+            <span className="lobby__rounds-val mono">{rounds}</span>
+            <button
+              className="lobby__rounds-btn"
+              onClick={() => setRounds((n) => clampRounds(n + 1))}
+              disabled={rounds >= 30}
+              aria-label="라운드 늘리기"
+            >+</button>
+          </div>
+        </div>
+      )}
 
       <div className="lobby__footer">
         <span className="muted lobby__ready-count">

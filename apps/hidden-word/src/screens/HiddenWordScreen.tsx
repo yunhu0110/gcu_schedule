@@ -7,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ScreenHeader } from '../components/ScreenHeader';
 import '../components/ScreenHeader.css';
-import { fetchEnvelopes, selectHiddenWord, subscribeGame, parseGameState, type Envelope } from '../lib/game';
+import { fetchEnvelopes, getMyEnvelope, selectHiddenWord, subscribeGame, parseGameState, type Envelope } from '../lib/game';
 import { fetchRoom, subscribeRoom } from '../lib/rooms';
 import { getSession } from '../lib/session';
 import './HiddenWordScreen.css';
@@ -18,6 +18,7 @@ export default function HiddenWordScreen() {
   const session = useMemo(() => getSession(code), [code]);
 
   const [myEnvelope, setMyEnvelope] = useState<Envelope | null>(null);
+  const [words, setWords] = useState<string[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -28,11 +29,15 @@ export default function HiddenWordScreen() {
     if (!r) return;
     const envs = await fetchEnvelopes(r.id);
     setMyEnvelope(envs.find((e) => e.selected_by === session.playerId) ?? null);
+    // 봉투 단어는 본인 전용 RPC로만 조회(#3) — 1회 로드
+    if (words == null) {
+      try { setWords(await getMyEnvelope(session.token)); } catch { /* 대기 */ }
+    }
 
     const gs = parseGameState(r.state);
     if (gs?.phase === 'round' || gs?.phase === 'game_over') nav(`/room/${code}/play`);
     else if (gs?.phase === 'envelope_selection') nav(`/room/${code}/envelopes`);
-  }, [code, nav, session]);
+  }, [code, nav, session, words]);
 
   useEffect(() => {
     if (!session) { nav(`/join/${code}`, { replace: true }); return; }
@@ -106,11 +111,11 @@ export default function HiddenWordScreen() {
             아무도 모르게 하나를 선택하세요. 이 단어가 게임 내내 당신의 비밀입니다.
           </p>
 
-          {!myEnvelope ? (
+          {!words ? (
             <p className="muted" style={{ textAlign: 'center', marginTop: 40 }}>봉투를 불러오는 중…</p>
           ) : (
             <div className="hw-screen__words">
-              {myEnvelope.words.map((w, i) => (
+              {words.map((w, i) => (
                 <motion.button
                   key={w}
                   className={`hw-word-btn${selected === w ? ' is-selected' : ''}`}
