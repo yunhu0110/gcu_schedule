@@ -50,9 +50,22 @@ export default function LobbyScreen() {
   // HashRouter 사용 — 입장 경로는 해시(#) 뒤에 둔다. BASE_URL은 배포 서브경로(/.../hidden-word/).
   const joinUrl = `${window.location.origin}${import.meta.env.BASE_URL}#/join/${code}`;
   const [starting, setStarting] = useState(false);
-  const [rounds, setRounds] = useState(6); // #6 방장이 라운드 수 설정(3~30, 기본 6)
+  const [rounds, setRounds] = useState(1); // #6 방장이 라운드(바퀴) 수 설정(1~10, 기본 1). 1라운드=전원 1회 출제
+  const [shared, setShared] = useState(false);
 
-  const clampRounds = (n: number) => Math.max(3, Math.min(30, n));
+  const clampRounds = (n: number) => Math.max(1, Math.min(10, n));
+
+  async function handleShare() {
+    const text = `히든 워드 같이 해요! 방 코드 ${room?.code ?? code}`;
+    try {
+      if (navigator.share) { await navigator.share({ title: '히든 워드', text, url: joinUrl }); return; }
+    } catch { /* 사용자가 공유 취소 — 무시 */ }
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      setShared(true);
+      setTimeout(() => setShared(false), 1800);
+    } catch { alert(joinUrl); }
+  }
 
   async function toggleReady() {
     if (!session || !me) return;
@@ -85,6 +98,9 @@ export default function LobbyScreen() {
           <span className="kicker">방 코드</span>
           <div className="lobby__code-val mono">{room.code}</div>
           <span className="muted lobby__count">{players.length} / {room.max_players}명</span>
+          <button className="btn lobby__share" onClick={handleShare}>
+            {shared ? '링크 복사됨 ✓' : '초대 링크 공유'}
+          </button>
         </div>
       </div>
 
@@ -119,17 +135,18 @@ export default function LobbyScreen() {
             <button
               className="lobby__rounds-btn"
               onClick={() => setRounds((n) => clampRounds(n - 1))}
-              disabled={rounds <= 3}
+              disabled={rounds <= 1}
               aria-label="라운드 줄이기"
             >−</button>
             <span className="lobby__rounds-val mono">{rounds}</span>
             <button
               className="lobby__rounds-btn"
               onClick={() => setRounds((n) => clampRounds(n + 1))}
-              disabled={rounds >= 30}
+              disabled={rounds >= 10}
               aria-label="라운드 늘리기"
             >+</button>
           </div>
+          <span className="muted lobby__rounds-hint">1라운드 = 전원이 각자 1번씩 출제 (총 {rounds * players.length}턴)</span>
         </div>
       )}
 

@@ -94,6 +94,10 @@ export default function GameScreen() {
 
   const curRound = gameState?.round_index ?? 0;
   const totalRounds = gameState?.total_rounds ?? 0;
+  // 라운드 = 바퀴(전원 1회 출제). round_index 는 턴 인덱스이므로 인원수로 나눠 바퀴를 구한다.
+  const nPlayers = gameState?.player_order.length ?? 0;
+  const curCycle = nPlayers ? Math.floor(curRound / nPlayers) + 1 : 1;
+  const turnInCycle = nPlayers ? (curRound % nPlayers) + 1 : 1;
   const unlocked = !!gameState?.unlocked;
   const hint = gameState?.current_hint ?? null;
   const isGameOver = gameState?.phase === 'game_over';
@@ -212,7 +216,8 @@ export default function GameScreen() {
       {/* 상태 배지 */}
       <div className="game-screen__status">
         <span className="game-screen__round kicker">
-          라운드 {curRound + 1}{totalRounds ? ` / ${totalRounds}` : ''}
+          라운드 {curCycle}{totalRounds ? ` / ${totalRounds}` : ''}
+          {nPlayers ? ` · ${turnInCycle}/${nPlayers}번째 출제` : ''}
         </span>
         {giver && (
           <span className="game-screen__giver">
