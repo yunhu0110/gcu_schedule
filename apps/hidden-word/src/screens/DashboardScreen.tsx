@@ -172,10 +172,9 @@ export default function DashboardScreen() {
                         </motion.span>
                       </AnimatePresence>
                       <div className="dashboard__gauge">
-                        <motion.div
+                        <div
                           className={`dashboard__gauge-fill${gameState.unlocked ? ' is-hit' : ''}`}
-                          animate={{ width: `${pct}%` }}
-                          transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                          style={{ width: `${pct}%` }}
                         />
                         <span className="dashboard__gauge-mark" style={{ left: `${UNLOCK_AT}%` }} />
                       </div>
@@ -217,13 +216,15 @@ export default function DashboardScreen() {
           {/* 우: 점수판 */}
           <aside className="dashboard__board">
             <p className="kicker">점수판</p>
-            {ranked.map((p) => (
-              <div key={p.id} className="dashboard__board-row">
-                <span className="dashboard__gem" style={{ ['--gem' as string]: p.color }} />
-                <span className="dashboard__board-name">{p.nickname}{giverId === p.id ? ' · 출제' : ''}</span>
-                <span className="dashboard__board-pts mono">{pointsOf(p.id)}</span>
-              </div>
-            ))}
+            <div className="dashboard__board-rows">
+              {ranked.map((p) => (
+                <div key={p.id} className={`dashboard__board-row${giverId === p.id ? ' is-giver' : ''}`}>
+                  <span className="dashboard__gem" style={{ ['--gem' as string]: p.color }} />
+                  <span className="dashboard__board-name">{p.nickname}{giverId === p.id ? ' · 출제' : ''}</span>
+                  <span className="dashboard__board-pts mono">{pointsOf(p.id)}</span>
+                </div>
+              ))}
+            </div>
           </aside>
         </div>
       )}

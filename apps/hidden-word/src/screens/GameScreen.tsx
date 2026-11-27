@@ -328,10 +328,9 @@ export default function GameScreen() {
               </motion.span>
             </AnimatePresence>
             <div className="game-screen__gauge">
-              <motion.div
+              <div
                 className={`game-screen__gauge-fill${unlocked ? ' is-hit' : ''}`}
-                animate={{ width: `${pct}%` }}
-                transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                style={{ width: `${pct}%` }}
               />
               <span className="game-screen__gauge-mark" style={{ left: `${UNLOCK_AT}%` }} />
             </div>
