@@ -50,10 +50,10 @@ export default function LobbyScreen() {
   // HashRouter 사용 — 입장 경로는 해시(#) 뒤에 둔다. BASE_URL은 배포 서브경로(/.../hidden-word/).
   const joinUrl = `${window.location.origin}${import.meta.env.BASE_URL}#/join/${code}`;
   const [starting, setStarting] = useState(false);
-  const [rounds, setRounds] = useState(1); // #6 방장이 라운드(바퀴) 수 설정(1~10, 기본 1). 1라운드=전원 1회 출제
+  const [rounds, setRounds] = useState(1); // 라운드(바퀴) 수. 방장이 자유롭게 설정(상한 없음). 봉투는 라운드마다 새로 생성
   const [shared, setShared] = useState(false);
 
-  const clampRounds = (n: number) => Math.max(1, Math.min(10, n));
+  const clampRounds = (n: number) => Math.max(1, n);
 
   async function handleShare() {
     const text = `히든 워드 같이 해요! 방 코드 ${room?.code ?? code}`;
@@ -142,11 +142,10 @@ export default function LobbyScreen() {
             <button
               className="lobby__rounds-btn"
               onClick={() => setRounds((n) => clampRounds(n + 1))}
-              disabled={rounds >= 10}
               aria-label="라운드 늘리기"
             >+</button>
           </div>
-          <span className="muted lobby__rounds-hint">1라운드 = 전원이 각자 1번씩 출제 (총 {rounds * players.length}턴)</span>
+          <span className="muted lobby__rounds-hint">1라운드 = 전원이 각자 1번씩 출제 (총 {rounds * players.length}문제)</span>
         </div>
       )}
 

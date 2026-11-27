@@ -63,9 +63,12 @@ export default function GameScreen() {
     setScores(sc);
     setRevealed(rv);
 
-    // 직전 라운드(정산 완료) 추측 결과 — 공개된 것만
-    if (gs && gs.round_index > 0) {
-      setPrevGuesses(await fetchGuesses(r.id, gs.round_index - 1));
+    // 내 이번 라운드 히든워드(라운드마다 바뀌므로 매 갱신 시 재조회)
+    if (session.token) getMyWord(session.token).then(setMyWord).catch(() => {});
+
+    // 직전 문제(정산 완료) 추측 결과 — 공개된 것만
+    if (gs && gs.problem_no > 1) {
+      setPrevGuesses(await fetchGuesses(r.id, gs.problem_no - 1));
     } else {
       setPrevGuesses([]);
     }
@@ -82,7 +85,6 @@ export default function GameScreen() {
         unsubRoom = subscribeRoom(r.id, reload);
         unsubGame = subscribeGame(r.id, reload);
       });
-      if (session.token) getMyWord(session.token).then(setMyWord).catch(() => {});
     });
     return () => { unsubRoom(); unsubGame(); };
   }, [code, reload, nav, session]);
@@ -92,23 +94,29 @@ export default function GameScreen() {
   const isGiver = giverId === session?.playerId;
   const giver = players.find((p) => p.id === giverId);
 
-  const curRound = gameState?.round_index ?? 0;
-  const totalRounds = gameState?.total_rounds ?? 0;
-  // 라운드 = 바퀴(전원 1회 출제). round_index 는 턴 인덱스이므로 인원수로 나눠 바퀴를 구한다.
-  const nPlayers = gameState?.player_order.length ?? 0;
-  const curCycle = nPlayers ? Math.floor(curRound / nPlayers) + 1 : 1;
-  const turnInCycle = nPlayers ? (curRound % nPlayers) + 1 : 1;
+  const curRound = gameState?.round_no ?? 1;
+  const totalRounds = gameState?.configured_rounds ?? 0;
+  const nPlayers = gameState?.participant_count || (gameState?.player_order.length ?? 0);
+  const problemNo = gameState?.problem_no ?? 1;
+  const totalProblems = gameState?.total_problems ?? 0;
+  const turnInRound = (gameState?.giver_index ?? 0) + 1;
+  const attemptNo = gameState?.attempt_no ?? 1;
+  const maxAttempts = gameState?.max_attempts ?? 3;
+  const maxHints = gameState?.max_hints ?? 10;
   const unlocked = !!gameState?.unlocked;
   const hint = gameState?.current_hint ?? null;
   const isGameOver = gameState?.phase === 'game_over';
 
-  // 이번 라운드 힌트 이력(출제자 반복 제출)
-  const roundClues = useMemo(
-    () => clues.filter((c) => c.round_index === curRound).sort((a, b) => a.attempt - b.attempt),
-    [clues, curRound],
+  // 현재 문제·현재 회차 힌트 이력(출제자 반복 제출)
+  const attemptClues = useMemo(
+    () => clues
+      .filter((c) => c.problem_no === problemNo && c.attempt_no === attemptNo)
+      .sort((a, b) => a.hint_index - b.hint_index),
+    [clues, problemNo, attemptNo],
   );
+  const hintsUsed = attemptClues.length;
 
-  const iGuessedThisRound = guessedRound === curRound;
+  const iGuessedThisAttempt = guessedRound === problemNo * 100 + attemptNo;
 
   const getPlayer = (id: string) => players.find((p) => p.id === id);
   const pointsOf = (id: string) => scores.find((s) => s.player_id === id)?.points ?? 0;
@@ -135,7 +143,7 @@ export default function GameScreen() {
     try {
       await submitGuess(session.token, input.trim());
       setInput('');
-      setGuessedRound(curRound);
+      setGuessedRound(problemNo * 100 + attemptNo);
     } catch (e) {
       alert(e instanceof Error ? e.message : '오류가 발생했어요.');
     } finally {
@@ -202,11 +210,14 @@ export default function GameScreen() {
     );
   }
 
-  // 직전 라운드 출제자 & 정답(공개된 경우)
-  const prevGiverId = gameState.player_order.length
-    ? gameState.player_order[(curRound - 1 + gameState.player_order.length) % gameState.player_order.length]
+  // 직전 문제 출제자 & 정답(공개된 경우)
+  const prevProblem = problemNo - 1;
+  const prevRound = nPlayers ? Math.floor((prevProblem - 1) / nPlayers) + 1 : 1;
+  const prevGiverIdx = nPlayers ? (prevProblem - 1) % nPlayers : 0;
+  const prevGiverId = prevProblem >= 1 && gameState.player_order.length
+    ? gameState.player_order[prevGiverIdx]
     : null;
-  const prevAnswer = prevGiverId ? revealed[prevGiverId] : undefined;
+  const prevAnswer = prevGiverId ? revealed[`${prevGiverId}:${prevRound}`] : undefined;
   const pct = Math.max(0, Math.min(100, hint?.similarity ?? 0));
 
   return (
@@ -216,8 +227,10 @@ export default function GameScreen() {
       {/* 상태 배지 */}
       <div className="game-screen__status">
         <span className="game-screen__round kicker">
-          라운드 {curCycle}{totalRounds ? ` / ${totalRounds}` : ''}
-          {nPlayers ? ` · ${turnInCycle}/${nPlayers}번째 출제` : ''}
+          라운드 {curRound}{totalRounds ? `/${totalRounds}` : ''}
+          {nPlayers ? ` · ${turnInRound}/${nPlayers}번째 출제` : ''}
+          {totalProblems ? ` · 문제 ${problemNo}/${totalProblems}` : ''}
+          {` · ${attemptNo}/${maxAttempts}회차`}
         </span>
         {giver && (
           <span className="game-screen__giver">
@@ -287,11 +300,11 @@ export default function GameScreen() {
         )}
       </div>
 
-      {/* 이번 라운드 힌트 이력 */}
-      {roundClues.length > 1 && (
+      {/* 이번 회차 힌트 이력 */}
+      {attemptClues.length > 1 && (
         <div className="game-screen__clue-log">
           <AnimatePresence initial={false}>
-            {roundClues.slice(0, -1).map((c) => (
+            {attemptClues.slice(0, -1).map((c) => (
               <motion.div
                 key={c.id}
                 className="game-screen__clue-row"
@@ -301,7 +314,7 @@ export default function GameScreen() {
               >
                 <span className="game-screen__clue-gem" style={{ ['--gem' as string]: giver?.color ?? '#888' }} />
                 <div className="game-screen__clue-body">
-                  <span className="game-screen__clue-who muted">시도 {c.attempt}</span>
+                  <span className="game-screen__clue-who muted">힌트 {c.hint_index}</span>
                   <span className="game-screen__clue-word">{c.clue_word}</span>
                 </div>
                 <span className="mono" style={{ fontSize: 14, color: 'var(--text-2)' }}>
@@ -324,7 +337,7 @@ export default function GameScreen() {
             transition={{ duration: 0.3 }}
           >
             <p className="kicker" style={{ fontSize: 10, marginBottom: 8 }}>
-              이전 라운드 결과{prevAnswer ? ` · 정답 "${prevAnswer}"` : ''}
+              이전 문제 결과{prevAnswer ? ` · 정답 "${prevAnswer}"` : ''}
             </p>
             {prevGuesses.map((g, i) => {
               const gsr = getPlayer(g.guesser_id);
@@ -373,6 +386,7 @@ export default function GameScreen() {
             <>
               <p className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
                 히든워드와 가까운 단어를 힌트로 제출하세요. 유사도 {UNLOCK_AT} 이상이면 추측이 열립니다.
+                {' '}(힌트 {hintsUsed}/{maxHints} · {attemptNo}/{maxAttempts}회차)
               </p>
               <div className="game-screen__input-row">
                 <input
@@ -391,7 +405,7 @@ export default function GameScreen() {
             </>
           )
         ) : unlocked ? (
-          iGuessedThisRound ? (
+          iGuessedThisAttempt ? (
             <p className="muted" style={{ textAlign: 'center', fontSize: 13, padding: '8px 0' }}>
               추측을 제출했어요. 다른 참가자 대기 중…
             </p>

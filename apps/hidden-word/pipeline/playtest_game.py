@@ -1,198 +1,277 @@
 """
-playtest_game.py — 3인 게임 한 판을 실제 Supabase RPC로 끝까지 시뮬레이션.
-'라운드=바퀴' 정의(0044) 검증: total_rounds(바퀴) × 인원수 = 총 출제 턴, 마지막 턴에만 game_over.
-라운드마다 출제자 1명·추측자 2명(정답1·오답1)으로 채점 양쪽 경로를 검증.
-규칙 #3(봉투 비공개)·#7(단어 재사용 금지: 같은 출제자가 매 턴 다른 힌트)·#9/#10(유사도)·
-#11(95 게이트)·채점·바퀴 로테이션·게임오버 검증. 끝나면 테스트 방을 삭제(cascade)해 DB를 원복한다.
+playtest_game.py — 새 엔진(0045~0048) 한 판 시뮬레이션 (Phase 1).
+검증 대상:
+  · 봉투는 매 라운드 새로 생성, 개수 = 참가자 수(§3·§4), 봉투 공개테이블에 words 없음(§3)
+  · 전 라운드 봉투 단어가 서로 전역 중복 없음(이전 라운드 전체 단어 재사용 금지, §3)
+  · total_problems = 인원 × 라운드, player_order 시작 시 1회 추첨·모든 라운드 동일 유지(§4)
+  · 한 문제 최대 3회차 재도전: 회차마다 힌트→추측, 오답 전원 시 다음 회차(같은 히든워드 유지)
+  · 힌트 10개 소진 시 ≥95 미도달 → 회차 실패(다음 회차로)
+  · ≥95 게이트(§11), §7 힌트 단어 재사용 금지, 유사도 공개(§9·§10)
+  · 문제 정산 시 해당 라운드 히든워드 공개, 마지막 문제에만 game_over
+  · 점수(최종·배율 없음): 정답자 각 +1 / 출제자=(해결회차-1)*해결회차/2 / 미해결 6점 — 정확 검증
+끝나면 테스트 방을 삭제(cascade)해 DB를 원복한다.
 """
-import os, json, uuid, psycopg
+import psycopg
 
 ENV = "/Users/yunhu/gcu_schedule/scripts/hw-similarity/.env.local"
-TOTAL_ROUNDS = 2   # 바퀴 수 → 3명이면 총 6턴
+R = 2   # 라운드(바퀴) 수
 N = 3
 
-u = None
-for line in open(ENV):
-    if line.startswith("SUPABASE_DB_URL="):
-        u = line.split("=", 1)[1].strip().strip('"').strip("'")
+u = next(l.split("=", 1)[1].strip().strip('"').strip("'")
+         for l in open(ENV) if l.startswith("SUPABASE_DB_URL="))
 
 PASS, FAIL = [], []
 def check(name, cond, extra=""):
     (PASS if cond else FAIL).append(name)
-    print(f"  {'✓' if cond else '✗ 실패'} {name}{(' — '+extra) if extra else ''}")
+    print(f"  {'✓' if cond else '✗ 실패'} {name}{(' — ' + extra) if extra else ''}")
 
 def rpc(cur, fn, *args):
-    ph = ",".join(["%s"] * len(args))
-    cur.execute(f"select public.{fn}({ph})", args)
+    cur.execute(f"select public.{fn}({','.join(['%s'] * len(args))})", args)
     return cur.fetchone()[0]
 
-def candidates_for(cur, hidden, k=50):
-    """hidden 의 임베딩 최근접 이웃 k개를 합성 유사도와 함께 (단어, 유사도) desc 로 반환."""
+def cands(cur, hidden, k=80):
     cur.execute("""
-      select nn.w, (sc.score)::float from (
+      select nn.w,(sc.score)::float from (
         select ea2.word w from public.hw_word_embeddings ea
-        join public.hw_word_embeddings ea2 on ea2.word <> ea.word
-        where ea.word = %s order by ea.vec <=> ea2.vec limit %s
-      ) nn, lateral public.hw_word_similarity(%s, nn.w) sc
-      order by sc.score desc
+        join public.hw_word_embeddings ea2 on ea2.word<>ea.word
+        where ea.word=%s order by ea.vec<=>ea2.vec limit %s
+      ) nn, lateral public.hw_word_similarity(%s,nn.w) sc order by sc.score desc
     """, (hidden, k, hidden))
-    return [(w, s) for w, s in cur.fetchall()]
+    return cur.fetchall()
+
+def state(cur, rid):
+    cur.execute("select state from public.hw_rooms where id=%s", (rid,))
+    return cur.fetchone()[0]
+
+def points(cur, rid):
+    cur.execute("select player_id, points from public.hw_scores where room_id=%s", (rid,))
+    return {str(p): pt for p, pt in cur.fetchall()}
 
 with psycopg.connect(u, autocommit=True) as c, c.cursor() as cur:
     cur.execute("set statement_timeout=0")
+
     print("=== 1) 방 생성 + 참가 (3인) ===")
     r1 = rpc(cur, "hw_create_room", "플레이테스트", 6, "앨리스", "#c9a24b", False)
-    code, room_id, t1, p1 = r1["code"], r1["room_id"], r1["token"], r1["player_id"]
-    print(f"  방 {code} 생성 · 호스트 앨리스")
-    r2 = rpc(cur, "hw_join_room", code, "밥", "#6b8fd4")
-    t2, p2 = r2["token"], r2["player_id"]
-    r3 = rpc(cur, "hw_join_room", code, "찰리", "#5fd38a")
-    t3, p3 = r3["token"], r3["player_id"]
-    print("  밥·찰리 참가")
-    rpc(cur, "hw_set_ready", t2, True)
-    rpc(cur, "hw_set_ready", t3, True)
+    code, rid, t1, p1 = r1["code"], r1["room_id"], r1["token"], r1["player_id"]
+    r2 = rpc(cur, "hw_join_room", code, "밥", "#6b8fd4"); t2, p2 = r2["token"], r2["player_id"]
+    r3 = rpc(cur, "hw_join_room", code, "찰리", "#5fd38a"); t3, p3 = r3["token"], r3["player_id"]
+    rpc(cur, "hw_set_ready", t2, True); rpc(cur, "hw_set_ready", t3, True)
+    tok = {p1: t1, p2: t2, p3: t3}
+    nm = {p1: "앨리스", p2: "밥", p3: "찰리"}
 
-    print(f"=== 2) 게임 시작 (total_rounds={TOTAL_ROUNDS} 바퀴) ===")
-    rpc(cur, "hw_start_game", t1, TOTAL_ROUNDS)
-    cur.execute("select state from public.hw_rooms where id=%s", (room_id,))
-    st = cur.fetchone()[0]
-    check("시작 후 phase=envelope_selection", st["phase"] == "envelope_selection", st["phase"])
-    check(f"total_rounds={TOTAL_ROUNDS} 저장(바퀴)", st.get("total_rounds") == TOTAL_ROUNDS, str(st.get("total_rounds")))
+    print(f"=== 2) 게임 시작 (라운드={R}) ===")
+    sg = rpc(cur, "hw_start_game", t1, R)
+    check("total_problems = 인원×라운드", sg["total_problems"] == N * R, str(sg))
+    st = state(cur, rid)
+    check("phase=envelope_selection", st["phase"] == "envelope_selection", st["phase"])
+    check("total_problems state 저장", st["total_problems"] == N * R)
     order = st["player_order"]
-    check("player_order 3명", len(order) == N)
-
-    print("=== 3) 봉투 선택 (번호만, 내용 비공개 #3) ===")
+    check("player_order N명", len(order) == N)
+    cur.execute("select count(*) from public.hw_envelopes where room_id=%s", (rid,))
+    check("봉투 개수 = 인원수(§4)", cur.fetchone()[0] == N, "")
     cur.execute("""select column_name from information_schema.columns
                    where table_schema='public' and table_name='hw_envelopes'""")
     cols = {r[0] for r in cur.fetchall()}
-    check("hw_envelopes 공개 테이블에 words 없음(#3)", "words" not in cols and "envelope_number" in cols)
-    rpc(cur, "hw_select_envelope", t1, 1)
-    rpc(cur, "hw_select_envelope", t2, 2)
-    rpc(cur, "hw_select_envelope", t3, 3)
-    cur.execute("select state from public.hw_rooms where id=%s", (room_id,))
-    st = cur.fetchone()[0]
-    check("전원 봉투 선택 후 phase=hidden_word_selection", st["phase"] == "hidden_word_selection", st["phase"])
+    check("봉투 공개테이블에 words 없음(§3)", "words" not in cols)
 
-    print(f"=== 4) 히든워드 선택 (각 바퀴마다 다른 ≥95 힌트가 {TOTAL_ROUNDS}개 이상 가능한 단어로) ===")
-    best = {}  # pid -> (hidden, [strong...], (weak_word, weak_sim))
-    for tok, pid, nm in [(t1, p1, "앨리스"), (t2, p2, "밥"), (t3, p3, "찰리")]:
-        words = rpc(cur, "hw_get_my_envelope", tok)
-        pick = None
-        for w in words:
-            cands = candidates_for(cur, w)
-            strong = [cw for cw, s in cands if s >= 95.0]
-            weak = cands[-1] if cands else (None, 0.0)  # 50번째 이웃 → 낮은 유사도
-            if pick is None or len(strong) > len(pick[1]):
-                pick = (w, strong, weak)
-        hidden, strong, weak = pick
-        check(f"{nm}: 히든='{hidden}' 강한힌트 후보 {len(strong)}개 ≥ {TOTAL_ROUNDS}(바퀴마다 다른 힌트 #7)",
-              len(strong) >= TOTAL_ROUNDS, f"strong={strong[:TOTAL_ROUNDS]}")
-        rpc(cur, "hw_select_hidden_word", tok, hidden)
-        best[pid] = (hidden, strong, weak)
-        print(f"  {nm}: 히든워드='{hidden}' · 강한힌트{strong[:TOTAL_ROUNDS]} · 약한힌트'{weak[0]}'≈{weak[1]:.1f}")
-    cur.execute("select state from public.hw_rooms where id=%s", (room_id,))
-    st = cur.fetchone()[0]
-    check("전원 히든워드 선택 후 phase=round", st["phase"] == "round", st["phase"])
+    used_clue = {p: set() for p in order}   # §7 전역 힌트 재사용 금지
+    used_word = {p: set() for p in order}   # §6 히든워드 재사용 금지
+    all_env_words = []                       # §3 전 라운드 봉투 단어 누적(전역 중복 검사)
+    env_words = {}                           # 현재 라운드 봉투 단어(라운드마다 재조회)
+    neigh = {}                               # (pid, word) -> (strong[list], weak[list])
+    did_prog = did_cap = did_fail = False
 
-    tok_of = {p1: t1, p2: t2, p3: t3}
-    name_of = {p1: "앨리스", p2: "밥", p3: "찰리"}
+    def pick_word(p):
+        """이 라운드용 히든워드: 아직 안 쓴 단어 중 사용가능 strong 이웃이 가장 많은 것."""
+        best = None
+        for w in env_words[p]:
+            if w in used_word[p]:
+                continue
+            s = [x for x in neigh[(p, w)][0] if x not in used_clue[p]]
+            if best is None or len(s) > len(best[1]):
+                best = (w, s)
+        return best  # (word, strong_unused)
 
-    def revealed_map():
-        cur.execute("select player_id, hidden_word from public.hw_revealed_words(%s)", (room_id,))
-        return {str(pid): hw for pid, hw in cur.fetchall()}
+    def guess_all(gssrs, giver, hidden, wrong=False):
+        resp = None
+        for i, g in enumerate(gssrs):
+            word = (f"절대아닌단어Z{i}" if wrong else hidden)
+            resp = rpc(cur, "hw_submit_guess", tok[g], word)
+        return resp
 
-    print(f"=== 5) 라운드 진행 (총 {TOTAL_ROUNDS}바퀴 × {N}명 = {TOTAL_ROUNDS*N}턴) ===")
-    total_turns = TOTAL_ROUNDS * N
-    used_clue = {p1: set(), p2: set(), p3: set()}  # #7: 출제자별 사용한 힌트
-    guard_done = False
-    for turn in range(total_turns):
-        cur.execute("select state from public.hw_rooms where id=%s", (room_id,))
-        st = cur.fetchone()[0]
-        ri = st["round_index"]
-        check(f"턴{turn}: round_index 일치", ri == turn, f"ri={ri}")
-        cycle = turn // N + 1
-        giver = order[ri % N]
-        guessers = [p for p in order if p != giver]
-        correct_g, wrong_g = guessers[0], guessers[1]
-        hidden, strong, weak = best[giver]
-        print(f"\n  ── {cycle}바퀴 · 턴{turn} · 출제자 {name_of[giver]} (히든='{hidden}') ──")
+    for rnd in range(1, R + 1):
+        print(f"\n########## 라운드 {rnd} ##########")
 
-        if not guard_done:
-            try:
-                rpc(cur, "hw_submit_guess", tok_of[correct_g], hidden)
-                check("개방 전 추측 거부(#11)", False, "거부되지 않음")
-            except Exception:
-                check("개방 전 추측 거부(#11)", True)
-            try:
-                rpc(cur, "hw_submit_clue", tok_of[giver], hidden)
-                check("힌트=히든워드 거부", False, "거부되지 않음")
-            except Exception:
-                check("힌트=히든워드 거부", True)
-            # 약한 힌트로는 게이트가 닫혀 있어야 함 (#11)
-            if weak[0] and weak[0] != hidden and weak[1] < 95:
-                rw = rpc(cur, "hw_submit_clue", tok_of[giver], weak[0])
-                print(f"    약한 힌트 '{weak[0]}' → 유사도 {rw['similarity']} · 개방={rw['unlocked']}")
-                check("약한 힌트로는 미개방(#11)", not rw["unlocked"] and rw["similarity"] < 95)
-                used_clue[giver].add(weak[0])
-            guard_done = True
+        # (A) 매 라운드 새 봉투 선택(§3) — round1 은 start 직후, round≥2 는 정산 전이 후
+        st = state(cur, rid)
+        check(f"R{rnd}: phase=envelope_selection", st["phase"] == "envelope_selection", st["phase"])
+        check(f"R{rnd}: round_no={rnd}", st["round_no"] == rnd, str(st["round_no"]))
+        cur.execute("select count(*) from public.hw_envelopes where room_id=%s and round_no=%s", (rid, rnd))
+        check(f"R{rnd}: 봉투 개수 = 인원수(§4)", cur.fetchone()[0] == N, "")
+        for i, p in enumerate(order, 1):
+            rpc(cur, "hw_select_envelope", tok[p], i)
+        check(f"R{rnd}: 전원 선택 후 phase=hidden_word_selection",
+              state(cur, rid)["phase"] == "hidden_word_selection")
 
-        # 이번 턴 강한 힌트: 이 출제자가 아직 안 쓴 ≥95 단어 (#7 재사용 금지)
-        sc = next((s for s in strong if s not in used_clue[giver]), None)
-        check(f"턴{turn}: 미사용 강한힌트 확보(#7)", sc is not None, f"used={used_clue[giver]}")
-        used_clue[giver].add(sc)
-        rs = rpc(cur, "hw_submit_clue", tok_of[giver], sc)
-        print(f"    강한 힌트 '{sc}' → 유사도 {rs['similarity']} · 개방={rs['unlocked']}")
-        check(f"턴{turn}: 강한 힌트 ≥95 개방(#11)", rs["unlocked"] and rs["similarity"] >= 95, f"sim={rs['similarity']}")
+        # 이 라운드 봉투 단어 재조회 + 전역 중복 검사(§3: 전 라운드 모든 봉투 단어 재사용 금지)
+        env_words = {p: rpc(cur, "hw_get_my_envelope", tok[p]) for p in order}
+        flat = [w for p in order for w in env_words[p]]
+        check(f"R{rnd}: 봉투 단어 라운드 내 중복 없음", len(set(flat)) == len(flat))
+        overlap = set(flat) & set(all_env_words)
+        check(f"R{rnd}: 이전 라운드 단어와 전역 중복 없음(§3)", not overlap, f"겹침={overlap}")
+        all_env_words += flat
 
-        cur.execute("select player_id, points from public.hw_scores where room_id=%s", (room_id,))
-        before = {str(pid): pts for pid, pts in cur.fetchall()}
+        # strong/weak 이웃 재계산(라운드마다 단어가 바뀜)
+        neigh = {}
+        for p in order:
+            for w in env_words[p]:
+                cs = cands(cur, w)
+                neigh[(p, w)] = ([x for x, s in cs if s >= 95.0 and x != w],
+                                 [x for x, s in cs if s < 90.0 and x != w])
 
-        rg1 = rpc(cur, "hw_submit_guess", tok_of[correct_g], hidden)
-        check(f"턴{turn}: 첫 추측 후 미정산", rg1["all_guessed"] is False, str(rg1))
-        rg2 = rpc(cur, "hw_submit_guess", tok_of[wrong_g], "절대아닌단어ZZZ")
-        last = (turn == total_turns - 1)
-        print(f"    {name_of[correct_g]}=정답 · {name_of[wrong_g]}=오답 → all_guessed={rg2['all_guessed']} game_over={rg2.get('game_over')}")
-        check(f"턴{turn}: 전원 추측 후 정산", rg2["all_guessed"])
-        # 바퀴 핵심 검증: 마지막 턴에만 game_over
-        check(f"턴{turn}: game_over={last} (마지막 턴에만)", bool(rg2.get("game_over")) == last,
-              f"game_over={rg2.get('game_over')}, last={last}")
+        # (B) 히든워드 선택
+        chosen = {}
+        for p in order:
+            pw = pick_word(p)
+            check(f"R{rnd} {nm[p]}: 사용가능 strong 히든워드 확보", pw is not None and len(pw[1]) >= 1,
+                  f"word={pw[0] if pw else None} strong={len(pw[1]) if pw else 0}")
+            w, strong = pw
+            rpc(cur, "hw_select_hidden_word", tok[p], w)
+            used_word[p].add(w)
+            chosen[p] = (w, strong)
+        check(f"R{rnd}: 전원 선택 후 phase=round", state(cur, rid)["phase"] == "round")
+        st = state(cur, rid)
+        check("player_order 영속(불변·재셔플 없음, §4)", st["player_order"] == order)
 
-        revmap = revealed_map()
-        check(f"턴{turn}: 정답 공개", revmap.get(str(giver)) == hidden, f"공개='{revmap.get(str(giver))}'")
+        for gi in range(N):
+            st = state(cur, rid)
+            giver = order[gi]
+            hidden, _ = chosen[giver]
+            strong = [x for x in neigh[(giver, hidden)][0] if x not in used_clue[giver]]
+            weak = [x for x in neigh[(giver, hidden)][1] if x not in used_clue[giver]]
+            gssrs = [p for p in order if p != giver]
+            is_last = (rnd == R and gi == N - 1)
+            prob_no = (rnd - 1) * N + gi + 1
+            check(f"R{rnd}P{gi}: giver_index={gi}", st["giver_index"] == gi, str(st["giver_index"]))
+            check(f"R{rnd}P{gi}: problem_no={prob_no}", st["problem_no"] == prob_no, str(st["problem_no"]))
+            check(f"R{rnd}P{gi}: 회차 1부터", st["attempt_no"] == 1, str(st["attempt_no"]))
 
-        cur.execute("select player_id, points from public.hw_scores where room_id=%s", (room_id,))
-        after = {str(pid): pts for pid, pts in cur.fetchall()}
-        check(f"턴{turn}: 정답자 가점", after.get(str(correct_g), 0) > before.get(str(correct_g), 0),
-              f"{before.get(str(correct_g),0)}→{after.get(str(correct_g),0)}")
-        check(f"턴{turn}: 오답자 무가점", after.get(str(wrong_g), 0) == before.get(str(wrong_g), 0),
-              f"{before.get(str(wrong_g),0)}→{after.get(str(wrong_g),0)}")
-        check(f"턴{turn}: 출제자 가점", after.get(str(giver), 0) > before.get(str(giver), 0),
-              f"{before.get(str(giver),0)}→{after.get(str(giver),0)}")
+            if not did_cap and len(weak) >= 10 and len(strong) >= 1:
+                plan = "cap"
+            elif not did_prog and len(strong) >= 3:
+                plan = "prog3"
+            elif not did_fail and len(strong) >= 3:
+                plan = "fullfail"
+            elif not did_prog and len(strong) >= 2:
+                plan = "prog2"
+            else:
+                plan = "solve1"
+            print(f"\n  ── R{rnd} 문제{gi} · 출제자 {nm[giver]} (히든='{hidden}') · plan={plan} "
+                  f"(strong={len(strong)},weak={len(weak)}) ──")
 
-    print("\n=== 6) 게임오버 ===")
-    cur.execute("select state, status from public.hw_rooms where id=%s", (room_id,))
-    st, status = cur.fetchone()
-    check(f"{TOTAL_ROUNDS}바퀴({total_turns}턴) 후 phase=game_over", st["phase"] == "game_over", st["phase"])
-    cur.execute("select player_id, points from public.hw_scores where room_id=%s order by points desc", (room_id,))
-    scores = cur.fetchall()
-    print("  최종 점수:", {name_of.get(str(pid), str(pid)[:4]): pts for pid, pts in scores})
+            before = points(cur, rid)
 
-    print("\n=== 7) #7 단어 재사용 금지 (유니크 인덱스 + 매 턴 다른 힌트 실증) ===")
+            if plan == "cap":
+                last = None
+                for h in range(10):
+                    cw = weak[h]; used_clue[giver].add(cw)
+                    last = rpc(cur, "hw_submit_clue", tok[giver], cw)
+                    if h in (0, 9):
+                        check(f"  약힌트{h+1} 미개방(§11)", not last["unlocked"] and last["similarity"] < 95,
+                              f"sim={last['similarity']}")
+                check("  10힌트 소진 → 회차 실패", last.get("attempt_failed") and last.get("next_attempt") == 2,
+                      str(last))
+                check("  회차2로 전환(같은 히든워드)", state(cur, rid)["attempt_no"] == 2)
+                sc = strong[0]; used_clue[giver].add(sc)
+                ru = rpc(cur, "hw_submit_clue", tok[giver], sc)
+                check("  회차2 강힌트 ≥95 개방", ru["unlocked"] and ru["attempt"] == 2, str(ru))
+                fin = guess_all(gssrs, giver, hidden, wrong=False)
+                check("  회차2 정답 → 문제 종료", fin.get("solved") and fin.get("problem_over"), str(fin))
+                did_cap = True
+
+            elif plan in ("prog2", "prog3"):
+                target = 3 if plan == "prog3" else 2
+                for a in range(1, target):
+                    sc = strong[a - 1]; used_clue[giver].add(sc)
+                    ru = rpc(cur, "hw_submit_clue", tok[giver], sc)
+                    check(f"  회차{a} 개방(≥95)", ru["unlocked"] and ru["attempt"] == a, str(ru))
+                    fr = guess_all(gssrs, giver, hidden, wrong=True)
+                    check(f"  회차{a} 전원 오답 → 회차{a+1}", (not fr.get("solved")) and fr.get("next_attempt") == a + 1,
+                          str(fr))
+                    check(f"  회차{a+1} 전환·히든워드 유지", state(cur, rid)["attempt_no"] == a + 1)
+                sc = strong[target - 1]; used_clue[giver].add(sc)
+                ru = rpc(cur, "hw_submit_clue", tok[giver], sc)
+                check(f"  회차{target} 개방", ru["unlocked"] and ru["attempt"] == target)
+                fin = guess_all(gssrs, giver, hidden, wrong=False)
+                check(f"  회차{target} 정답 → 문제 종료", fin.get("solved") and fin.get("problem_over"), str(fin))
+                did_prog = True
+
+            elif plan == "fullfail":
+                # 3회차까지 전원 오답 → 미해결. 출제자 6점(=1+2+3), 정답자 0점.
+                fr = None
+                for a in range(1, 4):
+                    sc = strong[a - 1]; used_clue[giver].add(sc)
+                    ru = rpc(cur, "hw_submit_clue", tok[giver], sc)
+                    check(f"  회차{a} 개방(≥95)", ru["unlocked"] and ru["attempt"] == a, str(ru))
+                    fr = guess_all(gssrs, giver, hidden, wrong=True)
+                    if a < 3:
+                        check(f"  회차{a} 전원 오답 → 회차{a+1}",
+                              (not fr.get("solved")) and fr.get("next_attempt") == a + 1, str(fr))
+                    else:
+                        check("  회차3 전원 오답 → 미해결 정산",
+                              (not fr.get("solved")) and fr.get("problem_over"), str(fr))
+                fin = fr
+                did_fail = True
+
+            else:  # solve1
+                sc = strong[0]; used_clue[giver].add(sc)
+                ru = rpc(cur, "hw_submit_clue", tok[giver], sc)
+                check("  회차1 개방(≥95)", ru["unlocked"], str(ru))
+                mid = rpc(cur, "hw_submit_guess", tok[gssrs[0]], hidden)
+                check("  첫 추측 후 미정산", mid["all_guessed"] is False, str(mid))
+                fin = rpc(cur, "hw_submit_guess", tok[gssrs[1]], "절대아닌단어ZZZ")
+                check("  전원 추측 후 정산", fin["all_guessed"] and fin.get("problem_over"), str(fin))
+
+            cur.execute("select hidden_word from public.hw_revealed_words(%s) where player_id=%s and round_no=%s",
+                        (rid, giver, rnd))
+            rvw = cur.fetchone()
+            check("  정산 후 이 라운드 히든워드 공개", bool(rvw) and rvw[0] == hidden, f"{rvw}")
+            check(f"  game_over={is_last} (마지막 문제에만)", bool(fin.get("game_over")) == is_last,
+                  str(fin.get("game_over")))
+            after = points(cur, rid)
+            d_total = sum(after.values()) - sum(before.values())
+            d_giver = after[str(giver)] - before[str(giver)]
+            # 최종 배점(배율 없음): 정답자 각 +1, 출제자=(해결회차-1)*해결회차/2, 미해결 6점.
+            ng = len(gssrs)
+            exp_giver, exp_total = {
+                "solve1":   (0, 1),        # 1회차 성공: 출제자 0, 정답자 1명
+                "prog2":    (1, 1 + ng),   # 2회차 성공: 출제자 1, 정답자 전원
+                "prog3":    (3, 3 + ng),   # 3회차 성공: 출제자 3, 정답자 전원
+                "cap":      (1, 1 + ng),   # 1회차(힌트소진) 실패→2회차 성공
+                "fullfail": (6, 6),        # 3회차까지 실패: 출제자 6
+            }[plan]
+            check(f"  출제자 점수 정확(+{d_giver}=+{exp_giver}, {plan})", d_giver == exp_giver)
+            check(f"  총점 변동 정확(+{d_total}=+{exp_total}, {plan})", d_total == exp_total)
+
+    print("\n=== 종료 상태 ===")
+    st = state(cur, rid)
+    check("phase=game_over", st["phase"] == "game_over", st["phase"])
+    check("회차 재도전(progression) 경로 실행됨", did_prog)
+    check("10힌트 상한 경로 실행됨", did_cap)
+    check("미해결(출제자 6점) 경로 실행됨", did_fail)
     cur.execute("""select indexdef from pg_indexes where schemaname='public'
                    and tablename='hw_clues' and indexdef ilike '%unique%'""")
-    idx = cur.fetchall()
-    check("hw_clues 재사용 방지 유니크 인덱스 존재(#7)", any("clue_word" in d[0] for d in idx),
-          str([d[0].split(' ON ')[0] for d in idx]))
+    check("§7 힌트 재사용 유니크 인덱스 존재", any("clue_word" in d[0] for d in cur.fetchall()))
 
-    print("\n=== 8) 테스트 방 정리(cascade 삭제) ===")
-    cur.execute("delete from public.hw_rooms where id=%s", (room_id,))
-    cur.execute("select count(*) from public.hw_rooms where id=%s", (room_id,))
+    print("=== 정리 ===")
+    cur.execute("delete from public.hw_rooms where id=%s", (rid,))
+    cur.execute("select count(*) from public.hw_rooms where id=%s", (rid,))
     check("테스트 방 삭제됨", cur.fetchone()[0] == 0)
     cur.execute("select count(*) from public.hw_words")
     check("어휘 데이터 보존(104,595)", cur.fetchone()[0] == 104595)
 
-print(f"\n{'='*40}\n결과: {len(PASS)} 통과 / {len(FAIL)} 실패")
+print(f"\n{'='*48}\n결과: {len(PASS)} 통과 / {len(FAIL)} 실패")
 if FAIL:
-    print("실패 항목:", FAIL)
+    print("실패:", FAIL)
     raise SystemExit(1)
 print("✅ 전 항목 통과")

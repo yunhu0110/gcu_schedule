@@ -28,11 +28,12 @@ export default function EnvelopeScreen() {
     if (!session) return;
     const r = await fetchRoom(code);
     if (!r) return;
-    const [pl, env] = await Promise.all([fetchPlayers(r.id), fetchEnvelopes(r.id)]);
+    const gs = parseGameState(r.state);
+    // 봉투는 매 라운드 새로 생성되므로 현재 라운드 것만 조회(§3)
+    const [pl, env] = await Promise.all([fetchPlayers(r.id), fetchEnvelopes(r.id, gs?.round_no)]);
     setPlayers(pl);
     setEnvelopes(env);
 
-    const gs = parseGameState(r.state);
     if (gs?.phase === 'hidden_word_selection') nav(`/room/${code}/hidden`);
     else if (gs?.phase === 'round' || gs?.phase === 'game_over') nav(`/room/${code}/play`);
   }, [code, nav, session]);

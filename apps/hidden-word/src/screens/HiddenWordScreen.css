@@ -37,6 +37,12 @@
   background: linear-gradient(180deg, rgba(168,85,247,0.18), rgba(109,40,180,0.10));
   box-shadow: var(--glow-violet);
 }
+.hw-word-btn.is-used {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.hw-word-btn.is-used:hover { transform: none; border-color: inherit; }
 .hw-word-btn__text {}
 .hw-word-btn__check {
   color: var(--violet-light);

@@ -7,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ScreenHeader } from '../components/ScreenHeader';
 import '../components/ScreenHeader.css';
-import { fetchEnvelopes, getMyEnvelope, selectHiddenWord, subscribeGame, parseGameState, type Envelope } from '../lib/game';
+import { fetchEnvelopes, getMyEnvelope, getMyUsedWords, selectHiddenWord, subscribeGame, parseGameState, type Envelope } from '../lib/game';
 import { fetchRoom, subscribeRoom } from '../lib/rooms';
 import { getSession } from '../lib/session';
 import './HiddenWordScreen.css';
@@ -19,6 +19,8 @@ export default function HiddenWordScreen() {
 
   const [myEnvelope, setMyEnvelope] = useState<Envelope | null>(null);
   const [words, setWords] = useState<string[] | null>(null);
+  const [usedWords, setUsedWords] = useState<string[]>([]);
+  const [roundNo, setRoundNo] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -27,14 +29,18 @@ export default function HiddenWordScreen() {
     if (!session) return;
     const r = await fetchRoom(code);
     if (!r) return;
-    const envs = await fetchEnvelopes(r.id);
+    const gs = parseGameState(r.state);
+    if (gs) setRoundNo(gs.round_no);
+    // 봉투는 라운드마다 새로 생성 — 현재 라운드 것만(§3)
+    const envs = await fetchEnvelopes(r.id, gs?.round_no);
     setMyEnvelope(envs.find((e) => e.selected_by === session.playerId) ?? null);
-    // 봉투 단어는 본인 전용 RPC로만 조회(#3) — 1회 로드
+    // 봉투 단어는 본인 전용 RPC로만 조회(§3) — 현재 라운드 봉투 기준. 화면은 라운드마다 재마운트되어 1회 로드.
     if (words == null) {
       try { setWords(await getMyEnvelope(session.token)); } catch { /* 대기 */ }
     }
+    // 이전 라운드에 쓴 단어(재사용 금지, §6) — 봉투가 전역 비중복이라 통상 교집합 없음
+    try { setUsedWords(await getMyUsedWords(session.token)); } catch { /* 무시 */ }
 
-    const gs = parseGameState(r.state);
     if (gs?.phase === 'round' || gs?.phase === 'game_over') nav(`/room/${code}/play`);
     else if (gs?.phase === 'envelope_selection') nav(`/room/${code}/envelopes`);
   }, [code, nav, session, words]);
@@ -105,30 +111,35 @@ export default function HiddenWordScreen() {
       ) : (
         <>
           <p className="kicker" style={{ textAlign: 'center', marginBottom: 6 }}>
-            나의 봉투 #{myEnvelope?.envelope_number}
+            라운드 {roundNo} · 나의 봉투 #{myEnvelope?.envelope_number}
           </p>
           <p className="muted hw-screen__sub">
-            아무도 모르게 하나를 선택하세요. 이 단어가 게임 내내 당신의 비밀입니다.
+            아무도 모르게 이번 라운드의 비밀 단어를 하나 선택하세요. 이전 라운드에 쓴 단어는 다시 쓸 수 없어요.
           </p>
 
           {!words ? (
             <p className="muted" style={{ textAlign: 'center', marginTop: 40 }}>봉투를 불러오는 중…</p>
           ) : (
             <div className="hw-screen__words">
-              {words.map((w, i) => (
-                <motion.button
-                  key={w}
-                  className={`hw-word-btn${selected === w ? ' is-selected' : ''}`}
-                  onClick={() => setSelected(w)}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.07, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span className="hw-word-btn__text">{w}</span>
-                  {selected === w && <span className="hw-word-btn__check">✓</span>}
-                </motion.button>
-              ))}
+              {words.map((w, i) => {
+                const used = usedWords.includes(w);
+                return (
+                  <motion.button
+                    key={w}
+                    className={`hw-word-btn${selected === w ? ' is-selected' : ''}${used ? ' is-used' : ''}`}
+                    onClick={() => { if (!used) setSelected(w); }}
+                    disabled={used}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.07, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    whileTap={used ? undefined : { scale: 0.98 }}
+                  >
+                    <span className="hw-word-btn__text">{w}</span>
+                    {used && <span className="hw-word-btn__check" style={{ fontSize: 11 }}>사용함</span>}
+                    {selected === w && !used && <span className="hw-word-btn__check">✓</span>}
+                  </motion.button>
+                );
+              })}
             </div>
           )}
 
