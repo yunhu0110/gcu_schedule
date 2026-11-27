@@ -5,7 +5,7 @@
  * 그 라운드의 '정답 제출'이 열리고, 출제자 외 참가자가 히든워드를 추측 → 정답자 득점.
  * 점수판·현재 힌트 스포트라이트·직전 라운드 결과(공개된 추측 + 정답) 표시.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -14,7 +14,7 @@ import { GameTimer } from '../components/GameTimer';
 import { RevealOverlay } from '../components/RevealOverlay';
 import {
   fetchClues, fetchGuesses, fetchScores, fetchRevealedWords, getMyWord,
-  submitClue, submitGuess, endGame, subscribeGame,
+  submitClue, submitGuess, endGame, revealAnswer, tickGame, subscribeGame,
   parseGameState, currentClueGiver,
   type Clue, type Guess, type Score, type GameState,
 } from '../lib/game';
@@ -34,6 +34,7 @@ export default function GameScreen() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [clues, setClues] = useState<Clue[]>([]);
   const [prevGuesses, setPrevGuesses] = useState<Guess[]>([]);
+  const [curGuesses, setCurGuesses] = useState<Guess[]>([]);
   const [scores, setScores] = useState<Score[]>([]);
   const [revealed, setRevealed] = useState<Record<string, string>>({});
   const [myWord, setMyWord] = useState<string | null>(null);
@@ -41,9 +42,6 @@ export default function GameScreen() {
   const [busy, setBusy] = useState(false);
   const [guessedRound, setGuessedRound] = useState<number | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
-  // 방송형 결과 공개 — 문제 정산(problem_no 증가) 감지용
-  const prevProblemRef = useRef<number | null>(null);
-  const [reveal, setReveal] = useState<{ giver?: Player; hiddenWord?: string; guesses: Guess[] } | null>(null);
 
   const reload = useCallback(async () => {
     if (!session) return;
@@ -77,6 +75,8 @@ export default function GameScreen() {
     } else {
       setPrevGuesses([]);
     }
+    // 현재 문제의 공개된 추측(§7 reveal 연출용)
+    setCurGuesses(gs ? await fetchGuesses(r.id, gs.problem_no) : []);
   }, [code, nav, session]);
 
   useEffect(() => {
@@ -94,25 +94,14 @@ export default function GameScreen() {
     return () => { unsubRoom(); unsubGame(); };
   }, [code, reload, nav, session]);
 
-  // 문제 정산 감지 → 방송형 결과 공개. problem_no 가 증가하면 직전 문제(결정 회차)를 공개.
+  // reveal 보류 단계: 마감(reveal_deadline)이 지나면 서버에 전이 요청(hw_tick). 접속 중 아무나 넛지.
   useEffect(() => {
-    if (!gameState) return;
-    const pn = gameState.problem_no;
-    const prev = prevProblemRef.current;
-    prevProblemRef.current = pn;
-    if (prev == null || pn <= prev) return;        // 첫 관측·비증가는 무시
-    const settled = prev;                          // 방금 정산된 문제 번호
-    const n = gameState.participant_count || gameState.player_order.length;
-    if (!n || !prevGuesses.length) return;
-    const round = Math.floor((settled - 1) / n) + 1;
-    const gId = gameState.player_order[(settled - 1) % n] ?? null;
-    const maxAtt = Math.max(...prevGuesses.map((g) => g.attempt_no));
-    setReveal({
-      giver: gId ? players.find((p) => p.id === gId) : undefined,
-      hiddenWord: gId ? revealed[`${gId}:${round}`] : undefined,
-      guesses: prevGuesses.filter((g) => g.attempt_no === maxAtt),
-    });
-  }, [gameState, prevGuesses, players, revealed]);
+    if (!room || gameState?.sub !== 'reveal' || !gameState.reveal_deadline) return;
+    const end = new Date(gameState.reveal_deadline).getTime();
+    if (Number.isNaN(end)) return;
+    const id = setTimeout(() => { tickGame(room.id).catch(() => {}); }, Math.max(0, end - Date.now()) + 500);
+    return () => clearTimeout(id);
+  }, [room, gameState?.sub, gameState?.reveal_deadline]);
 
   const me = players.find((p) => p.id === session?.playerId);
   const giverId = gameState ? currentClueGiver(gameState) : null;
@@ -174,6 +163,14 @@ export default function GameScreen() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleReveal() {
+    if (!session || busy) return;
+    setBusy(true);
+    try { await revealAnswer(session.token); }
+    catch (e) { alert(e instanceof Error ? e.message : '오류가 발생했어요.'); }
+    finally { setBusy(false); }
   }
 
   async function handleEndGame() {
@@ -509,15 +506,20 @@ export default function GameScreen() {
         </AnimatePresence>
       )}
 
-      {/* 방송형 결과 공개 오버레이 */}
+      {/* 방송형 결과 공개 오버레이 (§7) — 서버 reveal 보류 단계 동안 */}
       <AnimatePresence>
-        {reveal && (
+        {gameState.sub === 'reveal' && gameState.reveal && (
           <RevealOverlay
-            giver={reveal.giver}
-            hiddenWord={reveal.hiddenWord}
-            guesses={reveal.guesses}
+            kind={gameState.reveal.kind}
+            isFinal={gameState.reveal.is_final}
+            awaitGiver={gameState.reveal.await_giver}
+            revealed={gameState.reveal.revealed}
+            isGiver={isGiver}
+            giver={giver}
+            guesses={curGuesses.filter((g) => g.attempt_no === (gameState.reveal?.attempt ?? attemptNo))}
+            hiddenWord={giverId ? revealed[`${giverId}:${curRound}`] : undefined}
             players={players}
-            onClose={() => setReveal(null)}
+            onReveal={handleReveal}
           />
         )}
       </AnimatePresence>

@@ -18,10 +18,19 @@ export type GamePhase =
   | 'round'
   | 'game_over';
 
-/** round 단계의 세부 상태 */
-export type RoundSub = 'clue' | 'guess';
+/** round 단계의 세부 상태. 'reveal' = 방송형 결과 공개 보류(서버 권위, §7) */
+export type RoundSub = 'clue' | 'guess' | 'reveal';
 
 export type CurrentHint = { word: string; similarity: number } | null;
+
+/** reveal 보류 상태(§7). sub='reveal' 일 때만 유효. */
+export type RevealState = {
+  kind: 'solved' | 'no_winner' | 'below_95';
+  attempt: number;
+  is_final: boolean;    // 이번 회차가 마지막(문제 종료) 여부
+  await_giver: boolean; // solved 에서 출제자 공개 버튼 대기 중
+  revealed: boolean;    // 히든워드가 공개됐는지
+} | null;
 
 export type GameState = {
   phase: GamePhase;
@@ -43,6 +52,10 @@ export type GameState = {
   clue_deadline: string | null;
   /** 정답 단계 마감 시각(ISO, 서버 now()+5분). guess 단계에서만 유효, 아니면 null. */
   guess_deadline: string | null;
+  /** reveal 보류 상태(§7). sub='reveal' 이 아니면 null. */
+  reveal: RevealState;
+  /** reveal 자동 전이 마감 시각(ISO). 경과 시 hw_tick 이 다음 단계로. solved 버튼 대기 중엔 긴 안전상한. */
+  reveal_deadline: string | null;
 };
 
 /** 공개 봉투 — 번호·선택자만. 단어는 선택 전까지 비공개(§3). 매 라운드 새로 생성, 개수 = 참가자 수. */
@@ -179,6 +192,12 @@ export async function endGame(token: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/** 출제자 '정답 공개하기'(§7-1) — solved reveal 에서 현재 출제자만 호출. 히든워드 전원 동시 공개. */
+export async function revealAnswer(token: string): Promise<void> {
+  const { error } = await supabase.rpc('hw_reveal', { p_token: token });
+  if (error) throw new Error(error.message);
+}
+
 /** 타이머 진행 — 힌트 15분/정답 5분 마감이 지났으면 서버가 다음 단계로 전이.
  *  토큰 불필요(서버 now() 기준으로 만료된 단계만 진행). 접속 중 아무 클라이언트나 호출. */
 export async function tickGame(roomId: string): Promise<{ advanced: boolean; to?: string }> {
@@ -293,6 +312,22 @@ export function parseGameState(raw: Record<string, unknown> | null): GameState |
       : null,
     clue_deadline: (raw.clue_deadline as string | null) ?? null,
     guess_deadline: (raw.guess_deadline as string | null) ?? null,
+    reveal: parseReveal(raw.reveal),
+    reveal_deadline: (raw.reveal_deadline as string | null) ?? null,
+  };
+}
+
+function parseReveal(raw: unknown): RevealState {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const kind = r.kind;
+  if (kind !== 'solved' && kind !== 'no_winner' && kind !== 'below_95') return null;
+  return {
+    kind,
+    attempt: Number(r.attempt ?? 1),
+    is_final: Boolean(r.is_final),
+    await_giver: Boolean(r.await_giver),
+    revealed: Boolean(r.revealed),
   };
 }
 

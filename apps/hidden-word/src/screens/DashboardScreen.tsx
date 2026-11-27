@@ -5,14 +5,14 @@
  * 크게 띄우고, 문제가 정산되면 방송형 공개 오버레이를 함께 보여준다.
  * 접속 중인 TV 화면이 hw_tick 을 호출해 타이머를 진행시키는 역할도 겸한다(GameTimer).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameTimer } from '../components/GameTimer';
 import { RevealOverlay } from '../components/RevealOverlay';
 import {
   fetchClues, fetchGuesses, fetchScores, fetchRevealedWords,
-  parseGameState, currentClueGiver, subscribeGame,
+  parseGameState, currentClueGiver, subscribeGame, tickGame,
   type Clue, type Guess, type Score, type GameState,
 } from '../lib/game';
 import { fetchPlayers, fetchRoom, subscribeRoom, type Player, type Room } from '../lib/rooms';
@@ -28,10 +28,8 @@ export default function DashboardScreen() {
   const [clues, setClues] = useState<Clue[]>([]);
   const [scores, setScores] = useState<Score[]>([]);
   const [revealed, setRevealed] = useState<Record<string, string>>({});
-  const [prevGuesses, setPrevGuesses] = useState<Guess[]>([]);
+  const [curGuesses, setCurGuesses] = useState<Guess[]>([]);
   const [notFound, setNotFound] = useState(false);
-  const prevProblemRef = useRef<number | null>(null);
-  const [reveal, setReveal] = useState<{ giver?: Player; hiddenWord?: string; guesses: Guess[] } | null>(null);
 
   const reload = useCallback(async () => {
     const r = await fetchRoom(code);
@@ -43,8 +41,7 @@ export default function DashboardScreen() {
       fetchPlayers(r.id), fetchClues(r.id), fetchScores(r.id), fetchRevealedWords(r.id),
     ]);
     setPlayers(pl); setClues(cl); setScores(sc); setRevealed(rv);
-    if (gs && gs.problem_no > 1) setPrevGuesses(await fetchGuesses(r.id, gs.problem_no - 1));
-    else setPrevGuesses([]);
+    setCurGuesses(gs ? await fetchGuesses(r.id, gs.problem_no) : []);
   }, [code]);
 
   useEffect(() => {
@@ -60,25 +57,14 @@ export default function DashboardScreen() {
     return () => { unsubRoom(); unsubGame(); };
   }, [code, reload]);
 
-  // 문제 정산 감지 → 방송형 공개
+  // reveal 보류 마감 넛지(hw_tick) — 접속 중인 TV 화면도 전이 넛지에 동참
   useEffect(() => {
-    if (!gameState) return;
-    const pn = gameState.problem_no;
-    const prev = prevProblemRef.current;
-    prevProblemRef.current = pn;
-    if (prev == null || pn <= prev) return;
-    const settled = prev;
-    const n = gameState.participant_count || gameState.player_order.length;
-    if (!n || !prevGuesses.length) return;
-    const round = Math.floor((settled - 1) / n) + 1;
-    const gId = gameState.player_order[(settled - 1) % n] ?? null;
-    const maxAtt = Math.max(...prevGuesses.map((g) => g.attempt_no));
-    setReveal({
-      giver: gId ? players.find((p) => p.id === gId) : undefined,
-      hiddenWord: gId ? revealed[`${gId}:${round}`] : undefined,
-      guesses: prevGuesses.filter((g) => g.attempt_no === maxAtt),
-    });
-  }, [gameState, prevGuesses, players, revealed]);
+    if (!room || gameState?.sub !== 'reveal' || !gameState.reveal_deadline) return;
+    const end = new Date(gameState.reveal_deadline).getTime();
+    if (Number.isNaN(end)) return;
+    const id = setTimeout(() => { tickGame(room.id).catch(() => {}); }, Math.max(0, end - Date.now()) + 500);
+    return () => clearTimeout(id);
+  }, [room, gameState?.sub, gameState?.reveal_deadline]);
 
   const giverId = gameState ? currentClueGiver(gameState) : null;
   const giver = players.find((p) => p.id === giverId);
@@ -243,13 +229,18 @@ export default function DashboardScreen() {
       )}
 
       <AnimatePresence>
-        {reveal && (
+        {gameState.sub === 'reveal' && gameState.reveal && (
           <RevealOverlay
-            giver={reveal.giver}
-            hiddenWord={reveal.hiddenWord}
-            guesses={reveal.guesses}
+            kind={gameState.reveal.kind}
+            isFinal={gameState.reveal.is_final}
+            awaitGiver={gameState.reveal.await_giver}
+            revealed={gameState.reveal.revealed}
+            isGiver={false}
+            giver={giver}
+            guesses={curGuesses.filter((g) => g.attempt_no === (gameState.reveal?.attempt ?? attemptNo))}
+            hiddenWord={giverId ? revealed[`${giverId}:${gameState.round_no}`] : undefined}
             players={players}
-            onClose={() => setReveal(null)}
+            onReveal={() => { /* PC 대시보드는 읽기 전용 */ }}
           />
         )}
       </AnimatePresence>
