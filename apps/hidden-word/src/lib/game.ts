@@ -198,6 +198,19 @@ export async function revealAnswer(token: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/** 추측 수정 — 전원 제출(판정) 전까지 본인 추측 변경. */
+export async function updateGuess(token: string, guess: string): Promise<void> {
+  const { error } = await supabase.rpc('hw_update_guess', { p_token: token, p_guess: guess });
+  if (error) throw new Error(error.message);
+}
+
+/** 본인 현재 회차 추측(새로고침 복원·수정 프리필). 미제출이면 null. */
+export async function fetchMyGuess(token: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('hw_my_guess', { p_token: token });
+  if (error) throw new Error(error.message);
+  return (data as string | null) ?? null;
+}
+
 /** 타이머 진행 — 힌트 15분/정답 5분 마감이 지났으면 서버가 다음 단계로 전이.
  *  토큰 불필요(서버 now() 기준으로 만료된 단계만 진행). 접속 중 아무 클라이언트나 호출. */
 export async function tickGame(roomId: string): Promise<{ advanced: boolean; to?: string }> {

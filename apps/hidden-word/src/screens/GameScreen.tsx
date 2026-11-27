@@ -14,7 +14,7 @@ import { GameTimer } from '../components/GameTimer';
 import { RevealOverlay } from '../components/RevealOverlay';
 import {
   fetchClues, fetchGuesses, fetchScores, fetchRevealedWords, getMyWord,
-  submitClue, submitGuess, endGame, revealAnswer, tickGame, subscribeGame,
+  submitClue, submitGuess, updateGuess, fetchMyGuess, endGame, revealAnswer, tickGame, subscribeGame,
   parseGameState, currentClueGiver,
   type Clue, type Guess, type Score, type GameState,
 } from '../lib/game';
@@ -41,6 +41,8 @@ export default function GameScreen() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [guessedRound, setGuessedRound] = useState<number | null>(null);
+  const [myGuessWord, setMyGuessWord] = useState<string | null>(null);
+  const [editingGuess, setEditingGuess] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
 
   const reload = useCallback(async () => {
@@ -77,6 +79,16 @@ export default function GameScreen() {
     }
     // 현재 문제의 공개된 추측(§7 reveal 연출용)
     setCurGuesses(gs ? await fetchGuesses(r.id, gs.problem_no) : []);
+
+    // 내 현재 회차 추측 복원(수정 프리필·새로고침 대응)
+    if (gs?.phase === 'round' && gs.sub === 'guess' && session.token) {
+      const mg = await fetchMyGuess(session.token).catch(() => null);
+      setMyGuessWord(mg);
+      setGuessedRound(mg != null ? gs.problem_no * 100 + gs.attempt_no : null);
+    } else {
+      setMyGuessWord(null);
+      setEditingGuess(false);
+    }
   }, [code, nav, session]);
 
   useEffect(() => {
@@ -156,8 +168,24 @@ export default function GameScreen() {
     setBusy(true);
     try {
       await submitGuess(session.token, input.trim());
+      setMyGuessWord(input.trim());
       setInput('');
       setGuessedRound(problemNo * 100 + attemptNo);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : '오류가 발생했어요.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUpdateGuess() {
+    if (!session || busy || !input.trim()) return;
+    setBusy(true);
+    try {
+      await updateGuess(session.token, input.trim());
+      setMyGuessWord(input.trim());
+      setInput('');
+      setEditingGuess(false);
     } catch (e) {
       alert(e instanceof Error ? e.message : '오류가 발생했어요.');
     } finally {
@@ -434,14 +462,25 @@ export default function GameScreen() {
             </>
           )
         ) : unlocked ? (
-          iGuessedThisAttempt ? (
-            <p className="muted" style={{ textAlign: 'center', fontSize: 13, padding: '8px 0' }}>
-              추측을 제출했어요. 다른 참가자 대기 중…
-            </p>
+          iGuessedThisAttempt && !editingGuess ? (
+            <div style={{ textAlign: 'center', padding: '8px 0' }}>
+              <p className="muted" style={{ fontSize: 13 }}>
+                추측 제출됨{myGuessWord ? ` · "${myGuessWord}"` : ''}. 다른 참가자 대기 중…
+              </p>
+              <button
+                className="btn btn--ghost"
+                style={{ marginTop: 8 }}
+                onClick={() => { setInput(myGuessWord ?? ''); setEditingGuess(true); }}
+              >
+                정답 수정
+              </button>
+            </div>
           ) : (
             <>
               <p className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
-                {giver?.nickname ?? '출제자'}의 히든워드를 추측하세요. (기회 1회)
+                {editingGuess
+                  ? '정답을 수정하세요. (전원 제출 전까지 가능)'
+                  : `${giver?.nickname ?? '출제자'}의 히든워드를 추측하세요. (제출 후 수정 가능)`}
               </p>
               <div className="game-screen__input-row">
                 <input
@@ -449,13 +488,22 @@ export default function GameScreen() {
                   placeholder="추측 단어"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleSubmitGuess(); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') (editingGuess ? handleUpdateGuess() : handleSubmitGuess()); }}
                   maxLength={20}
                   autoFocus
                 />
-                <button className="btn btn--primary" disabled={!input.trim() || busy} onClick={handleSubmitGuess}>
-                  제출
+                <button
+                  className="btn btn--primary"
+                  disabled={!input.trim() || busy}
+                  onClick={editingGuess ? handleUpdateGuess : handleSubmitGuess}
+                >
+                  {editingGuess ? '수정' : '제출'}
                 </button>
+                {editingGuess && (
+                  <button className="btn btn--ghost" disabled={busy} onClick={() => { setEditingGuess(false); setInput(''); }}>
+                    취소
+                  </button>
+                )}
               </div>
             </>
           )

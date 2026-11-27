@@ -62,6 +62,7 @@ export function RevealOverlay({
   let tail = '';
   if (stage === 'resolve') {
     if (kind === 'solved') tail = revealed ? '정답자 득점!' : '';
+    else if (kind === 'below_95') tail = '아무도 점수를 얻지 못했어요 · 다음 문제로 이동합니다';
     else if (isFinal) tail = '이번 출제자의 차례가 끝났어요';
     else tail = '다음 회차로 이동합니다';
   }
