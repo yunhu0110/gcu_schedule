@@ -26,10 +26,10 @@ type Props = {
   onReveal: () => void;       // 출제자 '정답 공개하기'
 };
 
-// 연출 타임라인(ms) — §7-4 권장값에 맞춤
-const T_HUSH = 2500;    // 두구두구 종료 → 정적
-const T_VERDICT = 3400; // 정적 종료 → 판정 문구
-const T_RESOLVE = 4700; // 판정 → 결말
+// 연출 타임라인(ms) — 오답/95미달 결과가 충분히 보이도록 여유 있게(서버 hold 10~11s 내)
+const T_HUSH = 3000;    // 두구두구 종료 → 정적
+const T_VERDICT = 4200; // 정적 종료 → 판정 문구
+const T_RESOLVE = 5600; // 판정 → 결말(이후 결과가 수초간 유지됨)
 
 type Stage = 'drum' | 'hush' | 'verdict' | 'resolve';
 
