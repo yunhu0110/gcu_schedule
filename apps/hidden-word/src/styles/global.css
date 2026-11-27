@@ -43,6 +43,28 @@ input, button { font-family: inherit; }
   flex-direction: column;
 }
 
+/* 데스크톱/웹(≥600px): 화면을 핸드폰 크기 프레임으로 가둬 폰과 비율을 맞춘다.
+   - 폰(세로 <600px)은 이 규칙의 영향을 전혀 받지 않음(기존 그대로).
+   - min-height:100dvh 로 세로가 창 높이만큼 늘어나 flex:1 여백이 과하게 벌어지던 문제 해결. */
+@media (min-width: 600px) {
+  .app-shell {
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 24px 0;
+  }
+  .screen {
+    min-height: 0;
+    height: min(calc(100dvh - 48px), 880px);
+    max-width: 420px;
+    padding-bottom: 24px;
+    border: 1px solid var(--panel-border);
+    border-radius: 28px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
 /* 골드 코너 브래킷 프레임(시안 공통 장식) */
 .framed { position: relative; }
 .framed::before, .framed::after,

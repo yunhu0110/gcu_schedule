@@ -30,14 +30,20 @@ def rpc(cur, fn, *args):
     return cur.fetchone()[0]
 
 def cands(cur, hidden, k=80):
-    cur.execute("""
-      select nn.w,(sc.score)::float from (
-        select ea2.word w from public.hw_word_embeddings ea
-        join public.hw_word_embeddings ea2 on ea2.word<>ea.word
-        where ea.word=%s order by ea.vec<=>ea2.vec limit %s
-      ) nn, lateral public.hw_word_similarity(%s,nn.w) sc order by sc.score desc
-    """, (hidden, k, hidden))
-    return cur.fetchall()
+    # 테스트 전용: 정답 근처(≈95) 추측어를 찾으려 전체 임베딩을 brute-force 스캔한다.
+    # 게임 RPC 가 아니므로 3s 제한에서 제외(이 쿼리 동안만 해제 후 복구).
+    cur.execute("set statement_timeout=0")
+    try:
+        cur.execute("""
+          select nn.w,(sc.score)::float from (
+            select ea2.word w from public.hw_word_embeddings ea
+            join public.hw_word_embeddings ea2 on ea2.word<>ea.word
+            where ea.word=%s order by ea.vec<=>ea2.vec limit %s
+          ) nn, lateral public.hw_word_similarity(%s,nn.w) sc order by sc.score desc
+        """, (hidden, k, hidden))
+        return cur.fetchall()
+    finally:
+        cur.execute("set statement_timeout='3s'")
 
 def state(cur, rid):
     cur.execute("select state from public.hw_rooms where id=%s", (rid,))
@@ -48,7 +54,9 @@ def points(cur, rid):
     return {str(p): pt for p, pt in cur.fetchall()}
 
 with psycopg.connect(u, autocommit=True) as c, c.cursor() as cur:
-    cur.execute("set statement_timeout=0")
+    # 라이브 anon 역할과 동일한 3s 강제 — 게임 RPC는 모두 이 안에 끝나야 한다.
+    # (0048 회귀: hw_draw_envelopes 가 전체 스캔 반복으로 timeout 났고 0 설정이 이를 가렸음)
+    cur.execute("set statement_timeout='3s'")
 
     print("=== 1) 방 생성 + 참가 (3인) ===")
     r1 = rpc(cur, "hw_create_room", "플레이테스트", 6, "앨리스", "#c9a24b", False)
