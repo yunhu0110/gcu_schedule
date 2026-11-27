@@ -39,6 +39,10 @@ export type GameState = {
   max_hints: number;
   unlocked: boolean;
   current_hint: CurrentHint;
+  /** 힌트 단계 마감 시각(ISO, 서버 now()+15분). clue 단계에서만 유효, 아니면 null. */
+  clue_deadline: string | null;
+  /** 정답 단계 마감 시각(ISO, 서버 now()+5분). guess 단계에서만 유효, 아니면 null. */
+  guess_deadline: string | null;
 };
 
 /** 공개 봉투 — 번호·선택자만. 단어는 선택 전까지 비공개(§3). 매 라운드 새로 생성, 개수 = 참가자 수. */
@@ -175,6 +179,14 @@ export async function endGame(token: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/** 타이머 진행 — 힌트 15분/정답 5분 마감이 지났으면 서버가 다음 단계로 전이.
+ *  토큰 불필요(서버 now() 기준으로 만료된 단계만 진행). 접속 중 아무 클라이언트나 호출. */
+export async function tickGame(roomId: string): Promise<{ advanced: boolean; to?: string }> {
+  const { data, error } = await supabase.rpc('hw_tick', { p_room: roomId });
+  if (error) throw new Error(error.message);
+  return (data ?? { advanced: false }) as { advanced: boolean; to?: string };
+}
+
 // ----------------------------------------------------------------
 // 읽기 (공개 테이블 직접 조회)
 // ----------------------------------------------------------------
@@ -279,6 +291,8 @@ export function parseGameState(raw: Record<string, unknown> | null): GameState |
     current_hint: hint && hint.word != null
       ? { word: hint.word, similarity: Number(hint.similarity ?? 0) }
       : null,
+    clue_deadline: (raw.clue_deadline as string | null) ?? null,
+    guess_deadline: (raw.guess_deadline as string | null) ?? null,
   };
 }
 

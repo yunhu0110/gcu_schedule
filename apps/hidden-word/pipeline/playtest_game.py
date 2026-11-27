@@ -5,7 +5,8 @@ playtest_game.py — 새 엔진(0045~0048) 한 판 시뮬레이션 (Phase 1).
   · 전 라운드 봉투 단어가 서로 전역 중복 없음(이전 라운드 전체 단어 재사용 금지, §3)
   · total_problems = 인원 × 라운드, player_order 시작 시 1회 추첨·모든 라운드 동일 유지(§4)
   · 한 문제 최대 3회차 재도전: 회차마다 힌트→추측, 오답 전원 시 다음 회차(같은 히든워드 유지)
-  · 힌트 10개 소진 시 ≥95 미도달 → 회차 실패(다음 회차로)
+  · 힌트 10개 소진 시 ≥95 미도달이어도 정답(guess) 단계 개방(§3-4) → 전원 오답 시 다음 회차
+  · 타이머(0050): 힌트 15분 만료·정답 5분 만료를 hw_tick 이 서버 now() 기준으로 전이
   · ≥95 게이트(§11), §7 힌트 단어 재사용 금지, 유사도 공개(§9·§10)
   · 문제 정산 시 해당 라운드 히든워드 공개, 마지막 문제에만 game_over
   · 점수(최종·배율 없음): 정답자 각 +1 / 출제자=(해결회차-1)*해결회차/2 / 미해결 6점 — 정확 검증
@@ -87,7 +88,7 @@ with psycopg.connect(u, autocommit=True) as c, c.cursor() as cur:
     all_env_words = []                       # §3 전 라운드 봉투 단어 누적(전역 중복 검사)
     env_words = {}                           # 현재 라운드 봉투 단어(라운드마다 재조회)
     neigh = {}                               # (pid, word) -> (strong[list], weak[list])
-    did_prog = did_cap = did_fail = False
+    did_prog = did_cap = did_fail = did_timer = False
 
     def pick_word(p):
         """이 라운드용 히든워드: 아직 안 쓴 단어 중 사용가능 strong 이웃이 가장 많은 것."""
@@ -164,7 +165,9 @@ with psycopg.connect(u, autocommit=True) as c, c.cursor() as cur:
             check(f"R{rnd}P{gi}: problem_no={prob_no}", st["problem_no"] == prob_no, str(st["problem_no"]))
             check(f"R{rnd}P{gi}: 회차 1부터", st["attempt_no"] == 1, str(st["attempt_no"]))
 
-            if not did_cap and len(weak) >= 10 and len(strong) >= 1:
+            if not did_timer and len(strong) >= 1:
+                plan = "timer"
+            elif not did_cap and len(weak) >= 10 and len(strong) >= 1:
                 plan = "cap"
             elif not did_prog and len(strong) >= 3:
                 plan = "prog3"
@@ -179,16 +182,54 @@ with psycopg.connect(u, autocommit=True) as c, c.cursor() as cur:
 
             before = points(cur, rid)
 
-            if plan == "cap":
+            if plan == "timer":
+                # ── 타이머 전이(0050): 힌트 15분 만료·정답 5분 만료를 hw_tick 으로 검증 ──
+                st0 = state(cur, rid)
+                check("  힌트 단계 clue_deadline 존재", bool(st0.get("clue_deadline")) and st0["sub"] == "clue",
+                      str(st0.get("clue_deadline")))
+                check("  마감 전 tick 무동작", rpc(cur, "hw_tick", rid)["advanced"] is False)
+                # 힌트 데드라인을 과거로 → tick → 95 미도달·0힌트여도 정답 단계 개방(§3-4)
+                cur.execute("""update public.hw_rooms set state =
+                    jsonb_set(state,'{clue_deadline}', to_jsonb((now()-interval '1s')::text)) where id=%s""", (rid,))
+                tk = rpc(cur, "hw_tick", rid)
+                check("  힌트 15분 만료 → 정답 단계", tk["advanced"] and tk.get("to") == "guess", str(tk))
+                stg = state(cur, rid)
+                check("  전이 후 sub=guess·정답 데드라인 설정",
+                      stg["sub"] == "guess" and bool(stg.get("guess_deadline")) and not stg.get("clue_deadline"),
+                      str(stg))
+                check("  정답 마감 전 tick 무동작", rpc(cur, "hw_tick", rid)["advanced"] is False)
+                # 정답 데드라인을 과거로 → tick → 제출 0이므로 회차2로
+                cur.execute("""update public.hw_rooms set state =
+                    jsonb_set(state,'{guess_deadline}', to_jsonb((now()-interval '1s')::text)) where id=%s""", (rid,))
+                tk = rpc(cur, "hw_tick", rid)
+                check("  정답 5분 만료 → 회차 판정", tk["advanced"] and tk.get("to") == "judge", str(tk))
+                st2 = state(cur, rid)
+                check("  제출 0 → 회차2 전환(힌트 단계)", st2["attempt_no"] == 2 and st2["sub"] == "clue", str(st2))
+                # 회차2: 강힌트 개방 → 전원 정답 → 문제 종료
+                sc = strong[0]; used_clue[giver].add(sc)
+                ru = rpc(cur, "hw_submit_clue", tok[giver], sc)
+                check("  회차2 강힌트 ≥95 개방", ru["unlocked"] and ru["attempt"] == 2, str(ru))
+                fin = guess_all(gssrs, giver, hidden, wrong=False)
+                check("  회차2 정답 → 문제 종료", fin.get("solved") and fin.get("problem_over"), str(fin))
+                did_timer = True
+
+            elif plan == "cap":
                 last = None
                 for h in range(10):
                     cw = weak[h]; used_clue[giver].add(cw)
                     last = rpc(cur, "hw_submit_clue", tok[giver], cw)
-                    if h in (0, 9):
+                    if h < 9:
                         check(f"  약힌트{h+1} 미개방(§11)", not last["unlocked"] and last["similarity"] < 95,
                               f"sim={last['similarity']}")
-                check("  10힌트 소진 → 회차 실패", last.get("attempt_failed") and last.get("next_attempt") == 2,
+                # 10힌트 소진 → (95 미도달이어도) 정답 단계 개방(§3-4)
+                check("  10힌트 소진 → 정답 단계 개방",
+                      last["unlocked"] and last.get("hints_exhausted") is True and last["similarity"] < 95,
                       str(last))
+                stg = state(cur, rid)
+                check("  소진 후 sub=guess·회차1 유지", stg["sub"] == "guess" and stg["attempt_no"] == 1, str(stg))
+                # 전원 오답 → 회차2로 전환(같은 히든워드)
+                fr = guess_all(gssrs, giver, hidden, wrong=True)
+                check("  전원 오답 → 회차2 전환", (not fr.get("solved")) and fr.get("next_attempt") == 2, str(fr))
                 check("  회차2로 전환(같은 히든워드)", state(cur, rid)["attempt_no"] == 2)
                 sc = strong[0]; used_clue[giver].add(sc)
                 ru = rpc(cur, "hw_submit_clue", tok[giver], sc)
@@ -256,6 +297,7 @@ with psycopg.connect(u, autocommit=True) as c, c.cursor() as cur:
                 "prog2":    (1, 1 + ng),   # 2회차 성공: 출제자 1, 정답자 전원
                 "prog3":    (3, 3 + ng),   # 3회차 성공: 출제자 3, 정답자 전원
                 "cap":      (1, 1 + ng),   # 1회차(힌트소진) 실패→2회차 성공
+                "timer":    (1, 1 + ng),   # 1회차(타이머 만료) 실패→2회차 성공
                 "fullfail": (6, 6),        # 3회차까지 실패: 출제자 6
             }[plan]
             check(f"  출제자 점수 정확(+{d_giver}=+{exp_giver}, {plan})", d_giver == exp_giver)
@@ -267,6 +309,7 @@ with psycopg.connect(u, autocommit=True) as c, c.cursor() as cur:
     check("회차 재도전(progression) 경로 실행됨", did_prog)
     check("10힌트 상한 경로 실행됨", did_cap)
     check("미해결(출제자 6점) 경로 실행됨", did_fail)
+    check("타이머(hw_tick) 전이 경로 실행됨", did_timer)
     cur.execute("""select indexdef from pg_indexes where schemaname='public'
                    and tablename='hw_clues' and indexdef ilike '%unique%'""")
     check("§7 힌트 재사용 유니크 인덱스 존재", any("clue_word" in d[0] for d in cur.fetchall()))

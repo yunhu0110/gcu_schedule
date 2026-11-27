@@ -10,6 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScreenHeader } from '../components/ScreenHeader';
 import '../components/ScreenHeader.css';
+import { GameTimer } from '../components/GameTimer';
 import {
   fetchClues, fetchGuesses, fetchScores, fetchRevealedWords, getMyWord,
   submitClue, submitGuess, endGame, subscribeGame,
@@ -245,6 +246,13 @@ export default function GameScreen() {
         )}
       </div>
 
+      {/* 단계 타이머 — 힌트 15분 / 정답 5분. 0 도달 시 서버 전이(hw_tick) */}
+      {gameState.sub === 'clue' ? (
+        <GameTimer deadline={gameState.clue_deadline} roomId={room.id} label="힌트 시간" />
+      ) : (
+        <GameTimer deadline={gameState.guess_deadline} roomId={room.id} label="정답 시간" />
+      )}
+
       {/* 내 히든워드 — 출제자일 때만 의미 있음(모두에게 자기 단어는 비밀 유지) */}
       {myWord && isGiver && (
         <div className="game-screen__my-word panel">
@@ -289,7 +297,7 @@ export default function GameScreen() {
                 {(hint.similarity ?? 0).toFixed(1)}
               </motion.span>
               <span className="muted" style={{ fontSize: 11 }}>
-                {unlocked ? '정답 제출이 열렸습니다!' : `${UNLOCK_AT} 도달 시 추측 시작`}
+                {unlocked ? '정답 제출이 열렸습니다!' : `${UNLOCK_AT} 도달·시간·힌트 소진 시 추측`}
               </span>
             </div>
           </>
@@ -385,7 +393,7 @@ export default function GameScreen() {
           ) : (
             <>
               <p className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
-                히든워드와 가까운 단어를 힌트로 제출하세요. 유사도 {UNLOCK_AT} 이상이면 추측이 열립니다.
+                히든워드와 가까운 단어를 힌트로 제출하세요. 유사도 {UNLOCK_AT} 도달, 또는 힌트 {maxHints}개·제한시간(15분) 소진 시 추측이 열립니다.
                 {' '}(힌트 {hintsUsed}/{maxHints} · {attemptNo}/{maxAttempts}회차)
               </p>
               <div className="game-screen__input-row">
