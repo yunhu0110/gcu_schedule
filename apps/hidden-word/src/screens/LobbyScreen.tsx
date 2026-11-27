@@ -101,6 +101,14 @@ export default function LobbyScreen() {
           <button className="btn lobby__share" onClick={handleShare}>
             {shared ? '링크 복사됨 ✓' : '초대 링크 공유'}
           </button>
+          <a
+            className="btn btn--ghost lobby__dashboard"
+            href={`${import.meta.env.BASE_URL}#/room/${code}/dashboard`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            📺 PC 대시보드 열기
+          </a>
         </div>
       </div>
 

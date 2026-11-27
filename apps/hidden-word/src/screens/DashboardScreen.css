@@ -1,0 +1,251 @@
+/* PC 대형 대시보드 — 전체화면, 폰 프레임 제약을 벗어나 TV/모니터용으로 크게. */
+.dashboard {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(130% 100% at 50% 0%, #1d1726, var(--bg-deep));
+  color: var(--text);
+  padding: clamp(16px, 3vw, 40px);
+  gap: clamp(16px, 2.5vh, 32px);
+  overflow: hidden;
+}
+.dashboard--empty {
+  align-items: center;
+  justify-content: center;
+}
+.dashboard__logo {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.6vw, 40px);
+  letter-spacing: 0.22em;
+  color: var(--gold);
+  text-shadow: var(--glow-gold);
+}
+
+.dashboard__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: clamp(10px, 1.5vh, 20px);
+}
+.dashboard__progress {
+  font-size: clamp(13px, 1.4vw, 20px);
+  color: var(--text-faint);
+}
+.dashboard__code {
+  font-family: var(--font-mono);
+  font-size: clamp(13px, 1.3vw, 18px);
+  color: var(--violet-light);
+  letter-spacing: 0.1em;
+}
+
+.dashboard__grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: clamp(16px, 2.5vw, 40px);
+  min-height: 0;
+}
+
+/* ── 스테이지 ── */
+.dashboard__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 2.5vh, 36px);
+  background: rgba(30, 26, 38, 0.5);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-xl);
+  padding: clamp(20px, 3vw, 48px);
+}
+.dashboard__giver {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.dashboard__giver-name {
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 2.4vw, 36px);
+  color: var(--text-2);
+}
+
+.dashboard__spotlight {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 2vh, 24px);
+}
+.dashboard__spotlight.is-unlocked .dashboard__hint-word {
+  color: var(--glow-green);
+  text-shadow: var(--glow-green-soft);
+}
+.dashboard__hint-word {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 6vw, 104px);
+  line-height: 1;
+  color: var(--text);
+  text-align: center;
+}
+.dashboard__gauge {
+  position: relative;
+  width: min(100%, 680px);
+  height: 16px;
+  background: var(--bg-deep);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.dashboard__gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--violet-deep), var(--violet-light));
+  border-radius: var(--r-pill);
+}
+.dashboard__gauge-fill.is-hit {
+  background: linear-gradient(90deg, #16a34a, var(--glow-green));
+}
+.dashboard__gauge-mark {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--gold);
+  opacity: 0.8;
+}
+.dashboard__sim {
+  font-size: clamp(28px, 3.4vw, 56px);
+  color: var(--violet-light);
+}
+.dashboard__sim.is-hit {
+  color: var(--glow-green);
+  text-shadow: var(--glow-green-soft);
+}
+.dashboard__waiting {
+  color: var(--text-muted);
+  font-size: clamp(15px, 1.6vw, 22px);
+}
+
+.dashboard__clue-log {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.dashboard__clue-chip {
+  font-size: clamp(13px, 1.3vw, 18px);
+  color: var(--text-faint);
+  background: var(--surface-2);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-pill);
+  padding: 4px 12px;
+}
+.dashboard__clue-chip b {
+  color: var(--text-3);
+}
+
+.dashboard__prep {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dashboard__prep-title {
+  font-family: var(--font-serif);
+  font-size: clamp(24px, 3vw, 44px);
+  color: var(--text);
+}
+
+/* ── 점수판 ── */
+.dashboard__board {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.2vh, 14px);
+  background: rgba(30, 26, 38, 0.5);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-xl);
+  padding: clamp(16px, 2vw, 32px);
+  overflow-y: auto;
+}
+.dashboard__board-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: clamp(8px, 1.2vh, 16px) clamp(10px, 1vw, 16px);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+}
+.dashboard__board-name {
+  flex: 1;
+  font-size: clamp(16px, 1.6vw, 24px);
+  color: var(--text-2);
+}
+.dashboard__board-pts {
+  font-size: clamp(20px, 2vw, 32px);
+  color: var(--gold);
+}
+
+.dashboard__gem {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--gem);
+  box-shadow: 0 0 12px var(--gem);
+  flex: none;
+}
+.dashboard__gem--lg {
+  width: clamp(18px, 1.8vw, 26px);
+  height: clamp(18px, 1.8vw, 26px);
+}
+
+/* ── 최종 순위 ── */
+.dashboard__final {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 3vh, 36px);
+}
+.dashboard__final-title {
+  font-size: clamp(16px, 2vw, 28px);
+  color: var(--gold);
+}
+.dashboard__final-rows {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.5vh, 18px);
+  width: min(100%, 720px);
+}
+.dashboard__final-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: clamp(12px, 1.8vh, 22px) clamp(16px, 2vw, 28px);
+  background: var(--surface-2);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-lg);
+}
+.dashboard__final-row.is-winner {
+  border-color: var(--gold);
+  box-shadow: var(--glow-gold);
+}
+.dashboard__final-rank {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.4vw, 36px);
+  color: var(--gold);
+  width: clamp(32px, 3vw, 48px);
+  text-align: center;
+}
+.dashboard__final-name {
+  flex: 1;
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 2.2vw, 34px);
+  color: var(--text);
+}
+.dashboard__final-pts {
+  font-size: clamp(24px, 2.6vw, 42px);
+  color: var(--gold);
+}

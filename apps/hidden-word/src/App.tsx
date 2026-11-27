@@ -9,6 +9,7 @@ import LobbyScreen from './screens/LobbyScreen';
 import EnvelopeScreen from './screens/EnvelopeScreen';
 import HiddenWordScreen from './screens/HiddenWordScreen';
 import GameScreen from './screens/GameScreen';
+import DashboardScreen from './screens/DashboardScreen';
 
 export default function App() {
   const location = useLocation();
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/room/:code/envelopes" element={<Page><EnvelopeScreen /></Page>} />
           <Route path="/room/:code/hidden" element={<Page><HiddenWordScreen /></Page>} />
           <Route path="/room/:code/play" element={<Page><GameScreen /></Page>} />
+          <Route path="/room/:code/dashboard" element={<DashboardScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AnimatePresence>

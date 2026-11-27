@@ -1,0 +1,130 @@
+/* 방송형 결과 공개 오버레이 — 전체화면 암전 + 골드/바이올렛 극적 연출 */
+.reveal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 28px 20px;
+  background: radial-gradient(120% 90% at 50% 20%, rgba(40, 30, 60, 0.92), rgba(10, 8, 18, 0.97));
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  overflow-y: auto;
+}
+
+.reveal-overlay__kicker {
+  font-size: 12px;
+  color: var(--gold);
+  text-shadow: var(--glow-gold);
+}
+.reveal-overlay__giver {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  color: var(--text-2);
+}
+.reveal-overlay__gem {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gem);
+  box-shadow: 0 0 12px var(--gem);
+}
+
+.reveal-overlay__guesses {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+  perspective: 900px;
+}
+.reveal-overlay__card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--r-lg);
+  transform-origin: top center;
+}
+.reveal-overlay__card.is-correct {
+  border-color: var(--glow-green);
+  box-shadow: var(--glow-green-soft);
+}
+.reveal-overlay__card-gem {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gem);
+  box-shadow: 0 0 10px var(--gem);
+  flex: none;
+}
+.reveal-overlay__card-name {
+  font-size: 13px;
+  color: var(--text-faint);
+  flex: none;
+}
+.reveal-overlay__card-word {
+  flex: 1;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  color: var(--text);
+}
+.reveal-overlay__stamp {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  border: 2px solid currentColor;
+  transform: rotate(-8deg);
+}
+.reveal-overlay__stamp.is-ok {
+  color: var(--glow-green);
+}
+.reveal-overlay__stamp.is-no {
+  color: var(--text-muted);
+}
+
+.reveal-overlay__answer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.reveal-overlay__answer-label {
+  font-size: 12px;
+  color: var(--gold);
+}
+.reveal-overlay__answer-word {
+  font-family: var(--font-display);
+  font-size: 48px;
+  line-height: 1.1;
+  color: var(--gold);
+  text-shadow: var(--glow-gold), 0 0 40px rgba(229, 193, 88, 0.35);
+  text-align: center;
+}
+
+.reveal-overlay__verdict {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  text-align: center;
+}
+.reveal-overlay__verdict.is-ok {
+  color: var(--glow-green);
+  text-shadow: var(--glow-green-soft);
+}
+.reveal-overlay__verdict.is-no {
+  color: var(--violet-light);
+  text-shadow: var(--glow-violet);
+}

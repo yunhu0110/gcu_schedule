@@ -55,6 +55,15 @@
   font-size: 13px;
   width: auto;
 }
+.lobby__dashboard {
+  margin-top: 6px;
+  align-self: flex-start;
+  padding: 6px 14px;
+  font-size: 13px;
+  width: auto;
+  text-decoration: none;
+  text-align: center;
+}
 .lobby__rounds-ctrl { display: flex; align-items: center; gap: 14px; }
 .lobby__rounds-btn {
   width: 34px; height: 34px;
